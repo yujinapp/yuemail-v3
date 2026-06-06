@@ -1,0 +1,66 @@
+{
+  "name": "@yujinapp/yuemail",
+  "version": "0.3.0",
+  "description": "Voice-first single-user email client. Dictate, sign, send. Local-only, BYOK encrypted vault.",
+  "license": "MIT",
+  "type": "module",
+  "engines": { "node": ">=18.0.0" },
+  "bin": { "yuemail": "./bin/yuemail.mjs" },
+  "main": "./server-dist/index.js",
+  "files": [
+    "bin/",
+    "dist/",
+    "server-dist/",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "dev:web": "vite",
+    "dev:server": "tsc -p tsconfig.server.json --watch",
+    "build:web": "vite build",
+    "build:server": "tsc -p tsconfig.server.json",
+    "build": "npm run build:web && npm run build:server",
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.server.json --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "start": "node bin/yuemail.mjs start",
+    "prepublishOnly": "npm run typecheck && npm run test && npm run build"
+  },
+  "dependencies": {
+    "docx": "^8.5.0",
+    "express": "^4.19.2",
+    "imapflow": "^1.0.162",
+    "nodemailer": "^6.9.13",
+    "open": "^10.1.0"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.12.7",
+    "@types/nodemailer": "^6.4.14",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "typescript": "^5.4.5",
+    "vite": "^5.2.11",
+    "vitest": "^1.6.0"
+  },
+  "keywords": [
+    "email",
+    "voice",
+    "accessibility",
+    "a11y",
+    "dictation",
+    "byok",
+    "local-only",
+    "yujin"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yujinapp/yuemail.git"
+  }
+}

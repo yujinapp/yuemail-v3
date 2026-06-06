@@ -1,0 +1,184 @@
+/* Yuemail app styles -- all values reference tokens.css. */
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-md);
+  line-height: var(--line-height-normal);
+  background: var(--color-bg-subtle);
+  color: var(--color-text-primary);
+}
+
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.yuemail-topbar {
+  background: var(--color-bg-surface);
+  border-bottom: 1px solid var(--color-border-subtle);
+  padding: var(--space-3) var(--space-5);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: var(--shadow-low);
+}
+
+.yuemail-topbar h1 {
+  margin: 0;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+}
+
+.yuemail-toolbar {
+  background: var(--color-bg-surface);
+  border-bottom: 1px solid var(--color-border-subtle);
+  padding: var(--space-3) var(--space-5);
+  display: flex;
+  gap: var(--space-3);
+}
+
+.yuemail-toolbar button {
+  background: var(--accent-jade);
+  color: var(--color-paper-cool);
+  border: none;
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: filter var(--motion-fast) var(--motion-ease);
+}
+
+.yuemail-toolbar button:hover {
+  filter: brightness(1.1);
+}
+
+.yuemail-toolbar button:focus-visible {
+  outline: 3px solid var(--accent-amber);
+  outline-offset: 2px;
+}
+
+.yuemail-main {
+  flex: 1;
+  padding: var(--space-5);
+  display: flex;
+  gap: var(--space-5);
+}
+
+.yuemail-editor {
+  flex: 1;
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--space-5);
+  box-shadow: var(--shadow-low);
+}
+
+.yuemail-editor input[type="text"] {
+  width: 100%;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  border: none;
+  border-bottom: 1px solid var(--color-border-subtle);
+  padding: var(--space-2) 0;
+  margin-bottom: var(--space-4);
+  background: transparent;
+  color: var(--color-text-primary);
+}
+
+.yuemail-editor textarea {
+  width: 100%;
+  min-height: 240px;
+  font-family: var(--font-family-serif);
+  font-size: var(--font-size-md);
+  line-height: var(--line-height-loose);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-sm);
+  padding: var(--space-3);
+  background: var(--color-bg-subtle);
+  color: var(--color-text-primary);
+  resize: vertical;
+}
+
+.yuemail-side {
+  width: 320px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.yuemail-card {
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  box-shadow: var(--shadow-low);
+}
+
+.yuemail-card h2 {
+  margin: 0 0 var(--space-3) 0;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+}
+
+.yuemail-mic-toggle {
+  background: var(--accent-rose);
+  color: var(--color-paper-cool);
+  border: none;
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+}
+
+.yuemail-mic-toggle[data-state="on"] {
+  background: var(--accent-amber);
+}
+
+.yuemail-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 20, 25, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.yuemail-modal-card {
+  background: var(--color-bg-surface);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  min-width: 360px;
+  max-width: 90vw;
+  box-shadow: var(--shadow-high);
+}
+
+.yuemail-toast {
+  position: fixed;
+  bottom: var(--space-5);
+  right: var(--space-5);
+  background: var(--color-ink-deep);
+  color: var(--color-paper-cool);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-mid);
+  z-index: 200;
+}
+
+.yuemail-toast[data-kind="error"] {
+  background: var(--accent-rose);
+}
+
+.yuemail-toast[data-kind="success"] {
+  background: var(--accent-jade);
+}

@@ -1,0 +1,12 @@
+node_modules/
+dist/
+server-dist/
+.yuemail/
+vault*
+signatures/
+.env
+.env.*
+*.tsbuildinfo
+.DS_Store
+.vite/
+coverage/
