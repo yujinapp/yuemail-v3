@@ -15,6 +15,7 @@ const COMPONENT_FILES = [
   'src/components/Editor.tsx',
   'src/components/SignaturePad.tsx',
   'src/components/SendDialog.tsx',
+  'src/components/SettingsDialog.tsx',
   'src/App.tsx',
 ];
 
@@ -55,6 +56,7 @@ describe('Voice/NAC3 symmetry -- modal buttons are voice-reachable', () => {
   const MODAL_FILES = [
     'src/components/SendDialog.tsx',
     'src/components/SignaturePad.tsx',
+    'src/components/SettingsDialog.tsx',
   ];
 
   async function modalButtonActions(rel: string): Promise<string[]> {

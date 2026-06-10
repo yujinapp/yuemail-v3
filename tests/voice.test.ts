@@ -50,6 +50,15 @@ describe('parseCommand -- the 9 Spanish phrases (acceptance #5)', () => {
     expect(parseCommand('leer bandeja').type).toBe('LEER_BANDEJA');
   });
 
+  it('ABRIR_CONFIGURACION: "abrir configuracion"', () => {
+    expect(parseCommand('abrir configuracion').type).toBe('ABRIR_CONFIGURACION');
+  });
+
+  it('ABRIR_CONFIGURACION alt: "ajustes" / "configurar correo"', () => {
+    expect(parseCommand('ajustes').type).toBe('ABRIR_CONFIGURACION');
+    expect(parseCommand('configurar el correo').type).toBe('ABRIR_CONFIGURACION');
+  });
+
   it('DETENER_VOZ', () => {
     expect(parseCommand('detener voz').type).toBe('DETENER_VOZ');
   });
@@ -178,15 +187,47 @@ describe('parseCommand -- contextual: signature_pad', () => {
   });
 });
 
-describe('COMMAND_CATALOG', () => {
-  it('lists exactly 9 global user-facing phrases (matches acceptance #5)', () => {
-    expect(COMMAND_CATALOG.filter((c) => !c.context).length).toBe(9);
+describe('parseCommand -- contextual: settings_dialog', () => {
+  it('"detectar servidores" -> DETECTAR_SERVIDORES', () => {
+    expect(parseCommand('detectar servidores', 'settings_dialog').type).toBe('DETECTAR_SERVIDORES');
   });
 
-  it('covers both modal contexts with contextual entries', () => {
+  it('"configuracion automatica" -> DETECTAR_SERVIDORES', () => {
+    expect(parseCommand('configuracion automatica', 'settings_dialog').type).toBe('DETECTAR_SERVIDORES');
+  });
+
+  it('"probar conexion" -> PROBAR_CONEXION', () => {
+    expect(parseCommand('probar conexion', 'settings_dialog').type).toBe('PROBAR_CONEXION');
+  });
+
+  it('"guardar" -> GUARDAR_CONFIG (saves the settings, not the signature)', () => {
+    expect(parseCommand('guardar', 'settings_dialog').type).toBe('GUARDAR_CONFIG');
+  });
+
+  it('"cancelar" / "cerrar" -> CANCELAR', () => {
+    expect(parseCommand('cancelar', 'settings_dialog').type).toBe('CANCELAR');
+    expect(parseCommand('cerrar', 'settings_dialog').type).toBe('CANCELAR');
+  });
+
+  it('suppresses global commands: "firmar" is UNKNOWN with settings open', () => {
+    expect(parseCommand('firmar', 'settings_dialog').type).toBe('UNKNOWN');
+  });
+
+  it('mic safety passes through: "apagar microfono" still works', () => {
+    expect(parseCommand('apagar microfono', 'settings_dialog').type).toBe('APAGAR_MICROFONO');
+  });
+});
+
+describe('COMMAND_CATALOG', () => {
+  it('lists exactly 10 global user-facing phrases (acceptance #5 base 9 + settings F10)', () => {
+    expect(COMMAND_CATALOG.filter((c) => !c.context).length).toBe(10);
+  });
+
+  it('covers the three modal contexts with contextual entries', () => {
     const contexts = new Set(COMMAND_CATALOG.filter((c) => c.context).map((c) => c.context));
     expect(contexts.has('send_dialog')).toBe(true);
     expect(contexts.has('signature_pad')).toBe(true);
+    expect(contexts.has('settings_dialog')).toBe(true);
   });
 
   it('every contextual entry names the data-nac-action it drives', () => {

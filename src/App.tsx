@@ -12,6 +12,7 @@ import { Toolbar, type ToolbarAction } from './components/Toolbar.js';
 import { Editor, type DocumentBlock } from './components/Editor.js';
 import { SignaturePad } from './components/SignaturePad.js';
 import { SendDialog } from './components/SendDialog.js';
+import { SettingsDialog } from './components/SettingsDialog.js';
 import { useVoice } from './voice/useVoice.js';
 import type { VoiceCommand, VoiceContext } from './voice/commands.js';
 import { announce, ensureRegions } from './lib/ariaLive.js';
@@ -28,6 +29,7 @@ export function App(): React.ReactElement {
   const [signatureExists, setSignatureExists] = React.useState(false);
   const [showSignaturePad, setShowSignaturePad] = React.useState(false);
   const [showSendDialog, setShowSendDialog]   = React.useState(false);
+  const [showSettings, setShowSettings]       = React.useState(false);
   const [sendPrefillTo, setSendPrefillTo]     = React.useState('');
   const [envelopes, setEnvelopes] = React.useState<InboxEnvelope[]>([]);
   const [toasts, setToasts]       = React.useState<Toast[]>([]);
@@ -159,7 +161,8 @@ export function App(): React.ReactElement {
    * ref so the recognition callback always reads the current value. */
   const voiceContext: VoiceContext =
     showSignaturePad ? 'signature_pad' :
-    showSendDialog   ? 'send_dialog'   : 'global';
+    showSendDialog   ? 'send_dialog'   :
+    showSettings     ? 'settings_dialog' : 'global';
   const voiceContextRef = React.useRef<VoiceContext>(voiceContext);
   voiceContextRef.current = voiceContext;
 
@@ -190,6 +193,8 @@ export function App(): React.ReactElement {
         void onSendEmail(cmd.payload); break;
       case 'LEER_BANDEJA':
         void onReadInbox(); break;
+      case 'ABRIR_CONFIGURACION':
+        setShowSettings(true); break;
       case 'ENCENDER_MICROFONO':
         voice.start(); pushToast('info', 'Microfono encendido.'); break;
       case 'APAGAR_MICROFONO':
@@ -200,7 +205,7 @@ export function App(): React.ReactElement {
       case 'CONFIRMAR_ENVIO':
         clickNacAction('send_email'); break;
       case 'CANCELAR':
-        if (clickNacAction('cancel_signature') || clickNacAction('cancel_send')) {
+        if (clickNacAction('cancel_signature') || clickNacAction('cancel_send') || clickNacAction('cancel_settings')) {
           pushToast('info', 'Ventana cerrada.');
         }
         break;
@@ -212,6 +217,12 @@ export function App(): React.ReactElement {
       case 'GENERAR_FIRMA':
         if (clickNacAction('bake_signature_name')) pushToast('info', 'Firma cursiva generada.');
         break;
+      case 'DETECTAR_SERVIDORES':
+        clickNacAction('autodetect_servers'); break;
+      case 'PROBAR_CONEXION':
+        clickNacAction('test_connection'); break;
+      case 'GUARDAR_CONFIG':
+        clickNacAction('save_settings'); break;
       default:
         /* UNKNOWN -- ignore silently. */
         break;
@@ -244,18 +255,40 @@ export function App(): React.ReactElement {
     <>
       <header className="yuemail-topbar" data-nac-id="yuemail.topbar.root">
         <h1>Yuemail</h1>
-        <button
-          type="button"
-          className="yuemail-mic-toggle"
-          data-state={voice.listening ? 'on' : 'off'}
-          onClick={() => voice.listening ? voice.stop() : voice.start()}
-          disabled={!voice.supported}
-          data-nac-id="yuemail.voice.btn-mic"
-          data-nac-role="button"
-          data-nac-action={voice.listening ? 'mic_off' : 'mic_on'}
-        >
-          {voice.supported ? (voice.listening ? 'Microfono encendido' : 'Encender microfono') : 'Voz no soportada'}
-        </button>
+        <div className="yuemail-topbar-actions">
+          <button
+            type="button"
+            className="yuemail-settings-gear"
+            aria-label="Configuracion del correo"
+            title="Configuracion del correo"
+            onClick={() => setShowSettings(true)}
+            data-nac-id="yuemail.settings.btn-open"
+            data-nac-role="button"
+            data-nac-action="open_settings"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <circle cx="12" cy="12" r="3.2" stroke="currentColor" strokeWidth="1.8" />
+              <path
+                d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M18.7 5.3l-2.1 2.1M7.4 16.6l-2.1 2.1"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+              />
+            </svg>
+          </button>
+          <button
+            type="button"
+            className="yuemail-mic-toggle"
+            data-state={voice.listening ? 'on' : 'off'}
+            onClick={() => voice.listening ? voice.stop() : voice.start()}
+            disabled={!voice.supported}
+            data-nac-id="yuemail.voice.btn-mic"
+            data-nac-role="button"
+            data-nac-action={voice.listening ? 'mic_off' : 'mic_on'}
+          >
+            {voice.supported ? (voice.listening ? 'Microfono encendido' : 'Encender microfono') : 'Voz no soportada'}
+          </button>
+        </div>
       </header>
 
       <Toolbar onAction={onToolbarAction} />
@@ -295,6 +328,13 @@ export function App(): React.ReactElement {
         <SignaturePad
           onCancel={() => setShowSignaturePad(false)}
           onSave={(png) => void onSaveSignaturePng(png)}
+        />
+      )}
+
+      {showSettings && (
+        <SettingsDialog
+          onClose={() => setShowSettings(false)}
+          onToast={pushToast}
         />
       )}
 

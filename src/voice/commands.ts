@@ -1,7 +1,7 @@
 /**
  * Voice command parser (F2 / acceptance #5).
  *
- * Recognises 9 Spanish phrases (accent-insensitive, filler-word-tolerant):
+ * Recognises 10 Spanish phrases (accent-insensitive, filler-word-tolerant):
  *
  *   nuevo documento / documento nuevo  -> NUEVO_DOCUMENTO
  *   abrir documento [nombre]           -> ABRIR_DOCUMENTO (payload = nombre)
@@ -11,6 +11,7 @@
  *   fin dictado                        -> FIN_DICTADO
  *   enviar a <email>                   -> ENVIAR (payload = email)
  *   leer bandeja                       -> LEER_BANDEJA
+ *   abrir configuracion / ajustes      -> ABRIR_CONFIGURACION
  *   detener voz                        -> DETENER_VOZ
  *
  * Plus the always-on mic-toggle pair from F2:
@@ -18,9 +19,11 @@
  *   apagar microfono                   -> APAGAR_MICROFONO
  *
  * Plus contextual commands while a modal is open (VoiceContext):
- *   send_dialog:   confirmar/enviar -> CONFIRMAR_ENVIO, cancelar/cerrar -> CANCELAR
- *   signature_pad: guardar -> GUARDAR_FIRMA_PAD, borrar -> BORRAR_FIRMA,
- *                  generar -> GENERAR_FIRMA, cancelar/cerrar -> CANCELAR
+ *   send_dialog:     confirmar/enviar -> CONFIRMAR_ENVIO, cancelar/cerrar -> CANCELAR
+ *   signature_pad:   guardar -> GUARDAR_FIRMA_PAD, borrar -> BORRAR_FIRMA,
+ *                    generar -> GENERAR_FIRMA, cancelar/cerrar -> CANCELAR
+ *   settings_dialog: detectar -> DETECTAR_SERVIDORES, probar -> PROBAR_CONEXION,
+ *                    guardar -> GUARDAR_CONFIG, cancelar/cerrar -> CANCELAR
  * With a modal open, global commands are suppressed except the mic pair
  * + detener voz.
  *
@@ -39,6 +42,7 @@ export type VoiceCommandType =
   | 'FIN_DICTADO'
   | 'ENVIAR'
   | 'LEER_BANDEJA'
+  | 'ABRIR_CONFIGURACION'
   | 'DETENER_VOZ'
   | 'ENCENDER_MICROFONO'
   | 'APAGAR_MICROFONO'
@@ -49,6 +53,9 @@ export type VoiceCommandType =
   | 'GUARDAR_FIRMA_PAD'
   | 'BORRAR_FIRMA'
   | 'GENERAR_FIRMA'
+  | 'DETECTAR_SERVIDORES'
+  | 'PROBAR_CONEXION'
+  | 'GUARDAR_CONFIG'
   | 'UNKNOWN';
 
 /**
@@ -57,7 +64,7 @@ export type VoiceCommandType =
  * like "firmar" cannot reach the document behind the dialog. Each context
  * exposes its own small command set instead.
  */
-export type VoiceContext = 'global' | 'send_dialog' | 'signature_pad';
+export type VoiceContext = 'global' | 'send_dialog' | 'signature_pad' | 'settings_dialog';
 
 export interface VoiceCommand {
   type:     VoiceCommandType;
@@ -203,6 +210,14 @@ const MATCHERS: Matcher[] = [
       /\bque\s+correos\s+tengo\b/,
     ],
   },
+  {
+    type: 'ABRIR_CONFIGURACION',
+    patterns: [
+      /\bconfiguracion\b/,
+      /\bajustes\b/,
+      /\bconfigurar\s+(?:el\s+|la\s+)?(?:correo|cuenta|email|mail)\b/,
+    ],
+  },
   /* Mic-on (always allowed). */
   {
     type: 'ENCENDER_MICROFONO',
@@ -265,6 +280,24 @@ const CONTEXT_MATCHERS: Record<Exclude<VoiceContext, 'global'>, Matcher[]> = {
     },
     {
       type: 'GUARDAR_FIRMA_PAD',
+      patterns: [/\bguardar\b/, /\blisto\b/],
+    },
+    {
+      type: 'CANCELAR',
+      patterns: [/\bcancelar\b/, /\bcerrar\b/, /\bsalir\b/, /\bvolver\b/],
+    },
+  ],
+  settings_dialog: [
+    {
+      type: 'DETECTAR_SERVIDORES',
+      patterns: [/\bdetectar\b/, /\bautodetectar\b/, /\bautomatic[ao]s?\b/],
+    },
+    {
+      type: 'PROBAR_CONEXION',
+      patterns: [/\bprobar\b/, /\bprueba\b/, /\bverificar\b/],
+    },
+    {
+      type: 'GUARDAR_CONFIG',
       patterns: [/\bguardar\b/, /\blisto\b/],
     },
     {
@@ -337,6 +370,7 @@ export const COMMAND_CATALOG: ReadonlyArray<CommandCatalogEntry> = [
   { type: 'FIN_DICTADO',        sample: 'fin dictado',            action: 'Detener transcripcion.' },
   { type: 'ENVIAR',             sample: 'enviar a ana arroba ejemplo punto com', action: 'Abrir el dialogo de envio.' },
   { type: 'LEER_BANDEJA',       sample: 'leer bandeja',           action: 'Listar los envelopes recientes.' },
+  { type: 'ABRIR_CONFIGURACION', sample: 'abrir configuracion',   action: 'Abrir la configuracion de la cuenta de correo.' },
   { type: 'DETENER_VOZ',        sample: 'detener voz',            action: 'Apagar el microfono.' },
   /* Contextual: send dialog open. */
   { type: 'CONFIRMAR_ENVIO', sample: 'confirmar envio', action: 'Confirmar y enviar el correo.',      context: 'send_dialog',  nac_action: 'send_email' },
@@ -346,4 +380,9 @@ export const COMMAND_CATALOG: ReadonlyArray<CommandCatalogEntry> = [
   { type: 'BORRAR_FIRMA',      sample: 'borrar',                 action: 'Limpiar el lienzo de firma.',         context: 'signature_pad', nac_action: 'clear_signature' },
   { type: 'GENERAR_FIRMA',     sample: 'generar firma cursiva',  action: 'Renderizar el nombre escrito como firma.', context: 'signature_pad', nac_action: 'bake_signature_name' },
   { type: 'CANCELAR',          sample: 'cancelar',               action: 'Cerrar el pad sin guardar.',          context: 'signature_pad', nac_action: 'cancel_signature' },
+  /* Contextual: settings dialog open. */
+  { type: 'DETECTAR_SERVIDORES', sample: 'detectar servidores', action: 'Autocompletar los servidores a partir de la direccion.', context: 'settings_dialog', nac_action: 'autodetect_servers' },
+  { type: 'PROBAR_CONEXION',     sample: 'probar conexion',     action: 'Probar la conexion IMAP y SMTP en vivo.',               context: 'settings_dialog', nac_action: 'test_connection' },
+  { type: 'GUARDAR_CONFIG',      sample: 'guardar',             action: 'Guardar la configuracion cifrada en la boveda.',        context: 'settings_dialog', nac_action: 'save_settings' },
+  { type: 'CANCELAR',            sample: 'cancelar',            action: 'Cerrar la configuracion sin guardar.',                  context: 'settings_dialog', nac_action: 'cancel_settings' },
 ];

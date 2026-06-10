@@ -28,7 +28,7 @@ degrade to button-only mode.
 ```bash
 yuemail                          # start the server + open the browser
 yuemail start                    # start the server only (no browser)
-yuemail vault setup              # interactive 12-field wizard
+yuemail vault setup              # interactive 12-field wizard (or use the in-app gear)
 yuemail vault list               # list configured key names
 yuemail vault set <name> <val>   # encrypt and store a value
 yuemail vault delete <name>      # remove a value
@@ -53,6 +53,7 @@ filler-word-tolerant):
 | `fin dictado`                          | Stop transcription                 |
 | `enviar a <email>`                     | Open the send dialog               |
 | `leer bandeja`                         | List the latest envelopes          |
+| `abrir configuracion` / `ajustes`      | Open the account settings          |
 | `detener voz`                          | Mute the microphone                |
 
 Plus the always-on mic toggle: `encender microfono` / `apagar microfono`.
@@ -74,8 +75,24 @@ dialog) and these contextual phrases take over:
 | Signature pad    | `borrar` / `limpiar`               | Clear the canvas           |
 | Signature pad    | `generar` / `cursiva`              | Bake the typed name        |
 | Signature pad    | `cancelar` / `cerrar` / `salir`    | Close without saving       |
+| Settings         | `detectar` / `automatica`          | Autodetect the servers     |
+| Settings         | `probar` / `verificar`             | Live IMAP+SMTP test        |
+| Settings         | `guardar` / `listo`                | Save to the vault          |
+| Settings         | `cancelar` / `cerrar` / `salir`    | Close without saving       |
 
 `apagar microfono` and `detener voz` always work, dialog or not.
+
+## Account setup (the gear)
+
+Click the gear in the topbar (or say `abrir configuracion`), type
+your email address, and Yuemail resolves the IMAP/SMTP servers for
+you: major providers from a built-in table (Gmail, Outlook, Yahoo,
+iCloud, AOL, GMX, Zoho, Fastmail, Yandex -- including each
+provider's app-password caveat), everything else via the Mozilla
+autoconfig database, with a convention guess as last resort. Run
+`Probar conexion` to test the real IMAP+SMTP login before saving;
+saving encrypts everything into the vault. Proton (without Bridge)
+and Tuta do not expose IMAP/SMTP and are reported as such.
 
 ## Privacy
 
@@ -88,8 +105,9 @@ dialog) and these contextual phrases take over:
 
 ## Vault keys
 
-The wizard prompts for these 12 fields. Skip any with Enter; you can
-fill them later with `yuemail vault set`.
+The in-app gear fills these for you from just your address. The
+wizard prompts for the same 12 fields; skip any with Enter and fill
+them later with `yuemail vault set`.
 
 - `imap.host`, `imap.port`, `imap.user`, `imap.pass`, `imap.secure`
 - `smtp.host`, `smtp.port`, `smtp.user`, `smtp.pass`, `smtp.secure`

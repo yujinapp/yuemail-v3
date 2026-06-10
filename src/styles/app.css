@@ -129,6 +129,34 @@ html, body {
   color: var(--color-text-secondary);
 }
 
+.yuemail-topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.yuemail-settings-gear {
+  display: inline-flex;
+  align-items: center;
+  background: transparent;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  color: var(--color-text-secondary);
+  padding: var(--space-2) var(--space-3);
+  cursor: pointer;
+  transition: filter var(--motion-fast) var(--motion-ease);
+}
+
+.yuemail-settings-gear:hover {
+  color: var(--color-text-primary);
+  background: var(--color-bg-subtle);
+}
+
+.yuemail-settings-gear:focus-visible {
+  outline: 3px solid var(--accent-amber);
+  outline-offset: 2px;
+}
+
 .yuemail-mic-toggle {
   background: var(--accent-rose);
   color: var(--color-paper-cool);

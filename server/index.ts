@@ -8,6 +8,8 @@
  *   /api/documents/*   (CRUD + .docx render on demand)
  *   /api/signature/*   (PNG read/write/delete)
  *   /api/email/send    (POST -- rejects when SMTP unconfigured)
+ *   /api/email/autoconfig (GET -- IMAP/SMTP discovery from the address)
+ *   /api/email/verify  (POST -- live IMAP/SMTP connection test)
  *   /api/inbox/list    (GET  -- imapflow last N envelopes)
  *   /*                 (static SPA from dist/, when present)
  *
@@ -23,6 +25,7 @@ import { registerDocumentsRoutes } from './routes/documents.js';
 import { registerSignatureRoutes } from './routes/signature.js';
 import { registerEmailRoutes }     from './routes/email.js';
 import { registerInboxRoutes }     from './routes/inbox.js';
+import { registerSettingsRoutes }  from './routes/settings.js';
 
 export const HOST = '127.0.0.1';
 export const PORT = 5180;
@@ -49,6 +52,7 @@ export function buildApp(opts: BuildAppOpts = {}): Express {
   registerSignatureRoutes(app);
   registerEmailRoutes(app);
   registerInboxRoutes(app);
+  registerSettingsRoutes(app);
 
   /* Static SPA -- present in production builds, absent in dev. */
   const staticRoot = opts.staticRoot ?? path.resolve(__dirname, '..', 'dist');

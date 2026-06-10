@@ -95,6 +95,31 @@ export const api = {
       body: JSON.stringify(payload),
     });
   },
+  emailAutoconfig(email: string) {
+    return send<{
+      ok: true;
+      source: 'known' | 'ispdb' | 'guess';
+      provider?: string;
+      username: string;
+      imap: { host: string; port: number; secure: boolean };
+      smtp: { host: string; port: number; secure: boolean };
+      note?: string;
+    }>('/api/email/autoconfig?email=' + encodeURIComponent(email));
+  },
+  emailVerify(payload: {
+    imap?: { host?: string; port?: number; user?: string; pass?: string; secure?: boolean };
+    smtp?: { host?: string; port?: number; user?: string; pass?: string; secure?: boolean };
+  }) {
+    return send<{
+      ok: boolean;
+      imap: { ok: boolean; error?: string };
+      smtp: { ok: boolean; error?: string };
+    }>('/api/email/verify', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+  },
   inboxList(limit = 20) {
     return send<{ ok: true; envelopes: Array<{ uid: number; from: string; subject: string; date: string }> }>(
       '/api/inbox/list?limit=' + limit,
