@@ -1,0 +1,99 @@
+{
+  "workflow": {
+    "meta": {
+      "tier": "medium"
+    },
+    "intent": {
+      "mode": "new",
+      "platform": "desktop",
+      "interaction": [
+        "voice",
+        "buttons",
+        "dictation"
+      ],
+      "tier": "medium",
+      "tier_rationale": "Single-user local accessibility app; no auth/multitenancy, but voice + encrypted vault + IMAP/SMTP integration push it past simple.",
+      "distribution": "npm @yujinapp/yuemail (public, bin yuemail)"
+    },
+    "legacy_audit": {
+      "applicable": false,
+      "reason": "greenfield -- no prior implementation in this directory (docs/SPEC.md Identity)"
+    },
+    "vault_inventory": {
+      "families": [
+        "imap.host",
+        "imap.port",
+        "imap.user",
+        "imap.pass",
+        "imap.secure",
+        "smtp.host",
+        "smtp.port",
+        "smtp.user",
+        "smtp.pass",
+        "smtp.secure",
+        "identity.from",
+        "identity.name"
+      ],
+      "storage": "AES-256-GCM, scrypt key, per-machine salt (F8)",
+      "setup_path": "yuemail vault setup (CLI wizard)"
+    },
+    "clarification": {
+      "functional": {
+        "persona": "person with motor and/or visual impairment operating solo",
+        "north_star": "dictate -> sign -> send by email in under 4 minutes, zero strictly-required clicks",
+        "mvp": "F1-F13 per docs/SPEC.md"
+      },
+      "nfr_quantitative": {
+        "volumetry": "single user, local-only; inbox last 20 envelopes",
+        "parallelism": "one server process, loopback",
+        "package_budget": "tarball < 100 KB, gzip JS < 60 KB"
+      },
+      "nfr_structural": {
+        "persistence": "JSON on filesystem under ~/.yuemail; no DB",
+        "middleware": "Express 4, 127.0.0.1:5180 only",
+        "workers": "none"
+      },
+      "nfr_governance": {
+        "compliance": "n/a (single-user local, no telemetry)",
+        "secrets": "vault never returns values via API",
+        "rbac": "n/a"
+      },
+      "nfr_operational": {
+        "i18n": "es-AR voice + Spanish UI",
+        "a11y": "ARIA live + NAC3 attrs + full voice parity incl. modal contexts (2026-06-10)",
+        "monitoring": "none by design",
+        "browsers": "Chrome/Edge/Safari for Web Speech; degrade to buttons"
+      },
+      "blocks": {
+        "decomposition": "F1-F13",
+        "status": "all implemented; 10 suites / 84 tests green"
+      }
+    },
+    "specs": {
+      "rfp": "docs/SPEC.md (+ adenda F2 contextual voice 2026-06-10)",
+      "architecture": "docs/ARCHITECTURE.md (generated 2026-06-10)",
+      "solution_design": "docs/DESIGN.md (generated 2026-06-10)"
+    },
+    "approvals": {
+      "rfp": "approved-in-use (spec drove the v0.2.0 build)",
+      "architecture": "PENDING owner OK (doc generated 2026-06-10)",
+      "solution_design": "PENDING owner OK (doc generated 2026-06-10)",
+      "gate_13": "blocked on explicit owner si"
+    },
+    "bootstrap": {
+      "status": "done",
+      "stack": "React 18 + Vite + Express 4 + TS strict",
+      "ci_gates": "prepublishOnly: typecheck + tests + build",
+      "tests": "10 suites / 84 green (2026-06-10)",
+      "nac3_baseline": "data-nac-* on every interactive element + voice symmetry suite"
+    },
+    "postlaunch": {
+      "manual_at": "2026-06-10T20:32:06.346Z",
+      "dashboards_at": "2026-06-10T20:30:40.071Z",
+      "feedback_channel": "TBD"
+    }
+  },
+  "pilot_completed": true,
+  "target": "responsive",
+  "mode": "didactico"
+}
