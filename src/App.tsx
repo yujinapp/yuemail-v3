@@ -13,7 +13,7 @@ import { Editor, type DocumentBlock } from './components/Editor.js';
 import { SignaturePad } from './components/SignaturePad.js';
 import { SendDialog } from './components/SendDialog.js';
 import { useVoice } from './voice/useVoice.js';
-import type { VoiceCommand } from './voice/commands.js';
+import type { VoiceCommand, VoiceContext } from './voice/commands.js';
 import { announce, ensureRegions } from './lib/ariaLive.js';
 import { api } from './lib/api.js';
 
@@ -155,6 +155,23 @@ export function App(): React.ReactElement {
 
   /* --- voice wiring --- */
 
+  /* Which modal (if any) owns the voice vocabulary right now. Kept in a
+   * ref so the recognition callback always reads the current value. */
+  const voiceContext: VoiceContext =
+    showSignaturePad ? 'signature_pad' :
+    showSendDialog   ? 'send_dialog'   : 'global';
+  const voiceContextRef = React.useRef<VoiceContext>(voiceContext);
+  voiceContextRef.current = voiceContext;
+
+  /* Contextual commands drive the SAME handler as the on-screen button:
+   * resolve the element by its data-nac-action and click it. */
+  function clickNacAction(action: string): boolean {
+    const el = document.querySelector<HTMLElement>('[data-nac-action="' + action + '"]');
+    if (!el) return false;
+    el.click();
+    return true;
+  }
+
   function onVoiceCommand(cmd: VoiceCommand) {
     switch (cmd.type) {
       case 'NUEVO_DOCUMENTO':
@@ -178,6 +195,23 @@ export function App(): React.ReactElement {
       case 'APAGAR_MICROFONO':
       case 'DETENER_VOZ':
         voice.stop(); pushToast('info', 'Microfono apagado.'); break;
+      /* Contextual (modal) commands -- routed through the button's own
+       * data-nac-action so voice and click share one handler. */
+      case 'CONFIRMAR_ENVIO':
+        clickNacAction('send_email'); break;
+      case 'CANCELAR':
+        if (clickNacAction('cancel_signature') || clickNacAction('cancel_send')) {
+          pushToast('info', 'Ventana cerrada.');
+        }
+        break;
+      case 'GUARDAR_FIRMA_PAD':
+        clickNacAction('save_signature'); break;
+      case 'BORRAR_FIRMA':
+        if (clickNacAction('clear_signature')) pushToast('info', 'Lienzo de firma borrado.');
+        break;
+      case 'GENERAR_FIRMA':
+        if (clickNacAction('bake_signature_name')) pushToast('info', 'Firma cursiva generada.');
+        break;
       default:
         /* UNKNOWN -- ignore silently. */
         break;
@@ -186,11 +220,18 @@ export function App(): React.ReactElement {
 
   function onVoiceTranscript(text: string, isFinal: boolean) {
     if (!isFinal || !dictation) return;
+    /* A modal owns the voice channel: do not dictate into the document
+     * sitting behind it. */
+    if (voiceContextRef.current !== 'global') return;
     /* Append the transcript as a new paragraph block. */
     setBlocks((prev) => [...prev, { type: 'paragraph', text }]);
   }
 
-  const voice = useVoice({ onCommand: onVoiceCommand, onTranscript: onVoiceTranscript });
+  const voice = useVoice({
+    onCommand:    onVoiceCommand,
+    onTranscript: onVoiceTranscript,
+    getContext:   () => voiceContextRef.current,
+  });
 
   function onToolbarAction(action: ToolbarAction) {
     if (action === 'new_document')    void onNewDocument();

@@ -114,9 +114,91 @@ describe('extractEmail', () => {
   });
 });
 
+describe('parseCommand -- contextual: send_dialog', () => {
+  it('"confirmar envio" -> CONFIRMAR_ENVIO', () => {
+    expect(parseCommand('confirmar envio', 'send_dialog').type).toBe('CONFIRMAR_ENVIO');
+  });
+
+  it('"enviar" inside the dialog confirms instead of re-opening it', () => {
+    expect(parseCommand('enviar', 'send_dialog').type).toBe('CONFIRMAR_ENVIO');
+  });
+
+  it('"cancelar" -> CANCELAR', () => {
+    expect(parseCommand('cancelar', 'send_dialog').type).toBe('CANCELAR');
+  });
+
+  it('"cerrar" -> CANCELAR', () => {
+    expect(parseCommand('cerrar', 'send_dialog').type).toBe('CANCELAR');
+  });
+
+  it('suppresses global commands: "firmar" is UNKNOWN with the dialog open', () => {
+    expect(parseCommand('firmar', 'send_dialog').type).toBe('UNKNOWN');
+  });
+
+  it('suppresses dictation start with the dialog open', () => {
+    expect(parseCommand('iniciar dictado', 'send_dialog').type).toBe('UNKNOWN');
+  });
+
+  it('mic safety passes through: "apagar microfono" still works', () => {
+    expect(parseCommand('apagar microfono', 'send_dialog').type).toBe('APAGAR_MICROFONO');
+  });
+
+  it('mic safety passes through: "detener voz" still works', () => {
+    expect(parseCommand('detener voz', 'send_dialog').type).toBe('DETENER_VOZ');
+  });
+});
+
+describe('parseCommand -- contextual: signature_pad', () => {
+  it('"guardar" -> GUARDAR_FIRMA_PAD (saves, does not re-open the pad)', () => {
+    expect(parseCommand('guardar', 'signature_pad').type).toBe('GUARDAR_FIRMA_PAD');
+  });
+
+  it('"guardar firma" inside the pad saves instead of re-opening', () => {
+    expect(parseCommand('guardar firma', 'signature_pad').type).toBe('GUARDAR_FIRMA_PAD');
+  });
+
+  it('"borrar" -> BORRAR_FIRMA', () => {
+    expect(parseCommand('borrar', 'signature_pad').type).toBe('BORRAR_FIRMA');
+  });
+
+  it('"generar firma cursiva" -> GENERAR_FIRMA', () => {
+    expect(parseCommand('generar firma cursiva', 'signature_pad').type).toBe('GENERAR_FIRMA');
+  });
+
+  it('"cancelar" -> CANCELAR', () => {
+    expect(parseCommand('cancelar', 'signature_pad').type).toBe('CANCELAR');
+  });
+
+  it('suppresses global commands: "firmar" must NOT insert into the doc behind the pad', () => {
+    expect(parseCommand('firmar', 'signature_pad').type).toBe('UNKNOWN');
+  });
+
+  it('filler-tolerant in context: "por favor, cancelar"', () => {
+    expect(parseCommand('por favor, cancelar', 'signature_pad').type).toBe('CANCELAR');
+  });
+});
+
 describe('COMMAND_CATALOG', () => {
-  it('lists exactly 9 user-facing phrases (matches acceptance #5)', () => {
-    expect(COMMAND_CATALOG.length).toBe(9);
+  it('lists exactly 9 global user-facing phrases (matches acceptance #5)', () => {
+    expect(COMMAND_CATALOG.filter((c) => !c.context).length).toBe(9);
+  });
+
+  it('covers both modal contexts with contextual entries', () => {
+    const contexts = new Set(COMMAND_CATALOG.filter((c) => c.context).map((c) => c.context));
+    expect(contexts.has('send_dialog')).toBe(true);
+    expect(contexts.has('signature_pad')).toBe(true);
+  });
+
+  it('every contextual entry names the data-nac-action it drives', () => {
+    for (const c of COMMAND_CATALOG.filter((e) => e.context)) {
+      expect(c.nac_action, c.type).toBeTruthy();
+    }
+  });
+
+  it('every contextual entry actually parses to its own type in its context', () => {
+    for (const c of COMMAND_CATALOG.filter((e) => e.context)) {
+      expect(parseCommand(c.sample, c.context).type, c.sample).toBe(c.type);
+    }
   });
 
   it('every catalog entry has a sample + action', () => {

@@ -60,6 +60,23 @@ Plus the always-on mic toggle: `encender microfono` / `apagar microfono`.
 Spoken `arroba` is treated as `@`, spoken `punto` as `.`, and the
 extracted email is lowercased.
 
+### Inside a dialog
+
+While a modal is open it owns the voice channel: the global phrases
+above are suspended (so `firmar` cannot touch the document behind the
+dialog) and these contextual phrases take over:
+
+| Dialog open      | You say                            | What happens               |
+|------------------|------------------------------------|----------------------------|
+| Send dialog      | `confirmar` / `enviar` / `mandar`  | Confirm and send the email |
+| Send dialog      | `cancelar` / `cerrar` / `salir`    | Close without sending      |
+| Signature pad    | `guardar` / `listo`                | Save the drawn signature   |
+| Signature pad    | `borrar` / `limpiar`               | Clear the canvas           |
+| Signature pad    | `generar` / `cursiva`              | Bake the typed name        |
+| Signature pad    | `cancelar` / `cerrar` / `salir`    | Close without saving       |
+
+`apagar microfono` and `detener voz` always work, dialog or not.
+
 ## Privacy
 
 - Single user. No login. No user table.

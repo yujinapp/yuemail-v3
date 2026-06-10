@@ -17,6 +17,13 @@
  *   encender microfono                 -> ENCENDER_MICROFONO
  *   apagar microfono                   -> APAGAR_MICROFONO
  *
+ * Plus contextual commands while a modal is open (VoiceContext):
+ *   send_dialog:   confirmar/enviar -> CONFIRMAR_ENVIO, cancelar/cerrar -> CANCELAR
+ *   signature_pad: guardar -> GUARDAR_FIRMA_PAD, borrar -> BORRAR_FIRMA,
+ *                  generar -> GENERAR_FIRMA, cancelar/cerrar -> CANCELAR
+ * With a modal open, global commands are suppressed except the mic pair
+ * + detener voz.
+ *
  * Email parsing recognises spoken "arroba" as "@" and "punto" as ".".
  * The extracted email is lowercased.
  *
@@ -35,7 +42,22 @@ export type VoiceCommandType =
   | 'DETENER_VOZ'
   | 'ENCENDER_MICROFONO'
   | 'APAGAR_MICROFONO'
+  /* Contextual (modal-only) commands. Active only while the matching
+   * dialog is open; see VoiceContext. */
+  | 'CONFIRMAR_ENVIO'
+  | 'CANCELAR'
+  | 'GUARDAR_FIRMA_PAD'
+  | 'BORRAR_FIRMA'
+  | 'GENERAR_FIRMA'
   | 'UNKNOWN';
+
+/**
+ * Where the utterance is being parsed. With a modal open, global commands
+ * are suppressed (except the mic-safety pair + "detener voz") so a phrase
+ * like "firmar" cannot reach the document behind the dialog. Each context
+ * exposes its own small command set instead.
+ */
+export type VoiceContext = 'global' | 'send_dialog' | 'signature_pad';
 
 export interface VoiceCommand {
   type:     VoiceCommandType;
@@ -212,10 +234,68 @@ const MATCHERS: Matcher[] = [
   },
 ];
 
-export function parseCommand(raw: string): VoiceCommand {
+/* Commands that must stay reachable no matter what is on screen --
+ * the user must always be able to silence / control the mic. */
+const MIC_SAFE_TYPES: ReadonlySet<VoiceCommandType> = new Set([
+  'ENCENDER_MICROFONO', 'APAGAR_MICROFONO', 'DETENER_VOZ',
+]);
+
+/* Per-modal command sets. Patterns are deliberately short: with a modal
+ * open the vocabulary shrinks, so a lone "cancelar" or "guardar" is
+ * unambiguous. */
+const CONTEXT_MATCHERS: Record<Exclude<VoiceContext, 'global'>, Matcher[]> = {
+  send_dialog: [
+    {
+      type: 'CONFIRMAR_ENVIO',
+      patterns: [/\bconfirmar\b/, /\benviar\b/, /\bmandar\b/],
+    },
+    {
+      type: 'CANCELAR',
+      patterns: [/\bcancelar\b/, /\bcerrar\b/, /\bsalir\b/, /\bvolver\b/],
+    },
+  ],
+  signature_pad: [
+    {
+      type: 'BORRAR_FIRMA',
+      patterns: [/\bborrar\b/, /\blimpiar\b/],
+    },
+    {
+      type: 'GENERAR_FIRMA',
+      patterns: [/\bgenerar\b/, /\bcursiva\b/],
+    },
+    {
+      type: 'GUARDAR_FIRMA_PAD',
+      patterns: [/\bguardar\b/, /\blisto\b/],
+    },
+    {
+      type: 'CANCELAR',
+      patterns: [/\bcancelar\b/, /\bcerrar\b/, /\bsalir\b/, /\bvolver\b/],
+    },
+  ],
+};
+
+export function parseCommand(raw: string, context: VoiceContext = 'global'): VoiceCommand {
   const normalizedRaw = normalize(raw);
   const cleaned = stripFillers(normalizedRaw.split(' ')).join(' ').trim();
   const normalized = cleaned.length > 0 ? cleaned : normalizedRaw;
+
+  if (context !== 'global') {
+    for (const m of CONTEXT_MATCHERS[context]) {
+      for (const re of m.patterns) {
+        if (re.test(normalized)) return { type: m.type, raw, normalized };
+      }
+    }
+    /* With a modal open, the only global commands that pass through are
+     * the mic-safety ones. Everything else is UNKNOWN on purpose: a
+     * global "firmar" must not mutate the document behind the dialog. */
+    for (const m of MATCHERS) {
+      if (!MIC_SAFE_TYPES.has(m.type)) continue;
+      for (const re of m.patterns) {
+        if (re.test(normalized)) return { type: m.type, raw, normalized };
+      }
+    }
+    return { type: 'UNKNOWN', raw, normalized };
+  }
 
   for (const m of MATCHERS) {
     for (const re of m.patterns) {
@@ -237,8 +317,18 @@ export function parseCommand(raw: string): VoiceCommand {
   return { type: 'UNKNOWN', raw, normalized };
 }
 
+export interface CommandCatalogEntry {
+  type:    VoiceCommandType;
+  sample:  string;
+  action:  string;
+  /** Omitted = global command. */
+  context?: Exclude<VoiceContext, 'global'>;
+  /** data-nac-action of the element this command drives (producer/consumer symmetry). */
+  nac_action?: string;
+}
+
 /** Catalogue of recognised commands. Exposed for UI/help screens. */
-export const COMMAND_CATALOG: ReadonlyArray<{ type: VoiceCommandType; sample: string; action: string }> = [
+export const COMMAND_CATALOG: ReadonlyArray<CommandCatalogEntry> = [
   { type: 'NUEVO_DOCUMENTO',    sample: 'nuevo documento',        action: 'Vaciar el editor y empezar de cero.' },
   { type: 'ABRIR_DOCUMENTO',    sample: 'abrir documento informe', action: 'Cargar el documento mas reciente o por nombre.' },
   { type: 'GUARDAR_FIRMA',      sample: 'guardar firma',          action: 'Abrir el pad de firma.' },
@@ -248,4 +338,12 @@ export const COMMAND_CATALOG: ReadonlyArray<{ type: VoiceCommandType; sample: st
   { type: 'ENVIAR',             sample: 'enviar a ana arroba ejemplo punto com', action: 'Abrir el dialogo de envio.' },
   { type: 'LEER_BANDEJA',       sample: 'leer bandeja',           action: 'Listar los envelopes recientes.' },
   { type: 'DETENER_VOZ',        sample: 'detener voz',            action: 'Apagar el microfono.' },
+  /* Contextual: send dialog open. */
+  { type: 'CONFIRMAR_ENVIO', sample: 'confirmar envio', action: 'Confirmar y enviar el correo.',      context: 'send_dialog',  nac_action: 'send_email' },
+  { type: 'CANCELAR',        sample: 'cancelar',        action: 'Cerrar el dialogo sin enviar.',      context: 'send_dialog',  nac_action: 'cancel_send' },
+  /* Contextual: signature pad open. */
+  { type: 'GUARDAR_FIRMA_PAD', sample: 'guardar',                action: 'Guardar la firma dibujada.',          context: 'signature_pad', nac_action: 'save_signature' },
+  { type: 'BORRAR_FIRMA',      sample: 'borrar',                 action: 'Limpiar el lienzo de firma.',         context: 'signature_pad', nac_action: 'clear_signature' },
+  { type: 'GENERAR_FIRMA',     sample: 'generar firma cursiva',  action: 'Renderizar el nombre escrito como firma.', context: 'signature_pad', nac_action: 'bake_signature_name' },
+  { type: 'CANCELAR',          sample: 'cancelar',               action: 'Cerrar el pad sin guardar.',          context: 'signature_pad', nac_action: 'cancel_signature' },
 ];

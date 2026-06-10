@@ -63,6 +63,16 @@ filler-word-tolerant):
 Spoken "@" recognised as `arroba`. Spoken "." recognised as
 `punto`. Extracted email lowercased.
 
+**Adenda 2026-06-10 (approved by owner; implements the zero-click
+north-star inside modals):** while a modal is open it owns the voice
+channel. Global phrases are suspended (except mic safety: `encender /
+apagar microfono`, `detener voz`) and contextual phrases activate:
+send dialog -> `confirmar` / `enviar` (send), `cancelar` / `cerrar`
+(close); signature pad -> `guardar` (save), `borrar` (clear),
+`generar` (bake typed name), `cancelar` / `cerrar` (close). Dictation
+is suppressed while a modal is open. Regression-guarded by the
+voice/NAC3 symmetry suite in tests/nac3-attrs.test.ts.
+
 ### F3 -- Document editor
 
 - Title field (text input, voice editable).

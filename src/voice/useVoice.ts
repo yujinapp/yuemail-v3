@@ -13,7 +13,7 @@
  * ASCII-only.
  */
 import { useEffect, useRef, useState } from 'react';
-import { parseCommand, type VoiceCommand } from './commands.js';
+import { parseCommand, type VoiceCommand, type VoiceContext } from './commands.js';
 
 type Ctor = new () => SpeechRecognitionLike;
 
@@ -37,6 +37,12 @@ function pickRecognitionCtor(): Ctor | undefined {
 export interface UseVoiceOpts {
   onCommand?:    (cmd: VoiceCommand) => void;
   onTranscript?: (text: string, isFinal: boolean) => void;
+  /**
+   * Reports which UI context is active (modal open?) at the moment the
+   * utterance finalises, so the parser can route contextual commands.
+   * Defaults to 'global'.
+   */
+  getContext?:   () => VoiceContext;
 }
 
 export interface VoiceHandle {
@@ -50,6 +56,12 @@ export interface VoiceHandle {
 export function useVoice(opts: UseVoiceOpts = {}): VoiceHandle {
   const [listening, setListening] = useState(false);
   const recRef = useRef<SpeechRecognitionLike | null>(null);
+  /* Callbacks live in a ref so the recognition instance survives
+   * re-renders. Depending on opts.* would tear down + recreate (and
+   * stop) the recognizer on every state change of the caller -- the mic
+   * died as soon as a toast or a modal re-rendered the app. */
+  const optsRef = useRef(opts);
+  optsRef.current = opts;
   const Ctor   = pickRecognitionCtor();
   const supported = Ctor !== undefined;
 
@@ -65,10 +77,11 @@ export function useVoice(opts: UseVoiceOpts = {}): VoiceHandle {
       if (!result) return;
       const transcript = result[0]?.transcript ?? '';
       const isFinal    = Boolean(result.isFinal);
-      if (transcript) opts.onTranscript?.(transcript, isFinal);
-      if (isFinal && opts.onCommand) {
-        const cmd = parseCommand(transcript);
-        opts.onCommand(cmd);
+      const current    = optsRef.current;
+      if (transcript) current.onTranscript?.(transcript, isFinal);
+      if (isFinal && current.onCommand) {
+        const cmd = parseCommand(transcript, current.getContext?.() ?? 'global');
+        current.onCommand(cmd);
       }
     };
     rec.onerror = () => {
@@ -82,7 +95,7 @@ export function useVoice(opts: UseVoiceOpts = {}): VoiceHandle {
       try { rec.stop(); } catch { /* ignore */ }
       recRef.current = null;
     };
-  }, [Ctor, opts.onCommand, opts.onTranscript]);
+  }, [Ctor]);
 
   function start() {
     if (!recRef.current) return;
