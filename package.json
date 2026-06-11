@@ -4,8 +4,12 @@
   "description": "Voice-first single-user email client. Dictate, sign, send. Local-only, BYOK encrypted vault.",
   "license": "MIT",
   "type": "module",
-  "engines": { "node": ">=18.0.0" },
-  "bin": { "yuemail": "./bin/yuemail.mjs" },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "bin": {
+    "yuemail": "bin/yuemail.mjs"
+  },
   "main": "./server-dist/index.js",
   "files": [
     "bin/",
@@ -61,6 +65,6 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/yujinapp/yuemail-v3.git"
+    "url": "git+https://github.com/yujinapp/yuemail-v3.git"
   }
 }
