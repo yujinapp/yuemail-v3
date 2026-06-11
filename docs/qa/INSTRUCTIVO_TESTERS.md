@@ -16,7 +16,7 @@ pensado para personas con discapacidad motriz y/o visual: todo lo
 que se hace con el mouse se puede hacer con la voz.
 
 Es open source (licencia MIT), gratuito, repositorio publico:
-https://github.com/yujinapp/yuemail
+https://github.com/yujinapp/yuemail-v3
 
 ## 2. Que necesitas antes de empezar
 
