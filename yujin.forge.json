@@ -65,22 +65,23 @@
         "browsers": "Chrome/Edge/Safari for Web Speech; degrade to buttons"
       },
       "blocks": {
-        "decomposition": "F1-F13 + adendas D9/D10 (settings autoconfig + field dictation)",
-        "status": "all implemented; 11 suites / 160 tests green (verified 2026-06-11)"
+        "decomposition": "F1-F14 + adendas D9/D10 (settings autoconfig + field dictation) + dictado en modales de envio/firma (PND-003)",
+        "status": "all implemented; 179 tests green (verified 2026-06-11 x3 incl. prepublish gate, PND-003)"
       }
     },
     "specs": {
-      "rfp": "docs/SPEC.md (+ adenda F2 contextual voice 2026-06-10; adenda settings/F14 propuesta en PND-006)",
+      "rfp": "docs/SPEC.md (+ adenda F2 contextual voice 2026-06-10; adenda F14 settings APROBADA por owner 2026-06-11 PND-006; criterios normalizados a v0.4.0)",
       "architecture": "docs/ARCHITECTURE.md (generated 2026-06-10, refreshed 2026-06-11)",
       "solution_design": "docs/DESIGN.md (generated 2026-06-10, refreshed 2026-06-11)",
       "plan": "docs/PLAN.md (reconstructed 2026-06-11, PND-004)",
       "iterations": "docs/ITERATIONS.md (2026-06-11)",
       "success_case": "docs/SUCCESS_CASE.md (2026-06-11)",
       "how_we_got_here": "docs/HOW_WE_GOT_HERE.md (2026-06-11)",
-      "handoff": "docs/HANDOFF.md (rewritten 2026-06-11, replaces TBD stub)"
+      "handoff": "docs/HANDOFF.md (rewritten 2026-06-11, replaces TBD stub)",
+      "qa_package": "docs/qa/INSTRUCTIVO_TESTERS.md + docs/qa/CASOS_DE_PRUEBA_v0.4.0.md (73 casos en 12 secciones, 2026-06-11)"
     },
     "approvals": {
-      "rfp": "approved-in-use (spec drove the build); adenda settings/v0.3.0/F14 pending owner decision (PND-006)",
+      "rfp": "approved-in-use (spec drove the build); adenda F14/v0.4.0 APPROVED by owner 2026-06-11 (PND-006 closed)",
       "architecture": "APPROVED by owner 2026-06-11 (Gate 13, PND-005)",
       "solution_design": "APPROVED by owner 2026-06-11 (Gate 13, PND-005)",
       "gate_13": "approved by explicit owner OK 2026-06-11 (PND-005 closed)"
@@ -89,7 +90,7 @@
       "status": "done",
       "stack": "React 18 + Vite + Express 4 + TS strict",
       "ci_gates": "prepublishOnly: typecheck + tests + build",
-      "tests": "11 suites / 160 tests green (verified 2026-06-11 via npm test, PND-004)",
+      "tests": "179 tests green (verified 2026-06-11 x3 incl. prepublish gate, PND-003; guard anti-envio verificado en rojo)",
       "nac3_baseline": "data-nac-* on every interactive element + voice symmetry suite"
     },
     "postlaunch": {
@@ -129,6 +130,22 @@
         "stage_title": "Gate 13 aprobado + canal de feedback definido (PND-005, PND-007)",
         "event": "stage_end",
         "content": "Cerrado con commit dab3f0f. Gate 13 aprobado por el owner (ARCHITECTURE + DESIGN); feedback channel = contact@yujin.app. Workflow (approvals + postlaunch) y docs (HANDOFF, observability, manual.es) sincronizados. PND-005 y PND-007 cerrados como shipped. El commit ademas incorpora los 4 docs canonicos del audit (PLAN, ITERATIONS, SUCCESS_CASE, HOW_WE_GOT_HERE) + WORKFLOW_LOG.md que habian quedado sin trackear en f87ca9b. Quedan abiertos: PND-003 (dictado en campos de envio/firma) y PND-006 (adenda RFP F14)."
+      },
+      {
+        "at": "2026-06-11T19:25:56.975Z",
+        "kind": "evolutive",
+        "stage_id": "v0.4.0-dictado-modales-2026-06-11",
+        "stage_title": "v0.4.0: dictado en modales (PND-003) + adenda F14 (PND-006) + paquete QA",
+        "event": "stage_start",
+        "content": "Pedido del owner: avanzar PND-003 (dictado por voz en todas las ventanas) + OK a PND-006 (adenda F14). Luego testing, subida a npm, instructivo + casos de test profusos para equipo de QA manual externo. Registro retroactivo: el panel estaba desconectado cuando se ejecuto el ciclo."
+      },
+      {
+        "at": "2026-06-11T19:26:08.382Z",
+        "kind": "evolutive",
+        "stage_id": "v0.4.0-dictado-modales-2026-06-11",
+        "stage_title": "v0.4.0: dictado en modales (PND-003) + adenda F14 (PND-006) + paquete QA",
+        "event": "stage_end",
+        "content": "Cerrado con commits 9548705 + a69aabf en yujinapp/yuemail-v3. PND-003 shipped: dictado en SendDialog (destinatarios hablados, asunto, cuerpo por parrafos, adjunto si/no) + SignaturePad (campo nombre / fin campo / generar / guardar); guard anti-envio-accidental verificado en rojo a proposito. PND-006 shipped con OK del owner: F14 formalizada en el RFP, criterios v0.4.0, 9 docs del canon en sync. Paquete QA: docs/qa/INSTRUCTIVO_TESTERS.md + CASOS_DE_PRUEBA_v0.4.0.md (73 casos / 12 secciones). 179 tests verdes x3 incl. puerta de publicacion. Fix extra: repository URL apuntaba al repo viejo abandonado. Queda abierto PND-008: publicacion npm bloqueada por org yujinapp inexistente; owner reporta org creada, se reintenta la publicacion."
       }
     ]
   },
