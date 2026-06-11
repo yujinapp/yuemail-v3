@@ -1,8 +1,9 @@
 {
   "workflow": {
-    "meta": {
-      "tier": "medium"
-    },
+    "kind": "greenfield",
+    "tier": "medium",
+    "tier_reason": "Single-user local accessibility app; no auth/multitenancy, but voice + encrypted vault + IMAP/SMTP integration push it past simple.",
+    "tier_decided_at": "2026-06-10",
     "intent": {
       "mode": "new",
       "platform": "desktop",
@@ -13,13 +14,15 @@
       ],
       "tier": "medium",
       "tier_rationale": "Single-user local accessibility app; no auth/multitenancy, but voice + encrypted vault + IMAP/SMTP integration push it past simple.",
-      "distribution": "npm @yujinapp/yuemail (public, bin yuemail)"
+      "distribution": "npm @yujinapp/yuemail (public, bin yuemail)",
+      "decided_at": "2026-06-10"
     },
     "legacy_audit": {
       "applicable": false,
       "reason": "greenfield -- no prior implementation in this directory (docs/SPEC.md Identity)"
     },
     "vault_inventory": {
+      "ran_at": "2026-06-10",
       "families": [
         "imap.host",
         "imap.port",
@@ -39,40 +42,64 @@
     },
     "clarification": {
       "functional": {
+        "done_at": "2026-06-10",
         "persona": "person with motor and/or visual impairment operating solo",
         "north_star": "dictate -> sign -> send by email in under 4 minutes, zero strictly-required clicks",
         "mvp": "F1-F13 per docs/SPEC.md"
       },
       "nfr_quantitative": {
+        "done_at": "2026-06-10",
         "volumetry": "single user, local-only; inbox last 20 envelopes",
         "parallelism": "one server process, loopback",
         "package_budget": "tarball < 100 KB, gzip JS < 60 KB"
       },
       "nfr_structural": {
+        "done_at": "2026-06-10",
         "persistence": "JSON on filesystem under ~/.yuemail; no DB",
         "middleware": "Express 4, 127.0.0.1:5180 only",
         "workers": "none"
       },
       "nfr_governance": {
+        "done_at": "2026-06-10",
         "compliance": "n/a (single-user local, no telemetry)",
         "secrets": "vault never returns values via API",
         "rbac": "n/a"
       },
       "nfr_operational": {
+        "done_at": "2026-06-10",
         "i18n": "es-AR voice + Spanish UI",
         "a11y": "ARIA live + NAC3 attrs + full voice parity incl. modal contexts (2026-06-10)",
         "monitoring": "none by design",
         "browsers": "Chrome/Edge/Safari for Web Speech; degrade to buttons"
       },
       "blocks": {
+        "done_at": "2026-06-11",
         "decomposition": "F1-F14 + adendas D9/D10 (settings autoconfig + field dictation) + dictado en modales de envio/firma (PND-003)",
         "status": "all implemented; 179 tests green (verified 2026-06-11 x3 incl. prepublish gate, PND-003)"
       }
     },
     "specs": {
-      "rfp": "docs/SPEC.md (+ adenda F2 contextual voice 2026-06-10; adenda F14 settings APROBADA por owner 2026-06-11 PND-006; criterios normalizados a v0.4.0)",
-      "architecture": "docs/ARCHITECTURE.md (generated 2026-06-10, refreshed 2026-06-11)",
-      "solution_design": "docs/DESIGN.md (generated 2026-06-10, refreshed 2026-06-11)",
+      "rfp": {
+        "done_at": "2026-06-10",
+        "version": 3,
+        "doc_path": "docs/SPEC.md",
+        "sha256": "",
+        "note": "v1 base + adenda F2 contextual voice 2026-06-10 + adenda F14 settings aprobada por owner 2026-06-11 (PND-006); criterios normalizados a v0.4.0"
+      },
+      "arch": {
+        "done_at": "2026-06-11",
+        "version": 2,
+        "doc_path": "docs/ARCHITECTURE.md",
+        "sha256": "",
+        "note": "generated 2026-06-10, refreshed 2026-06-11"
+      },
+      "design": {
+        "done_at": "2026-06-11",
+        "version": 2,
+        "doc_path": "docs/DESIGN.md",
+        "sha256": "",
+        "note": "generated 2026-06-10, refreshed 2026-06-11"
+      },
       "plan": "docs/PLAN.md (reconstructed 2026-06-11, PND-004)",
       "iterations": "docs/ITERATIONS.md (2026-06-11)",
       "success_case": "docs/SUCCESS_CASE.md (2026-06-11)",
@@ -81,17 +108,120 @@
       "qa_package": "docs/qa/INSTRUCTIVO_TESTERS.md + docs/qa/CASOS_DE_PRUEBA_v0.4.0.md (73 casos en 12 secciones, 2026-06-11)"
     },
     "approvals": {
-      "rfp": "approved-in-use (spec drove the build); adenda F14/v0.4.0 APPROVED by owner 2026-06-11 (PND-006 closed)",
-      "architecture": "APPROVED by owner 2026-06-11 (Gate 13, PND-005)",
-      "solution_design": "APPROVED by owner 2026-06-11 (Gate 13, PND-005)",
+      "rfp": {
+        "approved_at": "2026-06-11",
+        "version_sha256": "",
+        "note": "approved-in-use (spec drove the build); adenda F14/v0.4.0 approved by owner 2026-06-11 (PND-006 closed)"
+      },
+      "arch": {
+        "approved_at": "2026-06-11",
+        "version_sha256": "",
+        "note": "approved by owner 2026-06-11 (Gate 13, PND-005)"
+      },
+      "design": {
+        "approved_at": "2026-06-11",
+        "version_sha256": "",
+        "note": "approved by owner 2026-06-11 (Gate 13, PND-005)"
+      },
       "gate_13": "approved by explicit owner OK 2026-06-11 (PND-005 closed)"
     },
     "bootstrap": {
+      "done_at": "2026-06-10",
       "status": "done",
       "stack": "React 18 + Vite + Express 4 + TS strict",
+      "ci_set": true,
       "ci_gates": "prepublishOnly: typecheck + tests + build",
       "tests": "179 tests green (verified 2026-06-11 x3 incl. prepublish gate, PND-003; guard anti-envio verificado en rojo)",
       "nac3_baseline": "data-nac-* on every interactive element + voice symmetry suite"
+    },
+    "blocks_progress": [
+      {
+        "block_id": "F1",
+        "status": "green",
+        "tests_green_at": "2026-06-11"
+      },
+      {
+        "block_id": "F2",
+        "status": "green",
+        "tests_green_at": "2026-06-11"
+      },
+      {
+        "block_id": "F3",
+        "status": "green",
+        "tests_green_at": "2026-06-11"
+      },
+      {
+        "block_id": "F4",
+        "status": "green",
+        "tests_green_at": "2026-06-11"
+      },
+      {
+        "block_id": "F5",
+        "status": "green",
+        "tests_green_at": "2026-06-11"
+      },
+      {
+        "block_id": "F6",
+        "status": "green",
+        "tests_green_at": "2026-06-11"
+      },
+      {
+        "block_id": "F7",
+        "status": "green",
+        "tests_green_at": "2026-06-11"
+      },
+      {
+        "block_id": "F8",
+        "status": "green",
+        "tests_green_at": "2026-06-11"
+      },
+      {
+        "block_id": "F9",
+        "status": "green",
+        "tests_green_at": "2026-06-11"
+      },
+      {
+        "block_id": "F10",
+        "status": "green",
+        "tests_green_at": "2026-06-11"
+      },
+      {
+        "block_id": "F11",
+        "status": "green",
+        "tests_green_at": "2026-06-11"
+      },
+      {
+        "block_id": "F12",
+        "status": "green",
+        "tests_green_at": "2026-06-11"
+      },
+      {
+        "block_id": "F13",
+        "status": "green",
+        "tests_green_at": "2026-06-11"
+      },
+      {
+        "block_id": "F14",
+        "status": "green",
+        "tests_green_at": "2026-06-11"
+      },
+      {
+        "block_id": "D9",
+        "status": "green",
+        "tests_green_at": "2026-06-11"
+      },
+      {
+        "block_id": "D10",
+        "status": "green",
+        "tests_green_at": "2026-06-11"
+      }
+    ],
+    "deploy": {
+      "done_at": "2026-06-11T20:01:49.246Z",
+      "pipeline": "npm publish con gate prepublishOnly (typecheck + 179 tests + build)",
+      "url": "https://www.npmjs.com/package/@yujinapp/yuemail",
+      "smoke_at": "2026-06-11",
+      "note": "v0.4.0 tag latest, shasum 992a22f6f260e054d6d26624ce937abc89e25699, 76.4 kB; npm install -g verificado; blocker PND-008 resuelto"
     },
     "postlaunch": {
       "manual_at": "2026-06-11 (manual real es completo, PND-004; replaces 2026-06-10 stub)",
@@ -156,6 +286,22 @@
         "step_title": "Publicacion npm v0.4.0",
         "event": "step_end",
         "content": "@yujinapp/yuemail@0.4.0 publicado en registry publico (tag latest, shasum 992a22f6f260e054d6d26624ce937abc89e25699, 76.4 kB). Gate prepublishOnly verde: typecheck + 179/179 tests + build. Blocker PND-008 resuelto tras 5 iteraciones (org inexistente -> token solo-lectura -> 2FA -> token granular con bypass 2FA OK). package.json normalizado post-publish (commit c1d3461). QA manual desbloqueado: npm install -g @yujinapp/yuemail ya funciona."
+      },
+      {
+        "at": "2026-06-11T20:21:23.158Z",
+        "kind": "corrective",
+        "stage_id": "workflow-cards-sync-2026-06-11",
+        "stage_title": "Cards del workflow desincronizadas: registro normalizado al esquema canonico (PND-009)",
+        "event": "stage_start",
+        "content": "Owner reporta que la ventana nativa de workflow muestra fases abiertas aunque el proyecto esta publicado y en QA. Diagnostico: el registro del workflow se guardo con claves descriptivas (meta.tier, specs/approvals como texto, bootstrap sin marca de cierre) que los lectores de fases no reconocen; faltaban ademas blocks_progress y el grupo deploy. Las fases I, III, IV y VI aparecian abiertas sin deberlo."
+      },
+      {
+        "at": "2026-06-11T20:21:32.544Z",
+        "kind": "corrective",
+        "stage_id": "workflow-cards-sync-2026-06-11",
+        "stage_title": "Cards del workflow desincronizadas: registro normalizado al esquema canonico (PND-009)",
+        "event": "stage_end",
+        "content": "Registro normalizado preservando todo el historial: tier + tier_decided_at top-level, kind=greenfield, intent.decided_at, done_at en las 5 rondas de clarificacion + blocks, specs.rfp/arch/design como objetos canonicos (las notas descriptivas se conservan), approvals.rfp/arch/design con approved_at (gate_13 historico intacto), bootstrap.done_at + ci_set, blocks_progress con 16 bloques en verde (F1-F14 + D9/D10), grupo deploy con la publicacion npm v0.4.0 del 2026-06-11. Se elimino la clave workflow.phases espuria de un primer intento de fix. Verificado: las 6 fases reportan cerradas en workflow.state."
       }
     ]
   },
