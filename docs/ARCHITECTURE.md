@@ -1,6 +1,8 @@
 # Yuemail -- Architecture (Phase III, step 11)
 
-Status: generated 2026-06-10 from the as-built v0.2.0 codebase.
+Status: generated 2026-06-10 from the as-built codebase; refreshed
+2026-06-11 (PND-004: version label v0.3.0, verified test counts,
+settings feature relabelled D9 to undo the F10 collision).
 Pending owner approval (workflow gate 13). RFP: docs/SPEC.md.
 
 ## System overview
@@ -56,14 +58,14 @@ Pending owner approval (workflow gate 13). RFP: docs/SPEC.md.
   stop it). On-demand mic, never always-on.
 - `src/voice/commands.ts`: pure parser, accent-insensitive +
   filler-tolerant. Two vocabularies: global (10 phrases: acceptance
-  #5 base 9 + "abrir configuracion", F10) and contextual per open
-  modal (send_dialog, signature_pad, settings_dialog).
-  With a modal open, global commands are suppressed except mic
-  safety. Contextual commands are dispatched by clicking the target
-  button via its `data-nac-action`, so voice and pointer share one
-  handler (NAC3 symmetry).
+  #5 base 9 + "abrir configuracion", settings adenda D9) and
+  contextual per open modal (send_dialog, signature_pad,
+  settings_dialog). With a modal open, global commands are suppressed
+  except mic safety. Contextual commands are dispatched by clicking
+  the target button via its `data-nac-action`, so voice and pointer
+  share one handler (NAC3 symmetry).
 
-## Email autoconfiguration (F10)
+## Email autoconfiguration (adenda 2026-06-10, design D9)
 
 - `server/autoconfig.ts`: pure resolution logic, three tiers --
   (1) built-in table of major providers (Gmail, Outlook, Yahoo,
@@ -97,6 +99,7 @@ Pending owner approval (workflow gate 13). RFP: docs/SPEC.md.
 
 - Local-only product: no telemetry, no remote logging (F13). Server
   logs to stdout. Failures are user-visible by design (toast+ARIA).
+  Full posture: docs/observability.md.
 
 ## Security posture
 
@@ -109,9 +112,10 @@ Pending owner approval (workflow gate 13). RFP: docs/SPEC.md.
 
 - TypeScript strict + noUncheckedIndexedAccess; tsc for server,
   Vite for SPA.
-- Vitest: 11 suites / 105 tests (voice parser + contextual routing,
-  vault round-trip + at-rest encryption, docx magic bytes, NAC3
-  attribute + voice symmetry, autoconfig tiers, ARIA, toolbar
-  labels, server port binding, email reject, CLI help, design
-  tokens).
+- Vitest: 11 suites / 160 tests, verified green 2026-06-11 via
+  `npm test` (voice parser + contextual routing + settings field
+  dictation, vault round-trip + at-rest encryption, docx magic
+  bytes, NAC3 attribute + voice symmetry, autoconfig tiers, ARIA,
+  toolbar labels, server port binding, email reject, CLI help,
+  design tokens).
 - prepublishOnly: typecheck + tests + build (acceptance #10).

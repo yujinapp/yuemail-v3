@@ -1,6 +1,7 @@
 # Yuemail -- Solution Design decisions (Phase III, step 12)
 
-Status: generated 2026-06-10 from the as-built v0.2.0 codebase.
+Status: generated 2026-06-10 from the as-built codebase; refreshed
+2026-06-11 (PND-004: version label v0.3.0, pending references).
 Pending owner approval (workflow gate 13). RFP: docs/SPEC.md.
 Architecture: docs/ARCHITECTURE.md.
 
@@ -89,6 +90,11 @@ Tuta) fail with an explanation instead of a guess that can never
 connect. The dialog is a voice context like the other two modals
 (detectar / probar / guardar / cancelar), symmetry test-enforced.
 
+Note on numbering: early commits and the 2026-06-10 docs labelled
+this feature "F10", a number the RFP already assigns to the design
+system. It is referred to as D9 (this decision) until the RFP adenda
+(PND-006) assigns it a proper feature number (proposed: F14).
+
 ## D10 -- Settings field dictation (adenda 2026-06-10 bis)
 
 Voice could navigate the settings modal but not fill it: every value
@@ -115,6 +121,6 @@ directions by tests/nac3-attrs.test.ts: an input without a spec, a
 spec without its input, an alias that does not parse, or missing
 App routing all fail the suite.
 
-Known limit (tracked as its own pending): the SendDialog fields
+Known limit (tracked as PND-003): the SendDialog fields
 (to/subject/body) and the SignaturePad typed-name field are still
 keyboard-only; body dictation needs append semantics, not replace.

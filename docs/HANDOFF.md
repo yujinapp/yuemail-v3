@@ -1,31 +1,61 @@
-# Handoff package
+# Yuemail -- Handoff package
 
-*Generado por forge_workflow_run_step el 2026-06-10T20:30:40.258Z.*
-*Tier: unknown*
+Status: rewritten 2026-06-11 (PND-004); replaces the TBD stub
+generated 2026-06-10. Tier: medium. Version: v0.3.0.
 
-## Que es esta app
+## What this app is
 
-TBD
+Voice-first, single-user, local-only email client for people with
+motor and/or visual impairment: dictate a document in Spanish, sign
+it, send it as a .docx attachment. Public npm package
+@yujinapp/yuemail (bin: yuemail), MIT.
 
-## Decisiones de arquitectura
+## Architecture decisions (full rationale in docs/DESIGN.md)
 
-- Persistencia: ver TBD
-- Compliance: ver TBD
-- Observability: ver TBD
+- Persistence: JSON on filesystem under ~/.yuemail; no DB (D1). The
+  .docx is always rebuilt from JSON, never persisted (F5).
+- Secrets: AES-256-GCM vault, scrypt key, per-machine salt; API never
+  returns values; derived-passphrase caveat surfaced in UI (D2).
+- Email: per-send SMTP transport, read-only IMAP envelopes (D3).
+- Voice: on-demand mic, es-AR, per-modal contexts own the channel
+  (D4, D6); one dispatch table for click + voice, test-enforced (D5).
+- Account setup from just the address: 3-tier autoconfig + live
+  verify (D9); settings fields fillable by voice (D10).
+- Server: Express 4, binds 127.0.0.1:5180 only, never LAN (D8).
+- Compliance: n/a -- single-user local, no telemetry (F13).
+- Observability: stdout + user-visible failures by design; see
+  docs/observability.md.
 
-## Credenciales activas
+## Credentials (12 vault keys; never returned by any API)
 
-- **0**: imap.host
-- **1**: imap.port
-- **2**: imap.user
-- **3**: imap.pass
-- **4**: imap.secure
-- **5**: smtp.host
-- **6**: smtp.port
-- **7**: smtp.user
-- **8**: smtp.pass
-- **9**: smtp.secure
-- **10**: identity.from
-- **11**: identity.name
+imap.host / imap.port / imap.user / imap.pass / imap.secure
+smtp.host / smtp.port / smtp.user / smtp.pass / smtp.secure
+identity.from / identity.name
 
-## Bloques + estado
+Setup paths: in-app gear (autoconfig from the address) or
+`yuemail vault setup` (CLI wizard).
+
+## Blocks + state (verified 2026-06-11)
+
+F1-F13 implemented plus adendas D9/D10. 11 Vitest suites / 160 tests
+green; typecheck clean; prepublishOnly gate (typecheck + tests +
+build) protects publishes. Detail per block: docs/PLAN.md.
+
+## How to run
+
+- Dev: `npm run dev:web` (Vite) + `npm run dev:server` (tsc watch).
+- Prod-like: `npm run build` then `node bin/yuemail.mjs`.
+- Tests: `npm test`. Typecheck: `npm run typecheck`.
+
+## Open items (pending registry is canonical)
+
+- PND-003: dictation in SendDialog + SignaturePad fields (body needs
+  append semantics, not replace).
+- PND-005: Gate 13 -- owner approval of ARCHITECTURE.md + DESIGN.md.
+- PND-006: RFP adenda (settings feature, v0.3.0 labels, F10 collision).
+- PND-007: post-launch feedback channel TBD.
+
+## Deferred by scope (v0.4+ candidates)
+
+Reply / forward / body fetch, OAuth, multi-account, mobile,
+multi-document tabs, auto-update notification.
