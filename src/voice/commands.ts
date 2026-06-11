@@ -27,6 +27,12 @@
  * With a modal open, global commands are suppressed except the mic pair
  * + detener voz.
  *
+ * Settings field dictation (settings_dialog only):
+ *   campo <nombre>            -> ENFOCAR_CAMPO (arm a field for dictation)
+ *   borrar campo [nombre]     -> BORRAR_CAMPO  (empty it for re-dictation)
+ *   anything else while armed -> the utterance becomes the field value
+ *   (spoken forms translated per field kind, see spokenFieldValue).
+ *
  * Email parsing recognises spoken "arroba" as "@" and "punto" as ".".
  * The extracted email is lowercased.
  *
@@ -56,6 +62,8 @@ export type VoiceCommandType =
   | 'DETECTAR_SERVIDORES'
   | 'PROBAR_CONEXION'
   | 'GUARDAR_CONFIG'
+  | 'ENFOCAR_CAMPO'
+  | 'BORRAR_CAMPO'
   | 'UNKNOWN';
 
 /**
@@ -307,12 +315,138 @@ const CONTEXT_MATCHERS: Record<Exclude<VoiceContext, 'global'>, Matcher[]> = {
   ],
 };
 
+/* ------------------------------------------------------------------ */
+/* Settings field dictation (F10 voice parity for the dialog inputs).  */
+/* ------------------------------------------------------------------ */
+
+export type SettingsFieldKind = 'text' | 'email' | 'password' | 'host' | 'port' | 'checkbox';
+
+export interface SettingsFieldSpec {
+  /** Canonical key carried as the ENFOCAR_CAMPO payload. */
+  key: string;
+  /** Human label for toasts / aria announcements. */
+  label: string;
+  /** Spoken names, stored normalized (lowercase, accent-free, no articles). */
+  aliases: string[];
+  /** data-nac-action of the input this spec drives (producer/consumer symmetry). */
+  nac_action: string;
+  kind: SettingsFieldKind;
+}
+
+/* Every dictatable control of the settings dialog. The symmetry suite
+ * (tests/nac3-attrs.test.ts) checks this table against the actual
+ * <input> markup in SettingsDialog.tsx in BOTH directions: an input
+ * without a spec here, or a spec without its input, goes red. */
+export const SETTINGS_FIELD_SPECS: ReadonlyArray<SettingsFieldSpec> = [
+  { key: 'nombre',        label: 'Tu nombre',           aliases: ['nombre', 'remitente', 'nombre remitente'],                            nac_action: 'set_identity_name',    kind: 'text' },
+  { key: 'correo',        label: 'Direccion de correo', aliases: ['correo', 'email', 'mail', 'direccion', 'direccion correo', 'cuenta'], nac_action: 'set_account_email',    kind: 'email' },
+  { key: 'contrasena',    label: 'Contrasena',          aliases: ['contrasena', 'clave', 'password'],                                    nac_action: 'set_account_password', kind: 'password' },
+  { key: 'servidor_imap', label: 'Servidor IMAP',       aliases: ['servidor imap', 'imap', 'servidor entrada', 'servidor recepcion'],    nac_action: 'set_imap_host',        kind: 'host' },
+  { key: 'puerto_imap',   label: 'Puerto IMAP',         aliases: ['puerto imap', 'puerto entrada'],                                      nac_action: 'set_imap_port',        kind: 'port' },
+  { key: 'ssl_imap',      label: 'SSL IMAP',            aliases: ['ssl imap', 'seguridad imap'],                                         nac_action: 'toggle_imap_ssl',      kind: 'checkbox' },
+  { key: 'servidor_smtp', label: 'Servidor SMTP',       aliases: ['servidor smtp', 'smtp', 'servidor salida', 'servidor envio'],         nac_action: 'set_smtp_host',        kind: 'host' },
+  { key: 'puerto_smtp',   label: 'Puerto SMTP',         aliases: ['puerto smtp', 'puerto salida'],                                       nac_action: 'set_smtp_port',        kind: 'port' },
+  { key: 'ssl_smtp',      label: 'SSL SMTP',            aliases: ['ssl smtp', 'seguridad smtp'],                                         nac_action: 'toggle_smtp_ssl',      kind: 'checkbox' },
+];
+
+/* Articles/connectors dropped before alias matching, so "campo de la
+ * cuenta" or "servidor de entrada" resolve. FILLERS already went away
+ * during normalize. */
+const FIELD_STOPWORDS = new Set(['el', 'la', 'los', 'las', 'de', 'del', 'al', 'mi', 'su']);
+
+/** Resolve a spoken field name ("servidor de entrada") to its spec. */
+export function resolveSettingsField(spoken: string): SettingsFieldSpec | undefined {
+  const cleaned = normalize(spoken)
+    .split(' ')
+    .filter((w) => w.length > 0 && !FIELD_STOPWORDS.has(w))
+    .join(' ');
+  if (cleaned.length === 0) return undefined;
+  return SETTINGS_FIELD_SPECS.find((s) => s.aliases.includes(cleaned));
+}
+
+/* Recognisers usually emit numerals, but a slow spelled-out port
+ * ("nueve nueve tres") must land too. */
+const SPOKEN_DIGITS: ReadonlyArray<[RegExp, string]> = [
+  [/\bcero\b/g, '0'], [/\buno\b/g, '1'], [/\bdos\b/g, '2'], [/\btres\b/g, '3'],
+  [/\bcuatro\b/g, '4'], [/\bcinco\b/g, '5'], [/\bseis\b/g, '6'], [/\bsiete\b/g, '7'],
+  [/\bocho\b/g, '8'], [/\bnueve\b/g, '9'],
+];
+
+/* Spoken-form symbol substitutions shared by the value kinds. */
+function substSpokenSymbols(s: string): string {
+  return s
+    .replace(/\s+arroba\s+/g, '@')
+    .replace(/\s+at\s+/g, '@')
+    .replace(/\s+punto\s+/g, '.')
+    .replace(/\s+dot\s+/g, '.')
+    .replace(/\s+guion\s+bajo\s+/g, '_')
+    .replace(/\s+guion\s+/g, '-');
+}
+
+/**
+ * Turn a final dictation utterance into the value for a settings field.
+ * Dictation REPLACES the whole field (correcting = dictate again); an
+ * empty result means "nothing usable was heard" and the caller re-asks.
+ */
+export function spokenFieldValue(raw: string, kind: SettingsFieldKind): string {
+  /* Keep '.' (literal emails/hosts); drop the rest of the punctuation
+   * a recogniser may sprinkle in. */
+  const lowered = stripAccents(raw).toLowerCase().replace(/[,!?;:]+/g, ' ').trim();
+  switch (kind) {
+    case 'email': {
+      const direct = extractEmail(raw);
+      if (direct) return direct;
+      return substSpokenSymbols(lowered).replace(/\s+/g, '');
+    }
+    case 'host':
+      return substSpokenSymbols(lowered).replace(/\s+/g, '');
+    case 'port': {
+      let s = lowered;
+      for (const [re, digit] of SPOKEN_DIGITS) s = s.replace(re, digit);
+      return (s.match(/\d+/g) ?? []).join('');
+    }
+    case 'password':
+      /* Casing is kept (app passwords may be case-sensitive); the
+       * recogniser splits them into spaced groups, so spaces go away. */
+      return substSpokenSymbols(stripAccents(raw).trim()).replace(/\s+/g, '');
+    case 'text':
+    default:
+      return raw.trim();
+  }
+}
+
+/** Parse a spoken yes/no for checkbox fields. Undefined = not understood. */
+export function spokenCheckboxValue(raw: string): boolean | undefined {
+  const n = normalize(raw);
+  if (/\b(?:si|activar|activado|activada|encendido|encender|prender|on)\b/.test(n)) return true;
+  if (/\b(?:no|desactivar|desactivado|desactivada|apagado|apagar|off)\b/.test(n)) return false;
+  return undefined;
+}
+
 export function parseCommand(raw: string, context: VoiceContext = 'global'): VoiceCommand {
   const normalizedRaw = normalize(raw);
   const cleaned = stripFillers(normalizedRaw.split(' ')).join(' ').trim();
   const normalized = cleaned.length > 0 ? cleaned : normalizedRaw;
 
   if (context !== 'global') {
+    if (context === 'settings_dialog') {
+      /* Field commands run first. Order matters within them too:
+       * "borrar campo correo" must clear, not arm. */
+      const clear = normalized.match(/\b(?:borrar|limpiar|vaciar)\s+campo\b\s*(.*)$/);
+      if (clear) {
+        const cmd: VoiceCommand = { type: 'BORRAR_CAMPO', raw, normalized };
+        const spec = resolveSettingsField(clear[1] ?? '');
+        if (spec) cmd.payload = spec.key;
+        return cmd;
+      }
+      const focus = normalized.match(/\bcampo\s+(.+)$/);
+      if (focus) {
+        const cmd: VoiceCommand = { type: 'ENFOCAR_CAMPO', raw, normalized };
+        const spec = resolveSettingsField(focus[1] ?? '');
+        if (spec) cmd.payload = spec.key;
+        return cmd;
+      }
+    }
     for (const m of CONTEXT_MATCHERS[context]) {
       for (const re of m.patterns) {
         if (re.test(normalized)) return { type: m.type, raw, normalized };
@@ -358,6 +492,8 @@ export interface CommandCatalogEntry {
   context?: Exclude<VoiceContext, 'global'>;
   /** data-nac-action of the element this command drives (producer/consumer symmetry). */
   nac_action?: string;
+  /** True when the command drives the voice-armed settings field rather than one fixed element. */
+  field_scope?: boolean;
 }
 
 /** Catalogue of recognised commands. Exposed for UI/help screens. */
@@ -385,4 +521,16 @@ export const COMMAND_CATALOG: ReadonlyArray<CommandCatalogEntry> = [
   { type: 'PROBAR_CONEXION',     sample: 'probar conexion',     action: 'Probar la conexion IMAP y SMTP en vivo.',               context: 'settings_dialog', nac_action: 'test_connection' },
   { type: 'GUARDAR_CONFIG',      sample: 'guardar',             action: 'Guardar la configuracion cifrada en la boveda.',        context: 'settings_dialog', nac_action: 'save_settings' },
   { type: 'CANCELAR',            sample: 'cancelar',            action: 'Cerrar la configuracion sin guardar.',                  context: 'settings_dialog', nac_action: 'cancel_settings' },
+  /* Contextual: settings field dictation. "campo X" arms the field; the
+   * next utterance becomes its value; "borrar campo" empties it. */
+  { type: 'ENFOCAR_CAMPO', sample: 'campo nombre',        action: 'Enfocar el campo del nombre para dictarle el valor.',           context: 'settings_dialog', nac_action: 'set_identity_name' },
+  { type: 'ENFOCAR_CAMPO', sample: 'campo correo',        action: 'Enfocar la direccion de correo para dictarla.',                 context: 'settings_dialog', nac_action: 'set_account_email' },
+  { type: 'ENFOCAR_CAMPO', sample: 'campo contrasena',    action: 'Enfocar la contrasena para dictarla (nunca se lee en voz alta).', context: 'settings_dialog', nac_action: 'set_account_password' },
+  { type: 'ENFOCAR_CAMPO', sample: 'campo servidor imap', action: 'Enfocar el servidor IMAP para dictarlo.',                       context: 'settings_dialog', nac_action: 'set_imap_host' },
+  { type: 'ENFOCAR_CAMPO', sample: 'campo puerto imap',   action: 'Enfocar el puerto IMAP para dictarlo.',                         context: 'settings_dialog', nac_action: 'set_imap_port' },
+  { type: 'ENFOCAR_CAMPO', sample: 'campo ssl imap',      action: 'Enfocar SSL de IMAP; despues deci "si" o "no".',                context: 'settings_dialog', nac_action: 'toggle_imap_ssl' },
+  { type: 'ENFOCAR_CAMPO', sample: 'campo servidor smtp', action: 'Enfocar el servidor SMTP para dictarlo.',                       context: 'settings_dialog', nac_action: 'set_smtp_host' },
+  { type: 'ENFOCAR_CAMPO', sample: 'campo puerto smtp',   action: 'Enfocar el puerto SMTP para dictarlo.',                         context: 'settings_dialog', nac_action: 'set_smtp_port' },
+  { type: 'ENFOCAR_CAMPO', sample: 'campo ssl smtp',      action: 'Enfocar SSL de SMTP; despues deci "si" o "no".',                context: 'settings_dialog', nac_action: 'toggle_smtp_ssl' },
+  { type: 'BORRAR_CAMPO',  sample: 'borrar campo',        action: 'Vaciar el campo enfocado para dictarlo de nuevo.',              context: 'settings_dialog', field_scope: true },
 ];

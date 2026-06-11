@@ -14,7 +14,14 @@ import { SignaturePad } from './components/SignaturePad.js';
 import { SendDialog } from './components/SendDialog.js';
 import { SettingsDialog } from './components/SettingsDialog.js';
 import { useVoice } from './voice/useVoice.js';
-import type { VoiceCommand, VoiceContext } from './voice/commands.js';
+import {
+  SETTINGS_FIELD_SPECS,
+  spokenCheckboxValue,
+  spokenFieldValue,
+  type SettingsFieldSpec,
+  type VoiceCommand,
+  type VoiceContext,
+} from './voice/commands.js';
 import { announce, ensureRegions } from './lib/ariaLive.js';
 import { api } from './lib/api.js';
 
@@ -166,6 +173,15 @@ export function App(): React.ReactElement {
   const voiceContextRef = React.useRef<VoiceContext>(voiceContext);
   voiceContextRef.current = voiceContext;
 
+  /* Settings field armed for dictation via "campo <nombre>". Arming is
+   * voice-only on purpose: keyboard focus never arms a field, so the mic
+   * cannot scribble into a field the user is typing in by hand. Closing
+   * the dialog (or switching modal) disarms. */
+  const armedFieldRef = React.useRef<SettingsFieldSpec | undefined>(undefined);
+  React.useEffect(() => {
+    if (voiceContext !== 'settings_dialog') armedFieldRef.current = undefined;
+  }, [voiceContext]);
+
   /* Contextual commands drive the SAME handler as the on-screen button:
    * resolve the element by its data-nac-action and click it. */
   function clickNacAction(action: string): boolean {
@@ -176,6 +192,62 @@ export function App(): React.ReactElement {
     if (el instanceof HTMLButtonElement && el.disabled) return false;
     el.click();
     return true;
+  }
+
+  /* --- settings field dictation (voice parity for the dialog inputs) --- */
+
+  function nacInput(action: string): HTMLInputElement | undefined {
+    const el = document.querySelector('[data-nac-action="' + action + '"]');
+    return el instanceof HTMLInputElement ? el : undefined;
+  }
+
+  function focusNacField(spec: SettingsFieldSpec): boolean {
+    const el = nacInput(spec.nac_action);
+    if (!el) return false;
+    el.focus();
+    return true;
+  }
+
+  /* Write into a React-controlled input: go through the native value
+   * setter + an 'input' event so React's onChange sees the change. */
+  function setNacFieldValue(spec: SettingsFieldSpec, value: string): boolean {
+    const el = nacInput(spec.nac_action);
+    if (!el) return false;
+    const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set;
+    if (!setter) return false;
+    setter.call(el, value);
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+    return true;
+  }
+
+  function setNacCheckbox(spec: SettingsFieldSpec, on: boolean): boolean {
+    const el = nacInput(spec.nac_action);
+    if (!el) return false;
+    if (el.checked !== on) el.click();
+    return true;
+  }
+
+  function applyFieldDictation(spec: SettingsFieldSpec, raw: string) {
+    if (spec.kind === 'checkbox') {
+      const on = spokenCheckboxValue(raw);
+      if (on === undefined) {
+        pushToast('info', 'Para ' + spec.label + ' deci "si" o "no".');
+        return;
+      }
+      if (setNacCheckbox(spec, on)) pushToast('info', spec.label + (on ? ' activado.' : ' desactivado.'));
+      return;
+    }
+    const value = spokenFieldValue(raw, spec.kind);
+    if (value.length === 0) {
+      pushToast('info', 'No capte un valor para ' + spec.label + '. Proba de nuevo.');
+      return;
+    }
+    if (setNacFieldValue(spec, value)) {
+      /* Never echo a credential -- announce only that it landed. */
+      pushToast('info', spec.kind === 'password'
+        ? 'Contrasena cargada (' + value.length + ' caracteres).'
+        : spec.label + ': ' + value);
+    }
   }
 
   function onVoiceCommand(cmd: VoiceCommand) {
@@ -230,8 +302,40 @@ export function App(): React.ReactElement {
         clickNacAction('test_connection'); break;
       case 'GUARDAR_CONFIG':
         clickNacAction('save_settings'); break;
+      case 'ENFOCAR_CAMPO': {
+        const spec = SETTINGS_FIELD_SPECS.find((s) => s.key === cmd.payload);
+        if (!spec) {
+          pushToast('info', 'No encontre ese campo. Proba: campo nombre, campo correo, campo contrasena, campo servidor imap, campo puerto imap, campo ssl imap (idem smtp).');
+          break;
+        }
+        if (focusNacField(spec)) {
+          armedFieldRef.current = spec;
+          pushToast('info', spec.kind === 'checkbox'
+            ? 'Campo ' + spec.label + '. Deci "si" o "no".'
+            : 'Campo ' + spec.label + '. Dicta el valor.');
+        }
+        break;
+      }
+      case 'BORRAR_CAMPO': {
+        const spec = (cmd.payload
+          ? SETTINGS_FIELD_SPECS.find((s) => s.key === cmd.payload)
+          : undefined) ?? armedFieldRef.current;
+        if (!spec || spec.kind === 'checkbox') {
+          pushToast('info', 'Primero enfoca un campo de texto: campo correo, campo nombre...');
+          break;
+        }
+        if (setNacFieldValue(spec, '')) {
+          armedFieldRef.current = spec;
+          pushToast('info', 'Campo ' + spec.label + ' vacio. Dicta el valor.');
+        }
+        break;
+      }
       default:
-        /* UNKNOWN -- ignore silently. */
+        /* UNKNOWN -- inside settings with a field armed, the utterance IS
+         * the dictated value. Everywhere else, ignore silently. */
+        if (voiceContextRef.current === 'settings_dialog' && armedFieldRef.current) {
+          applyFieldDictation(armedFieldRef.current, cmd.raw);
+        }
         break;
     }
   }

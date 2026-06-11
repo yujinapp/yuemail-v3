@@ -103,3 +103,31 @@ SignaturePad open: "guardar" / "listo" -> save; "borrar" / "limpiar"
 "cancelar" / "cerrar" / "salir" / "volver" -> close.
 
 Any modal: "apagar microfono" / "detener voz" always work.
+
+## 6. Adenda 2026-06-10 bis -- settings field dictation
+
+The audit above guaranteed every modal BUTTON is voice-reachable; the
+external review (finding 6) correctly noted the settings TEXT FIELDS
+were still keyboard-only. Shipped in this adenda (design: D10 in
+docs/DESIGN.md):
+
+- "campo <nombre>" arms a settings field (focus + aria announce);
+  the NEXT utterance becomes its value, translated per field kind
+  (arroba/punto/guion, digit words for ports, space-joined app
+  passwords). "borrar campo [nombre]" empties it; the SSL checkboxes
+  take "si" / "no". Arming is voice-only (keyboard focus never arms),
+  and passwords are announced by length only, never echoed.
+- Field names recognised: nombre / correo / contrasena / servidor
+  imap / puerto imap / ssl imap / servidor smtp / puerto smtp /
+  ssl smtp (plus aliases: clave, cuenta, direccion, servidor de
+  entrada/salida...).
+
+Symmetry extended (SQ 14): every `<input>` in SettingsDialog.tsx must
+carry a data-nac-action AND have a SETTINGS_FIELD_SPECS entry, every
+spec must point at real markup and parse through each alias, and
+App.tsx must wire the armed-field routing. All four links enforced by
+tests/nac3-attrs.test.ts.
+
+Known limit (separate pending): SendDialog (to/subject/body) and the
+SignaturePad typed-name field are still keyboard-only; body dictation
+needs append semantics, not replace.

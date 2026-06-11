@@ -8,7 +8,7 @@
 import { describe, it, expect } from 'vitest';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
-import { COMMAND_CATALOG } from '../src/voice/commands.js';
+import { COMMAND_CATALOG, SETTINGS_FIELD_SPECS, parseCommand } from '../src/voice/commands.js';
 
 const COMPONENT_FILES = [
   'src/components/Toolbar.tsx',
@@ -95,9 +95,80 @@ describe('Voice/NAC3 symmetry -- modal buttons are voice-reachable', () => {
 
   it('App.tsx routes every voiced modal action', async () => {
     const app = await fs.readFile(path.resolve('src/App.tsx'), 'utf-8');
+    const fieldActions = new Set(SETTINGS_FIELD_SPECS.map((s) => s.nac_action));
     for (const entry of COMMAND_CATALOG.filter((c) => c.context)) {
+      /* Field-scoped entries route through the generic armed-field path,
+       * asserted by the dictation suite below. */
+      if (entry.field_scope || (entry.nac_action && fieldActions.has(entry.nac_action))) continue;
       const needle = "clickNacAction('" + entry.nac_action + "')";
       expect(app.includes(needle), entry.nac_action + ' is not routed in App.tsx').toBe(true);
+    }
+  });
+});
+
+/* Settings field dictation symmetry (SQ 14, adenda 2026-06-10 bis).
+ *
+ * Same producer/consumer discipline, now for the settings INPUTS: a
+ * voice-first app where you can reach every button but cannot fill a
+ * field is still a dead end. Four links:
+ *   0. every <input> in SettingsDialog.tsx carries a data-nac-action at
+ *      all (coverage -- a brand-new input with no attribute goes red),
+ *   1. that action has a SETTINGS_FIELD_SPECS entry (the voice layer can
+ *      arm + write it), and every spec points back at real markup,
+ *   2. every spec is reachable by voice through each of its aliases
+ *      ("campo <alias>" -> ENFOCAR_CAMPO + the right payload),
+ *   3. App.tsx wires the generic armed-field routing (focus + write +
+ *      toggle + dictation apply). */
+describe('Voice/NAC3 symmetry -- settings inputs are voice-dictatable', () => {
+  const SETTINGS_FILE = 'src/components/SettingsDialog.tsx';
+  const fieldActions = new Set(SETTINGS_FIELD_SPECS.map((s) => s.nac_action));
+
+  async function inputTags(): Promise<string[]> {
+    const src = await fs.readFile(path.resolve(SETTINGS_FILE), 'utf-8');
+    /* Inputs are self-closing in this codebase, so capture lazily up to
+     * the '/>' terminator. A plain [^>]* would stop at the '=>' of an
+     * inline arrow handler and truncate the tag before the nac attrs
+     * (that exact bug bit this suite once -- caught by going red). */
+    return [...src.matchAll(/<input[\s\S]*?\/>/g)].map((m) => m[0]);
+  }
+
+  it('every settings <input> carries a data-nac-action (coverage, not just consistency)', async () => {
+    const tags = await inputTags();
+    expect(tags.length).toBeGreaterThan(0);
+    for (const tag of tags) {
+      expect(/data-nac-action="[a-z_]+"/.test(tag), SETTINGS_FILE + ' has an input with no data-nac-action: ' + tag.slice(0, 80)).toBe(true);
+    }
+  });
+
+  it('every settings input action has a field spec (voice can dictate it)', async () => {
+    for (const tag of await inputTags()) {
+      const action = tag.match(/data-nac-action="([a-z_]+)"/)?.[1] ?? '';
+      if (action.length === 0) continue; /* reported by the coverage check above */
+      expect(fieldActions.has(action), 'input action="' + action + '" has no SETTINGS_FIELD_SPECS entry').toBe(true);
+    }
+  });
+
+  it('every field spec points at real settings markup (no orphan specs)', async () => {
+    const src = await fs.readFile(path.resolve(SETTINGS_FILE), 'utf-8');
+    for (const spec of SETTINGS_FIELD_SPECS) {
+      expect(src.includes('data-nac-action="' + spec.nac_action + '"'), spec.key + ' points at missing markup ' + spec.nac_action).toBe(true);
+    }
+  });
+
+  it('every field spec is reachable by voice through each of its aliases', () => {
+    for (const spec of SETTINGS_FIELD_SPECS) {
+      for (const alias of spec.aliases) {
+        const cmd = parseCommand('campo ' + alias, 'settings_dialog');
+        expect(cmd.type, 'campo ' + alias).toBe('ENFOCAR_CAMPO');
+        expect(cmd.payload, 'campo ' + alias).toBe(spec.key);
+      }
+    }
+  });
+
+  it('App.tsx wires the generic armed-field routing', async () => {
+    const app = await fs.readFile(path.resolve('src/App.tsx'), 'utf-8');
+    for (const needle of ['focusNacField(', 'setNacFieldValue(', 'setNacCheckbox(', 'applyFieldDictation(', "case 'ENFOCAR_CAMPO'", "case 'BORRAR_CAMPO'"]) {
+      expect(app.includes(needle), needle + ' missing in App.tsx').toBe(true);
     }
   });
 });

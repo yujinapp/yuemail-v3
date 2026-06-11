@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { parseCommand, extractEmail, COMMAND_CATALOG } from '../src/voice/commands.js';
+import {
+  parseCommand, extractEmail, COMMAND_CATALOG,
+  SETTINGS_FIELD_SPECS, spokenFieldValue, spokenCheckboxValue,
+} from '../src/voice/commands.js';
 
 describe('parseCommand -- the 9 Spanish phrases (acceptance #5)', () => {
   it('NUEVO_DOCUMENTO: "nuevo documento"', () => {
@@ -218,6 +221,110 @@ describe('parseCommand -- contextual: settings_dialog', () => {
   });
 });
 
+describe('parseCommand -- settings field dictation (F10 voice parity)', () => {
+  it('"campo correo" arms the email field', () => {
+    const c = parseCommand('campo correo', 'settings_dialog');
+    expect(c.type).toBe('ENFOCAR_CAMPO');
+    expect(c.payload).toBe('correo');
+  });
+
+  it('accent-tolerant: "campo contraseña"', () => {
+    const c = parseCommand('campo contraseña', 'settings_dialog');
+    expect(c.type).toBe('ENFOCAR_CAMPO');
+    expect(c.payload).toBe('contrasena');
+  });
+
+  it('article-tolerant: "ir al campo de la cuenta"', () => {
+    const c = parseCommand('ir al campo de la cuenta', 'settings_dialog');
+    expect(c.type).toBe('ENFOCAR_CAMPO');
+    expect(c.payload).toBe('correo');
+  });
+
+  it('two-word fields: "campo servidor imap" / "campo puerto smtp"', () => {
+    expect(parseCommand('campo servidor imap', 'settings_dialog').payload).toBe('servidor_imap');
+    expect(parseCommand('campo puerto smtp', 'settings_dialog').payload).toBe('puerto_smtp');
+  });
+
+  it('unknown field name stays ENFOCAR_CAMPO with no payload (App announces the options)', () => {
+    const c = parseCommand('campo zapato', 'settings_dialog');
+    expect(c.type).toBe('ENFOCAR_CAMPO');
+    expect(c.payload).toBeUndefined();
+  });
+
+  it('"borrar campo" -> BORRAR_CAMPO targeting the armed field', () => {
+    const c = parseCommand('borrar campo', 'settings_dialog');
+    expect(c.type).toBe('BORRAR_CAMPO');
+    expect(c.payload).toBeUndefined();
+  });
+
+  it('"limpiar campo correo" -> BORRAR_CAMPO with field payload (clears, does not arm)', () => {
+    const c = parseCommand('limpiar campo correo', 'settings_dialog');
+    expect(c.type).toBe('BORRAR_CAMPO');
+    expect(c.payload).toBe('correo');
+  });
+
+  it('"campo" commands are settings-only: UNKNOWN in global and other modals', () => {
+    expect(parseCommand('campo correo', 'global').type).toBe('UNKNOWN');
+    expect(parseCommand('campo correo', 'send_dialog').type).toBe('UNKNOWN');
+  });
+});
+
+describe('spokenFieldValue -- dictated values per field kind', () => {
+  it('email: spoken form "ana arroba ejemplo punto com"', () => {
+    expect(spokenFieldValue('ana arroba ejemplo punto com', 'email')).toBe('ana@ejemplo.com');
+  });
+
+  it('email: literal form passes through lowercased', () => {
+    expect(spokenFieldValue('Ana@Ejemplo.com', 'email')).toBe('ana@ejemplo.com');
+  });
+
+  it('host: "imap punto gmail punto com"', () => {
+    expect(spokenFieldValue('imap punto gmail punto com', 'host')).toBe('imap.gmail.com');
+  });
+
+  it('host: "guion" becomes a dash', () => {
+    expect(spokenFieldValue('mail guion in punto ejemplo punto com', 'host')).toBe('mail-in.ejemplo.com');
+  });
+
+  it('port: digits survive, spaces dropped', () => {
+    expect(spokenFieldValue('9 9 3', 'port')).toBe('993');
+    expect(spokenFieldValue('993', 'port')).toBe('993');
+  });
+
+  it('port: spoken digit words', () => {
+    expect(spokenFieldValue('nueve nueve tres', 'port')).toBe('993');
+  });
+
+  it('port: non-numeric utterance yields empty (App re-asks)', () => {
+    expect(spokenFieldValue('no se', 'port')).toBe('');
+  });
+
+  it('password: spaced groups joined, casing kept', () => {
+    expect(spokenFieldValue('abcd EFGH ijkl mnop', 'password')).toBe('abcdEFGHijklmnop');
+  });
+
+  it('text: kept as spoken, trimmed', () => {
+    expect(spokenFieldValue('  Pablo Kuschnirof ', 'text')).toBe('Pablo Kuschnirof');
+  });
+});
+
+describe('spokenCheckboxValue', () => {
+  it('affirmatives', () => {
+    expect(spokenCheckboxValue('si')).toBe(true);
+    expect(spokenCheckboxValue('sí')).toBe(true);
+    expect(spokenCheckboxValue('activar')).toBe(true);
+  });
+
+  it('negatives', () => {
+    expect(spokenCheckboxValue('no')).toBe(false);
+    expect(spokenCheckboxValue('apagado')).toBe(false);
+  });
+
+  it('anything else is undefined (App re-asks instead of guessing)', () => {
+    expect(spokenCheckboxValue('quizas')).toBeUndefined();
+  });
+});
+
 describe('COMMAND_CATALOG', () => {
   it('lists exactly 10 global user-facing phrases (acceptance #5 base 9 + settings F10)', () => {
     expect(COMMAND_CATALOG.filter((c) => !c.context).length).toBe(10);
@@ -230,15 +337,24 @@ describe('COMMAND_CATALOG', () => {
     expect(contexts.has('settings_dialog')).toBe(true);
   });
 
-  it('every contextual entry names the data-nac-action it drives', () => {
+  it('every contextual entry names the data-nac-action it drives (or is field-scoped)', () => {
     for (const c of COMMAND_CATALOG.filter((e) => e.context)) {
-      expect(c.nac_action, c.type).toBeTruthy();
+      expect(c.nac_action ?? c.field_scope, c.type).toBeTruthy();
     }
   });
 
   it('every contextual entry actually parses to its own type in its context', () => {
     for (const c of COMMAND_CATALOG.filter((e) => e.context)) {
       expect(parseCommand(c.sample, c.context).type, c.sample).toBe(c.type);
+    }
+  });
+
+  it('every settings field has its ENFOCAR_CAMPO catalog entry (help screens stay complete)', () => {
+    const voicedFields = new Set(
+      COMMAND_CATALOG.filter((c) => c.type === 'ENFOCAR_CAMPO').map((c) => c.nac_action),
+    );
+    for (const spec of SETTINGS_FIELD_SPECS) {
+      expect(voicedFields.has(spec.nac_action), spec.key).toBe(true);
     }
   });
 

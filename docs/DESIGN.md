@@ -88,3 +88,33 @@ holds. Providers with no public IMAP/SMTP (Proton without Bridge,
 Tuta) fail with an explanation instead of a guess that can never
 connect. The dialog is a voice context like the other two modals
 (detectar / probar / guardar / cancelar), symmetry test-enforced.
+
+## D10 -- Settings field dictation (adenda 2026-06-10 bis)
+
+Voice could navigate the settings modal but not fill it: every value
+still needed the keyboard, which contradicts the product's reason to
+exist (external review, finding 6). New flow: "campo <nombre>" arms
+a field (focus + announce), the next utterance becomes the field
+value, "borrar campo [nombre]" empties it for re-dictation, and the
+SSL checkboxes take "si" / "no". Spoken forms are translated per
+field kind (arroba/punto/guion to symbols, digit words for ports,
+space-joined groups for app passwords, names kept verbatim).
+
+Two deliberate constraints:
+- Arming is voice-only. Keyboard focus never arms a field, so the
+  mic cannot scribble into a field the user is typing in by hand.
+  Dictation REPLACES the field content (correcting = re-dictating);
+  there is no partial-append mode for short structured values.
+- Passwords are never echoed back. The toast/aria announcement
+  reports only the captured length, consistent with the D2
+  no-values-out rule.
+
+The field table (SETTINGS_FIELD_SPECS in src/voice/commands.ts) is
+the single producer/consumer contract, test-enforced in BOTH
+directions by tests/nac3-attrs.test.ts: an input without a spec, a
+spec without its input, an alias that does not parse, or missing
+App routing all fail the suite.
+
+Known limit (tracked as its own pending): the SendDialog fields
+(to/subject/body) and the SignaturePad typed-name field are still
+keyboard-only; body dictation needs append semantics, not replace.
