@@ -1,6 +1,6 @@
 # Manual de usuario -- Yuemail
 
-Version del producto: v0.3.0. Manual actualizado: 2026-06-11.
+Version del producto: v0.4.0. Manual actualizado: 2026-06-11.
 
 ## Que hace esta app
 
@@ -37,9 +37,10 @@ los correos que vos decidis mandar.
 Podes completar cualquier campo con la voz: deci "campo" y el
 nombre del campo (por ejemplo "campo contrasena", "campo puerto
 imap") y lo proximo que digas se vuelve el valor del campo. Para
-vaciarlo: "borrar campo" y el nombre. Para las casillas de SSL
-alcanza con decir "si" o "no". Las contrasenas nunca se repiten
-en voz alta: solo se anuncia cuantos caracteres se capturaron.
+vaciarlo: "borrar campo" y el nombre. Para soltar el campo y volver
+a los comandos: "fin campo". Para las casillas de SSL alcanza con
+decir "si" o "no". Las contrasenas nunca se repiten en voz alta:
+solo se anuncia cuantos caracteres se capturaron.
 
 ## Escribir, firmar y enviar
 
@@ -55,6 +56,28 @@ en voz alta: solo se anuncia cuantos caracteres se capturaron.
    naturalmente: "enviar a ana arroba ejemplo punto com". Se abre
    la ventana de envio con todo precargado; deci "confirmar" para
    mandarlo. El documento viaja adjunto como Word (.docx).
+
+### Dictar dentro de la ventana de envio
+
+Todos los campos de la ventana de envio se dictan:
+
+- "campo destinatario": dicta una o varias direcciones, hablado
+  natural ("ana arroba ejemplo punto com y pedro arroba test punto
+  org" -- tambien podes decir "coma" entre direcciones).
+- "campo asunto": lo proximo que digas reemplaza el asunto.
+- "campo cuerpo": cada frase que digas se AGREGA como un parrafo
+  nuevo, asi podes dictar un mensaje largo con calma. El campo
+  queda escuchando hasta que digas "fin campo".
+- "campo adjuntar": deci "si" o "no" para la casilla del adjunto.
+
+Importante: mientras estas dictando un campo, decir "enviar" en el
+medio de una frase NO manda el correo -- la frase entera va al
+campo. Para mandar de verdad: deci "fin campo" primero y despues
+"enviar" o "confirmar". "Borrar campo" vacia el campo enfocado si
+te equivocaste.
+
+En la ventana de la firma pasa lo mismo: "campo nombre", dicta tu
+nombre, "fin campo", y despues "generar" y "guardar".
 
 ## Leer la bandeja de entrada
 
@@ -88,13 +111,18 @@ globales se suspenden para que no pase nada por atras):
 | Ventana | Decis | Pasa |
 |---------|-------|------|
 | Envio | confirmar / enviar / mandar | manda el correo |
+| Envio | campo destinatario / asunto / cuerpo / adjuntar | enfoca ese campo para dictarlo |
 | Envio | cancelar / cerrar / salir | cierra sin enviar |
 | Firma | guardar / listo | guarda la firma |
 | Firma | borrar / limpiar | limpia el recuadro |
 | Firma | generar / cursiva | genera firma desde tu nombre escrito |
+| Firma | campo nombre | enfoca el nombre para dictarlo |
 | Configuracion | detectar / automatica | detecta los servidores |
 | Configuracion | probar / verificar | prueba la conexion |
 | Configuracion | guardar / listo | guarda la cuenta |
+| Configuracion | campo <nombre del campo> | enfoca ese campo para dictarlo |
+| Cualquiera | borrar campo | vacia el campo enfocado |
+| Cualquiera | fin campo | suelta el campo enfocado |
 | Cualquiera | cancelar / cerrar / salir | cierra la ventana |
 
 "Apagar microfono" y "detener voz" funcionan siempre, haya o no

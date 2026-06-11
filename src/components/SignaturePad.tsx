@@ -92,6 +92,10 @@ export function SignaturePad({ onCancel, onSave }: SignaturePadProps): React.Rea
       <div className="yuemail-modal-card">
         <h2 style={{ marginTop: 0 }}>Guardar firma</h2>
         <p>Dibujá tu firma con el mouse, dedo o stylus -- o escribí tu nombre.</p>
+        <p style={{ fontSize: 13, opacity: 0.7 }} role="note" data-nac-id="yuemail.signature.voice-hint">
+          Por voz: deci "campo nombre", dicta tu nombre y "fin campo"; despues
+          "generar" para la firma cursiva y "guardar".
+        </p>
         <canvas
           ref={canvasRef}
           width={W}

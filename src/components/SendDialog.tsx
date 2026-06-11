@@ -39,6 +39,11 @@ export function SendDialog(props: SendDialogProps): React.ReactElement {
     <div className="yuemail-modal" role="dialog" aria-label="Enviar correo" data-nac-id="yuemail.email.dialog" data-nac-role="dialog">
       <div className="yuemail-modal-card">
         <h2 style={{ marginTop: 0 }}>Enviar correo</h2>
+        <p style={{ fontSize: 13, opacity: 0.7 }} role="note" data-nac-id="yuemail.email.voice-hint">
+          Por voz: deci "campo destinatario", "campo asunto" o "campo cuerpo" y dicta
+          el valor. En el cuerpo cada frase se agrega como parrafo nuevo. Deci
+          "fin campo" al terminar y despues "enviar" o "cancelar".
+        </p>
         <label style={{ display: 'block', marginBottom: 12 }}>
           Destinatarios (separados por coma)
           <input

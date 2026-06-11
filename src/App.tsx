@@ -15,10 +15,10 @@ import { SendDialog } from './components/SendDialog.js';
 import { SettingsDialog } from './components/SettingsDialog.js';
 import { useVoice } from './voice/useVoice.js';
 import {
-  SETTINGS_FIELD_SPECS,
+  FIELD_SPECS_BY_CONTEXT,
   spokenCheckboxValue,
   spokenFieldValue,
-  type SettingsFieldSpec,
+  type DialogFieldSpec,
   type VoiceCommand,
   type VoiceContext,
 } from './voice/commands.js';
@@ -173,13 +173,13 @@ export function App(): React.ReactElement {
   const voiceContextRef = React.useRef<VoiceContext>(voiceContext);
   voiceContextRef.current = voiceContext;
 
-  /* Settings field armed for dictation via "campo <nombre>". Arming is
+  /* Dialog field armed for dictation via "campo <nombre>". Arming is
    * voice-only on purpose: keyboard focus never arms a field, so the mic
-   * cannot scribble into a field the user is typing in by hand. Closing
-   * the dialog (or switching modal) disarms. */
-  const armedFieldRef = React.useRef<SettingsFieldSpec | undefined>(undefined);
+   * cannot scribble into a field the user is typing in by hand. Any
+   * context switch (modal opened / closed / swapped) disarms. */
+  const armedFieldRef = React.useRef<DialogFieldSpec | undefined>(undefined);
   React.useEffect(() => {
-    if (voiceContext !== 'settings_dialog') armedFieldRef.current = undefined;
+    armedFieldRef.current = undefined;
   }, [voiceContext]);
 
   /* Contextual commands drive the SAME handler as the on-screen button:
@@ -194,40 +194,45 @@ export function App(): React.ReactElement {
     return true;
   }
 
-  /* --- settings field dictation (voice parity for the dialog inputs) --- */
+  /* --- dialog field dictation (voice parity for the modal inputs) --- */
 
-  function nacInput(action: string): HTMLInputElement | undefined {
+  type DictatableElement = HTMLInputElement | HTMLTextAreaElement;
+
+  function nacField(action: string): DictatableElement | undefined {
     const el = document.querySelector('[data-nac-action="' + action + '"]');
-    return el instanceof HTMLInputElement ? el : undefined;
+    return (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) ? el : undefined;
   }
 
-  function focusNacField(spec: SettingsFieldSpec): boolean {
-    const el = nacInput(spec.nac_action);
+  function focusNacField(spec: DialogFieldSpec): boolean {
+    const el = nacField(spec.nac_action);
     if (!el) return false;
     el.focus();
     return true;
   }
 
-  /* Write into a React-controlled input: go through the native value
-   * setter + an 'input' event so React's onChange sees the change. */
-  function setNacFieldValue(spec: SettingsFieldSpec, value: string): boolean {
-    const el = nacInput(spec.nac_action);
+  /* Write into a React-controlled input/textarea: go through the native
+   * value setter + an 'input' event so React's onChange sees the change. */
+  function setNacFieldValue(spec: DialogFieldSpec, value: string): boolean {
+    const el = nacField(spec.nac_action);
     if (!el) return false;
-    const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set;
+    const proto = el instanceof HTMLTextAreaElement
+      ? window.HTMLTextAreaElement.prototype
+      : window.HTMLInputElement.prototype;
+    const setter = Object.getOwnPropertyDescriptor(proto, 'value')?.set;
     if (!setter) return false;
     setter.call(el, value);
     el.dispatchEvent(new Event('input', { bubbles: true }));
     return true;
   }
 
-  function setNacCheckbox(spec: SettingsFieldSpec, on: boolean): boolean {
-    const el = nacInput(spec.nac_action);
-    if (!el) return false;
+  function setNacCheckbox(spec: DialogFieldSpec, on: boolean): boolean {
+    const el = nacField(spec.nac_action);
+    if (!(el instanceof HTMLInputElement)) return false;
     if (el.checked !== on) el.click();
     return true;
   }
 
-  function applyFieldDictation(spec: SettingsFieldSpec, raw: string) {
+  function applyFieldDictation(spec: DialogFieldSpec, raw: string) {
     if (spec.kind === 'checkbox') {
       const on = spokenCheckboxValue(raw);
       if (on === undefined) {
@@ -240,6 +245,19 @@ export function App(): React.ReactElement {
     const value = spokenFieldValue(raw, spec.kind);
     if (value.length === 0) {
       pushToast('info', 'No capte un valor para ' + spec.label + '. Proba de nuevo.');
+      return;
+    }
+    if (spec.kind === 'body') {
+      /* Long dictation APPENDS paragraph by paragraph (the field stays
+       * armed): replacing would destroy everything said so far. */
+      const el = nacField(spec.nac_action);
+      const current = el ? el.value : '';
+      const next = current.trim().length > 0
+        ? current.replace(/\s+$/, '') + '\n\n' + value
+        : value;
+      if (setNacFieldValue(spec, next)) {
+        pushToast('info', 'Agregado al cuerpo: ' + (value.length > 60 ? value.slice(0, 57) + '...' : value));
+      }
       return;
     }
     if (setNacFieldValue(spec, value)) {
@@ -303,25 +321,34 @@ export function App(): React.ReactElement {
       case 'GUARDAR_CONFIG':
         clickNacAction('save_settings'); break;
       case 'ENFOCAR_CAMPO': {
-        const spec = SETTINGS_FIELD_SPECS.find((s) => s.key === cmd.payload);
+        const ctx = voiceContextRef.current;
+        if (ctx === 'global') break;
+        const specs = FIELD_SPECS_BY_CONTEXT[ctx];
+        const spec = specs.find((s) => s.key === cmd.payload);
         if (!spec) {
-          pushToast('info', 'No encontre ese campo. Proba: campo nombre, campo correo, campo contrasena, campo servidor imap, campo puerto imap, campo ssl imap (idem smtp).');
+          pushToast('info', 'No encontre ese campo. Proba: ' + specs.map((s) => 'campo ' + (s.aliases[0] ?? s.key)).join(', ') + '.');
           break;
         }
         if (focusNacField(spec)) {
           armedFieldRef.current = spec;
           pushToast('info', spec.kind === 'checkbox'
             ? 'Campo ' + spec.label + '. Deci "si" o "no".'
-            : 'Campo ' + spec.label + '. Dicta el valor.');
+            : spec.kind === 'body'
+              ? 'Campo ' + spec.label + '. Dicta; cada frase se agrega como parrafo. Deci "fin campo" al terminar.'
+              : 'Campo ' + spec.label + '. Dicta el valor.');
+        } else {
+          pushToast('info', 'El campo ' + spec.label + ' no esta visible ahora.');
         }
         break;
       }
       case 'BORRAR_CAMPO': {
+        const ctx = voiceContextRef.current;
+        const specs = ctx === 'global' ? [] : FIELD_SPECS_BY_CONTEXT[ctx];
         const spec = (cmd.payload
-          ? SETTINGS_FIELD_SPECS.find((s) => s.key === cmd.payload)
+          ? specs.find((s) => s.key === cmd.payload)
           : undefined) ?? armedFieldRef.current;
         if (!spec || spec.kind === 'checkbox') {
-          pushToast('info', 'Primero enfoca un campo de texto: campo correo, campo nombre...');
+          pushToast('info', 'Primero enfoca un campo de texto con "campo <nombre>".');
           break;
         }
         if (setNacFieldValue(spec, '')) {
@@ -330,10 +357,18 @@ export function App(): React.ReactElement {
         }
         break;
       }
+      case 'FIN_CAMPO': {
+        const spec = armedFieldRef.current;
+        armedFieldRef.current = undefined;
+        pushToast('info', spec
+          ? 'Campo ' + spec.label + ' listo. Comandos del dialogo activos de nuevo.'
+          : 'Ningun campo estaba enfocado.');
+        break;
+      }
       default:
-        /* UNKNOWN -- inside settings with a field armed, the utterance IS
+        /* UNKNOWN -- with a field armed inside a modal, the utterance IS
          * the dictated value. Everywhere else, ignore silently. */
-        if (voiceContextRef.current === 'settings_dialog' && armedFieldRef.current) {
+        if (voiceContextRef.current !== 'global' && armedFieldRef.current) {
           applyFieldDictation(armedFieldRef.current, cmd.raw);
         }
         break;
@@ -353,6 +388,7 @@ export function App(): React.ReactElement {
     onCommand:    onVoiceCommand,
     onTranscript: onVoiceTranscript,
     getContext:   () => voiceContextRef.current,
+    getArmed:     () => armedFieldRef.current !== undefined,
   });
 
   function onToolbarAction(action: ToolbarAction) {

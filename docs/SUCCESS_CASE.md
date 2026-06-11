@@ -32,7 +32,7 @@ Target: under 4 minutes end-to-end, zero strictly-required clicks
 
 ## Quality numbers (verified 2026-06-11)
 
-- 11 Vitest suites / 160 tests green; typecheck strict +
+- 11 Vitest suites / 179 tests green; typecheck strict +
   noUncheckedIndexedAccess clean; prepublishOnly gate enforces
   typecheck + tests + build before any publish.
 - Vault encrypted at rest (AES-256-GCM, scrypt) -- at-rest secrecy
@@ -43,7 +43,7 @@ Target: under 4 minutes end-to-end, zero strictly-required clicks
 ## Distribution
 
 Public npm package @yujinapp/yuemail (bin: yuemail), MIT license,
-v0.3.0. Install: npm i -g @yujinapp/yuemail.
+v0.4.0. Install: npm i -g @yujinapp/yuemail.
 
 ## Current frontier
 

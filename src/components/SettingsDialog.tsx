@@ -193,8 +193,8 @@ export function SettingsDialog(props: SettingsDialogProps): React.ReactElement {
 
         <p style={{ fontSize: 13, opacity: 0.7 }} role="note" data-nac-id="yuemail.settings.voice-hint">
           Por voz: deci "campo correo" (o nombre, contrasena, servidor imap, puerto smtp...),
-          dicta el valor y "borrar campo" para corregir. Para SSL deci "campo ssl imap"
-          y despues "si" o "no".
+          dicta el valor y "borrar campo" para corregir; "fin campo" suelta el campo.
+          Para SSL deci "campo ssl imap" y despues "si" o "no".
         </p>
 
         <label style={{ display: 'block', marginBottom: 12 }}>

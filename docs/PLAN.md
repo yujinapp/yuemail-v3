@@ -38,7 +38,9 @@ Design: docs/DESIGN.md. Iteration log: docs/ITERATIONS.md.
 7. NAC3 attributes (F9), a11y regions (F11), design tokens (F10).
 8. CLI binary + loopback hardening (F12, F13).
 9. Adendas 2026-06-10: modal voice contexts, settings autoconfig
-   (D9), settings field dictation (D10).
+   (D9 / F14), settings field dictation (D10).
+10. Adenda 2026-06-11: dialog field dictation in every modal with
+    append-body + dictation precedence (D11, PND-003).
 
 ## Test plan
 
@@ -46,13 +48,14 @@ Post-implementation per the Forge testing policy: every block ships
 with its suite in the same iteration. Producer/consumer symmetry
 (SQ 14) is itself test-enforced (tests/nac3-attrs.test.ts fails when
 a modal button lacks a voice route or a settings input lacks a field
-spec). Verified totals 2026-06-11: 11 suites / 160 tests green.
+spec). Verified totals 2026-06-11 (v0.4.0): 11 suites / 179 tests
+green, including a mutation red-check of the no-accidental-send
+guard.
 
 ## Known gaps accepted by this plan
 
 - F3 and F7 lack dedicated suites (tracked as canon debt; acceptable
   while their behavior is covered indirectly and the product is alpha).
-- SendDialog + SignaturePad text fields are keyboard-only (PND-003).
 
 ## Risks identified up front
 

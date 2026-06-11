@@ -1,9 +1,11 @@
 # Yuemail -- Architecture (Phase III, step 11)
 
 Status: generated 2026-06-10 from the as-built codebase; refreshed
-2026-06-11 (PND-004: version label v0.3.0, verified test counts,
-settings feature relabelled D9 to undo the F10 collision).
-Pending owner approval (workflow gate 13). RFP: docs/SPEC.md.
+2026-06-11 (PND-004: version labels, verified test counts, settings
+feature relabelled D9 to undo the F10 collision). Approved by owner
+2026-06-11 (gate 13). Refreshed at v0.4.0: settings feature is now
+F14 (RFP adenda PND-006); dialog field dictation generalised (D11).
+RFP: docs/SPEC.md.
 
 ## System overview
 
@@ -112,10 +114,10 @@ Pending owner approval (workflow gate 13). RFP: docs/SPEC.md.
 
 - TypeScript strict + noUncheckedIndexedAccess; tsc for server,
   Vite for SPA.
-- Vitest: 11 suites / 160 tests, verified green 2026-06-11 via
-  `npm test` (voice parser + contextual routing + settings field
-  dictation, vault round-trip + at-rest encryption, docx magic
-  bytes, NAC3 attribute + voice symmetry, autoconfig tiers, ARIA,
-  toolbar labels, server port binding, email reject, CLI help,
-  design tokens).
+- Vitest: 11 suites / 179 tests, verified green 2026-06-11 via
+  `npm test` (voice parser + contextual routing + dialog field
+  dictation in all three modals incl. dictation precedence, vault
+  round-trip + at-rest encryption, docx magic bytes, NAC3 attribute
+  + voice symmetry, autoconfig tiers, ARIA, toolbar labels, server
+  port binding, email reject, CLI help, design tokens).
 - prepublishOnly: typecheck + tests + build (acceptance #10).

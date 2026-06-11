@@ -228,20 +228,61 @@ voice/NAC3 symmetry suite in tests/nac3-attrs.test.ts.
   re-sign supported).
 - Auto-update notification.
 
+## F14 -- Account settings with autoconfig (adenda 2026-06-11, PND-006)
+
+*Registered retroactively: shipped 2026-06-10, mislabelled "F10" in
+early commits (a number this RFP already assigns to the design
+system). Canonical number: F14. Decision record: docs/DESIGN.md D9/D10.*
+
+- A settings gear in the topbar opens the account dialog.
+- The user types (or dictates) only their email address; the server
+  resolves IMAP/SMTP in three tiers: built-in provider table,
+  Mozilla ISPDB, convention guess (flagged as a guess).
+- Live connection test (`/api/email/verify`) before saving.
+- Saving writes through the existing vault route (F8); the
+  no-values-out rule holds.
+- The dialog is a voice context: `detectar` / `probar` / `guardar` /
+  `cancelar`, plus per-field dictation (`campo <nombre>`, value
+  utterance, `borrar campo`, `fin campo`).
+- Adds the 10th global phrase: `abrir configuracion` / `ajustes`.
+
+## Adenda 2026-06-11 bis (PND-003, approved by owner) -- dialog field dictation everywhere
+
+Every modal input is now dictatable, not just settings:
+
+- **Send dialog**: `campo destinatario` (multi-address: `arroba` /
+  `punto` / `coma` / "y"), `campo asunto` (replace), `campo cuerpo`
+  (APPEND: each utterance lands as a new paragraph), `campo adjuntar`
+  ("si" / "no").
+- **Signature pad**: `campo nombre` (typed name for cursive baking).
+- `fin campo` releases the armed field and restores the dialog verbs.
+- **Dictation precedence (safety)**: while a field is armed in the
+  send dialog or the signature pad, free speech IS the field value --
+  a lone `enviar` inside a dictated sentence must NOT send the email.
+  Mic safety phrases always pass. Settings keeps verb-first semantics
+  (short structured values; the documented flow ends in `guardar`).
+- Regression-guarded: the dictation symmetry suite covers the inputs
+  of all three modals in both directions, and mutation-checked tests
+  pin the no-accidental-send guard.
+
 ## Acceptance criteria
 
-A successful build of v0.2.0 must:
+*(version + counts normalized by the 2026-06-11 adenda, PND-006)*
+
+A successful build of v0.4.0 must:
 
 1. Install from npm via `npm i -g @yujinapp/yuemail`.
 2. Launch with `yuemail`, bind 127.0.0.1:5180, open the browser.
 3. Allow `yuemail vault setup` to configure 12 fields without error.
 4. Reject `/api/email/send` with a meaningful error when SMTP
    creds are missing.
-5. Recognise all 9 voice phrases listed in F2.
+5. Recognise all 10 global voice phrases (the 9 listed in F2 plus
+   `abrir configuracion`, F14) and the contextual vocabulary of the
+   three modals, including field dictation.
 6. Render the 4 named buttons in F1 in the toolbar.
 7. Produce a `.docx` whose first two bytes are `PK` (ZIP magic)
    when downloaded.
 8. Encrypt the vault on disk -- the raw JSON file must not
    contain any plaintext value of any stored secret.
-9. Pass at least 25 vitest tests.
+9. Pass at least 160 vitest tests (v0.4.0 ships 179 across 11 suites).
 10. Pass `prepublishOnly` gate (typecheck + tests + build).

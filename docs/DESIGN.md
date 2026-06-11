@@ -1,9 +1,10 @@
 # Yuemail -- Solution Design decisions (Phase III, step 12)
 
 Status: generated 2026-06-10 from the as-built codebase; refreshed
-2026-06-11 (PND-004: version label v0.3.0, pending references).
-Pending owner approval (workflow gate 13). RFP: docs/SPEC.md.
-Architecture: docs/ARCHITECTURE.md.
+2026-06-11 (PND-004: version labels, pending references). Approved by
+owner 2026-06-11 (gate 13). Iterated same day under the approved-spec
+flow: D11 added with PND-003 (owner-approved), version label v0.4.0.
+RFP: docs/SPEC.md. Architecture: docs/ARCHITECTURE.md.
 
 ## D1 -- JSON-on-filesystem, no database
 
@@ -92,8 +93,8 @@ connect. The dialog is a voice context like the other two modals
 
 Note on numbering: early commits and the 2026-06-10 docs labelled
 this feature "F10", a number the RFP already assigns to the design
-system. It is referred to as D9 (this decision) until the RFP adenda
-(PND-006) assigns it a proper feature number (proposed: F14).
+system. RESOLVED 2026-06-11: the RFP adenda (PND-006, owner-approved)
+registers it as F14.
 
 ## D10 -- Settings field dictation (adenda 2026-06-10 bis)
 
@@ -121,6 +122,37 @@ directions by tests/nac3-attrs.test.ts: an input without a spec, a
 spec without its input, an alias that does not parse, or missing
 App routing all fail the suite.
 
-Known limit (tracked as PND-003): the SendDialog fields
-(to/subject/body) and the SignaturePad typed-name field are still
-keyboard-only; body dictation needs append semantics, not replace.
+Known limit (was PND-003): the SendDialog fields and the SignaturePad
+typed-name field were keyboard-only at first. RESOLVED 2026-06-11 by
+D11 below.
+
+## D11 -- Dialog field dictation everywhere + dictation precedence (PND-003, 2026-06-11)
+
+The D10 mechanism generalised to every modal: one spec table per
+context (`FIELD_SPECS_BY_CONTEXT` in src/voice/commands.ts), same
+"campo <nombre>" arming flow. Three interaction decisions on top:
+
+- **Body APPENDS, never replaces.** Long dictation arrives utterance
+  by utterance; each one lands as a new paragraph (blank-line
+  separated) and the field stays armed. Replace semantics (D10's
+  default for short structured values) would destroy everything said
+  so far. The toast echoes only the appended fragment.
+- **Dictation precedence while armed (send dialog + signature pad).**
+  With a field armed, free speech IS the field value: contextual verbs
+  are suppressed so a lone "enviar" inside a dictated sentence cannot
+  send the email, and "Guadalupe Borrero" cannot clear the signature
+  canvas. The user releases the field with "fin campo" (new command,
+  available in all three modals) to get the verbs back. Mic safety
+  phrases always pass. Settings deliberately keeps D10's verb-first
+  semantics: its values are short + structured and the documented flow
+  ends in "guardar"; changing it would break the shipped UX for no
+  safety gain.
+- **Recipients are multi-address.** Kind `recipients` extracts every
+  spoken address ("arroba" / "punto" / "coma" / "y" separators) and
+  joins them in the comma-separated form the send route expects.
+
+The symmetry suite now walks the inputs (+ textareas) of all three
+modals against their spec tables in both directions, and the
+no-accidental-send guard is mutation-checked (the suite was run
+against a build with the precedence line disabled and went red on
+exactly the three guarding tests).

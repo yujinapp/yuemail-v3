@@ -82,6 +82,23 @@ dialog) and these contextual phrases take over:
 
 `apagar microfono` and `detener voz` always work, dialog or not.
 
+### Dictating into dialog fields
+
+Every modal input is dictatable: say `campo <nombre>` to arm a field
+(send dialog: `destinatario`, `asunto`, `cuerpo`, `adjuntar`;
+signature pad: `nombre`; settings: `correo`, `contrasena`, `servidor
+imap`, ...), then speak the value. `borrar campo` empties the armed
+field; `fin campo` releases it and restores the dialog verbs.
+
+The message body APPENDS: each utterance lands as a new paragraph,
+so long messages can be dictated sentence by sentence. While a field
+is armed in the send dialog or the signature pad, free speech IS the
+field value -- saying `enviar` mid-sentence does NOT send the email;
+say `fin campo` first, then `enviar`. Recipients accept several
+addresses ("ana arroba ejemplo punto com y pedro arroba test punto
+org", or spoken `coma`). Passwords are never echoed back, only their
+captured length.
+
 ## Account setup (the gear)
 
 Click the gear in the topbar (or say `abrir configuracion`), type

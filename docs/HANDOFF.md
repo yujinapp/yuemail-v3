@@ -1,7 +1,8 @@
 # Yuemail -- Handoff package
 
 Status: rewritten 2026-06-11 (PND-004); replaces the TBD stub
-generated 2026-06-10. Tier: medium. Version: v0.3.0.
+generated 2026-06-10. Refreshed same day (PND-003/006 shipped).
+Tier: medium. Version: v0.4.0.
 
 ## What this app is
 
@@ -20,7 +21,8 @@ it, send it as a .docx attachment. Public npm package
 - Voice: on-demand mic, es-AR, per-modal contexts own the channel
   (D4, D6); one dispatch table for click + voice, test-enforced (D5).
 - Account setup from just the address: 3-tier autoconfig + live
-  verify (D9); settings fields fillable by voice (D10).
+  verify (D9 / F14); every modal field fillable by voice, body with
+  append semantics + no-accidental-send precedence (D10, D11).
 - Server: Express 4, binds 127.0.0.1:5180 only, never LAN (D8).
 - Compliance: n/a -- single-user local, no telemetry (F13).
 - Observability: stdout + user-visible failures by design; see
@@ -37,8 +39,8 @@ Setup paths: in-app gear (autoconfig from the address) or
 
 ## Blocks + state (verified 2026-06-11)
 
-F1-F13 implemented plus adendas D9/D10. 11 Vitest suites / 160 tests
-green; typecheck clean; prepublishOnly gate (typecheck + tests +
+F1-F14 implemented plus adendas D9/D10/D11. 11 Vitest suites / 179
+tests green; typecheck clean; prepublishOnly gate (typecheck + tests +
 build) protects publishes. Detail per block: docs/PLAN.md.
 
 ## How to run
@@ -49,13 +51,12 @@ build) protects publishes. Detail per block: docs/PLAN.md.
 
 ## Open items (pending registry is canonical)
 
-- PND-003: dictation in SendDialog + SignaturePad fields (body needs
-  append semantics, not replace).
-- PND-006: RFP adenda (settings feature, v0.3.0 labels, F10 collision).
+None at v0.4.0 publish time.
 
-Resolved 2026-06-11: PND-005 (Gate 13 -- owner approved
-ARCHITECTURE.md + DESIGN.md) and PND-007 (feedback channel:
-contact@yujin.app).
+Resolved 2026-06-11: PND-003 (dictation in SendDialog + SignaturePad,
+D11), PND-005 (Gate 13 -- owner approved ARCHITECTURE.md + DESIGN.md),
+PND-006 (RFP adenda: F14 registered, version + counts normalized) and
+PND-007 (feedback channel: contact@yujin.app).
 
 ## Deferred by scope (v0.4+ candidates)
 

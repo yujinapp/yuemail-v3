@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   parseCommand, extractEmail, COMMAND_CATALOG,
-  SETTINGS_FIELD_SPECS, spokenFieldValue, spokenCheckboxValue,
+  FIELD_SPECS_BY_CONTEXT, spokenFieldValue, spokenCheckboxValue,
 } from '../src/voice/commands.js';
 
 describe('parseCommand -- the 9 Spanish phrases (acceptance #5)', () => {
@@ -263,9 +263,83 @@ describe('parseCommand -- settings field dictation (F10 voice parity)', () => {
     expect(c.payload).toBe('correo');
   });
 
-  it('"campo" commands are settings-only: UNKNOWN in global and other modals', () => {
+  it('"campo" commands are modal-only: UNKNOWN in global', () => {
     expect(parseCommand('campo correo', 'global').type).toBe('UNKNOWN');
-    expect(parseCommand('campo correo', 'send_dialog').type).toBe('UNKNOWN');
+  });
+
+  it('a settings field name in another modal arms nothing (App announces that modal\'s options)', () => {
+    const c = parseCommand('campo servidor imap', 'send_dialog');
+    expect(c.type).toBe('ENFOCAR_CAMPO');
+    expect(c.payload).toBeUndefined();
+  });
+
+  it('"fin campo" releases the armed field (FIN_CAMPO), in its variants', () => {
+    expect(parseCommand('fin campo', 'settings_dialog').type).toBe('FIN_CAMPO');
+    expect(parseCommand('fin de campo', 'settings_dialog').type).toBe('FIN_CAMPO');
+    expect(parseCommand('listo campo', 'settings_dialog').type).toBe('FIN_CAMPO');
+    expect(parseCommand('cerrar campo', 'settings_dialog').type).toBe('FIN_CAMPO');
+  });
+
+  it('settings keeps verb-first semantics while armed: "guardar" still saves', () => {
+    expect(parseCommand('guardar', 'settings_dialog', { armed: true }).type).toBe('GUARDAR_CONFIG');
+  });
+});
+
+describe('parseCommand -- send_dialog field dictation (PND-003)', () => {
+  it('"campo destinatario" arms the recipients field', () => {
+    const c = parseCommand('campo destinatario', 'send_dialog');
+    expect(c.type).toBe('ENFOCAR_CAMPO');
+    expect(c.payload).toBe('destinatario');
+  });
+
+  it('"campo asunto" / "campo cuerpo" / "campo adjuntar" arm their fields', () => {
+    expect(parseCommand('campo asunto', 'send_dialog').payload).toBe('asunto');
+    expect(parseCommand('campo cuerpo', 'send_dialog').payload).toBe('cuerpo');
+    expect(parseCommand('campo mensaje', 'send_dialog').payload).toBe('cuerpo');
+    expect(parseCommand('campo adjuntar', 'send_dialog').payload).toBe('adjuntar');
+  });
+
+  it('ARMED: a lone "enviar" mid-dictation must NOT confirm the send', () => {
+    expect(parseCommand('enviar', 'send_dialog', { armed: true }).type).toBe('UNKNOWN');
+    expect(parseCommand('te enviare los detalles pronto', 'send_dialog', { armed: true }).type).toBe('UNKNOWN');
+  });
+
+  it('ARMED: "cancelar" inside a dictated sentence does not close the dialog', () => {
+    expect(parseCommand('tuve que cancelar la reunion', 'send_dialog', { armed: true }).type).toBe('UNKNOWN');
+  });
+
+  it('ARMED: field-control phrases still work', () => {
+    expect(parseCommand('fin campo', 'send_dialog', { armed: true }).type).toBe('FIN_CAMPO');
+    expect(parseCommand('borrar campo', 'send_dialog', { armed: true }).type).toBe('BORRAR_CAMPO');
+    expect(parseCommand('campo asunto', 'send_dialog', { armed: true }).type).toBe('ENFOCAR_CAMPO');
+  });
+
+  it('ARMED: mic safety still passes through', () => {
+    expect(parseCommand('apagar microfono', 'send_dialog', { armed: true }).type).toBe('APAGAR_MICROFONO');
+    expect(parseCommand('detener voz', 'send_dialog', { armed: true }).type).toBe('DETENER_VOZ');
+  });
+
+  it('NOT armed: "enviar" confirms as before (no regression)', () => {
+    expect(parseCommand('enviar', 'send_dialog', { armed: false }).type).toBe('CONFIRMAR_ENVIO');
+    expect(parseCommand('enviar', 'send_dialog').type).toBe('CONFIRMAR_ENVIO');
+  });
+});
+
+describe('parseCommand -- signature_pad field dictation (PND-003)', () => {
+  it('"campo nombre" arms the typed-name field', () => {
+    const c = parseCommand('campo nombre', 'signature_pad');
+    expect(c.type).toBe('ENFOCAR_CAMPO');
+    expect(c.payload).toBe('nombre');
+  });
+
+  it('ARMED: a name containing a pad verb is dictation, not a command', () => {
+    expect(parseCommand('Guadalupe Borrero', 'signature_pad', { armed: true }).type).toBe('UNKNOWN');
+    expect(parseCommand('guardar', 'signature_pad', { armed: true }).type).toBe('UNKNOWN');
+  });
+
+  it('ARMED: "fin campo" releases; verbs come back when not armed', () => {
+    expect(parseCommand('fin campo', 'signature_pad', { armed: true }).type).toBe('FIN_CAMPO');
+    expect(parseCommand('guardar', 'signature_pad', { armed: false }).type).toBe('GUARDAR_FIRMA_PAD');
   });
 });
 
@@ -305,6 +379,32 @@ describe('spokenFieldValue -- dictated values per field kind', () => {
 
   it('text: kept as spoken, trimmed', () => {
     expect(spokenFieldValue('  Pablo Kuschnirof ', 'text')).toBe('Pablo Kuschnirof');
+  });
+
+  it('recipients: one spoken address', () => {
+    expect(spokenFieldValue('ana arroba ejemplo punto com', 'recipients')).toBe('ana@ejemplo.com');
+  });
+
+  it('recipients: several addresses joined with "y" -> comma-separated', () => {
+    expect(spokenFieldValue('ana arroba ejemplo punto com y pedro arroba test punto org', 'recipients'))
+      .toBe('ana@ejemplo.com, pedro@test.org');
+  });
+
+  it('recipients: spoken "coma" separator', () => {
+    expect(spokenFieldValue('ana arroba a punto com coma pedro arroba b punto com', 'recipients'))
+      .toBe('ana@a.com, pedro@b.com');
+  });
+
+  it('recipients: literal comma-separated list passes through', () => {
+    expect(spokenFieldValue('Ana@A.com, pedro@b.com', 'recipients')).toBe('ana@a.com, pedro@b.com');
+  });
+
+  it('recipients: no recognisable email falls back to compacted text (App shows it for correction)', () => {
+    expect(spokenFieldValue('pepito', 'recipients')).toBe('pepito');
+  });
+
+  it('body: utterance kept verbatim (punctuation + casing), only trimmed', () => {
+    expect(spokenFieldValue('  Hola Ana, te mando el informe.  ', 'body')).toBe('Hola Ana, te mando el informe.');
   });
 });
 
@@ -349,12 +449,14 @@ describe('COMMAND_CATALOG', () => {
     }
   });
 
-  it('every settings field has its ENFOCAR_CAMPO catalog entry (help screens stay complete)', () => {
+  it('every dictatable field of every modal has its ENFOCAR_CAMPO catalog entry (help screens stay complete)', () => {
     const voicedFields = new Set(
       COMMAND_CATALOG.filter((c) => c.type === 'ENFOCAR_CAMPO').map((c) => c.nac_action),
     );
-    for (const spec of SETTINGS_FIELD_SPECS) {
-      expect(voicedFields.has(spec.nac_action), spec.key).toBe(true);
+    for (const specs of Object.values(FIELD_SPECS_BY_CONTEXT)) {
+      for (const spec of specs) {
+        expect(voicedFields.has(spec.nac_action), spec.key).toBe(true);
+      }
     }
   });
 

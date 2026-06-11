@@ -15,7 +15,7 @@ contradict the RFP. Therefore:
 - Every failure is user-visible by design: toast + assertive ARIA
   announce with a human-readable Spanish reason (F11).
 - The prepublishOnly gate (typecheck + tests + build) is the
-  pre-release health check; the Vitest suite (11 suites / 160 tests,
+  pre-release health check; the Vitest suite (11 suites / 179 tests,
   verified 2026-06-11) is the regression net.
 
 ## Diagnosing in the field

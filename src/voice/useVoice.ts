@@ -43,6 +43,12 @@ export interface UseVoiceOpts {
    * Defaults to 'global'.
    */
   getContext?:   () => VoiceContext;
+  /**
+   * Reports whether a dialog field is armed for dictation right now,
+   * so the parser can give free speech precedence over contextual
+   * verbs (see ParseOpts.armed). Defaults to false.
+   */
+  getArmed?:     () => boolean;
 }
 
 export interface VoiceHandle {
@@ -80,7 +86,7 @@ export function useVoice(opts: UseVoiceOpts = {}): VoiceHandle {
       const current    = optsRef.current;
       if (transcript) current.onTranscript?.(transcript, isFinal);
       if (isFinal && current.onCommand) {
-        const cmd = parseCommand(transcript, current.getContext?.() ?? 'global');
+        const cmd = parseCommand(transcript, current.getContext?.() ?? 'global', { armed: current.getArmed?.() ?? false });
         current.onCommand(cmd);
       }
     };

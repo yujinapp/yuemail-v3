@@ -27,11 +27,17 @@
  * With a modal open, global commands are suppressed except the mic pair
  * + detener voz.
  *
- * Settings field dictation (settings_dialog only):
+ * Dialog field dictation (every modal context):
  *   campo <nombre>            -> ENFOCAR_CAMPO (arm a field for dictation)
  *   borrar campo [nombre]     -> BORRAR_CAMPO  (empty it for re-dictation)
+ *   fin campo / listo campo   -> FIN_CAMPO     (release the armed field)
  *   anything else while armed -> the utterance becomes the field value
  *   (spoken forms translated per field kind, see spokenFieldValue).
+ * In send_dialog and signature_pad an ARMED field gives dictation
+ * precedence over the contextual verbs (a lone "enviar" mid-sentence
+ * must not send the email); release with "fin campo" to get the verbs
+ * back. settings_dialog keeps its original semantics: values there are
+ * short + structured and the documented flow ends with "guardar".
  *
  * Email parsing recognises spoken "arroba" as "@" and "punto" as ".".
  * The extracted email is lowercased.
@@ -64,6 +70,7 @@ export type VoiceCommandType =
   | 'GUARDAR_CONFIG'
   | 'ENFOCAR_CAMPO'
   | 'BORRAR_CAMPO'
+  | 'FIN_CAMPO'
   | 'UNKNOWN';
 
 /**
@@ -316,12 +323,16 @@ const CONTEXT_MATCHERS: Record<Exclude<VoiceContext, 'global'>, Matcher[]> = {
 };
 
 /* ------------------------------------------------------------------ */
-/* Settings field dictation (F10 voice parity for the dialog inputs).  */
+/* Dialog field dictation (voice parity for the modal inputs).         */
+/* Settings came first (F10 / D10); send + signature joined with       */
+/* PND-003. One spec table per modal context, same mechanism.          */
 /* ------------------------------------------------------------------ */
 
-export type SettingsFieldKind = 'text' | 'email' | 'password' | 'host' | 'port' | 'checkbox';
+export type DialogFieldKind =
+  | 'text' | 'email' | 'recipients' | 'password' | 'host' | 'port'
+  | 'checkbox' | 'body';
 
-export interface SettingsFieldSpec {
+export interface DialogFieldSpec {
   /** Canonical key carried as the ENFOCAR_CAMPO payload. */
   key: string;
   /** Human label for toasts / aria announcements. */
@@ -330,14 +341,14 @@ export interface SettingsFieldSpec {
   aliases: string[];
   /** data-nac-action of the input this spec drives (producer/consumer symmetry). */
   nac_action: string;
-  kind: SettingsFieldKind;
+  kind: DialogFieldKind;
 }
 
 /* Every dictatable control of the settings dialog. The symmetry suite
  * (tests/nac3-attrs.test.ts) checks this table against the actual
  * <input> markup in SettingsDialog.tsx in BOTH directions: an input
  * without a spec here, or a spec without its input, goes red. */
-export const SETTINGS_FIELD_SPECS: ReadonlyArray<SettingsFieldSpec> = [
+export const SETTINGS_FIELD_SPECS: ReadonlyArray<DialogFieldSpec> = [
   { key: 'nombre',        label: 'Tu nombre',           aliases: ['nombre', 'remitente', 'nombre remitente'],                            nac_action: 'set_identity_name',    kind: 'text' },
   { key: 'correo',        label: 'Direccion de correo', aliases: ['correo', 'email', 'mail', 'direccion', 'direccion correo', 'cuenta'], nac_action: 'set_account_email',    kind: 'email' },
   { key: 'contrasena',    label: 'Contrasena',          aliases: ['contrasena', 'clave', 'password'],                                    nac_action: 'set_account_password', kind: 'password' },
@@ -349,19 +360,43 @@ export const SETTINGS_FIELD_SPECS: ReadonlyArray<SettingsFieldSpec> = [
   { key: 'ssl_smtp',      label: 'SSL SMTP',            aliases: ['ssl smtp', 'seguridad smtp'],                                         nac_action: 'toggle_smtp_ssl',      kind: 'checkbox' },
 ];
 
+/* Dictatable controls of the send dialog (PND-003). The body uses
+ * APPEND semantics (each utterance lands as a new paragraph); the rest
+ * replace, like settings. Same bidirectional symmetry enforcement
+ * against SendDialog.tsx in tests/nac3-attrs.test.ts. */
+export const SEND_FIELD_SPECS: ReadonlyArray<DialogFieldSpec> = [
+  { key: 'destinatario', label: 'Destinatarios',      aliases: ['destinatario', 'destinatarios', 'para', 'correo destino'], nac_action: 'set_recipients', kind: 'recipients' },
+  { key: 'asunto',       label: 'Asunto',             aliases: ['asunto', 'titulo', 'tema'],                                nac_action: 'set_subject',    kind: 'text' },
+  { key: 'cuerpo',       label: 'Cuerpo',             aliases: ['cuerpo', 'mensaje', 'texto', 'cuerpo mensaje'],            nac_action: 'set_body',       kind: 'body' },
+  { key: 'adjuntar',     label: 'Adjuntar documento', aliases: ['adjuntar', 'adjunto', 'documento adjunto'],                nac_action: 'toggle_attach',  kind: 'checkbox' },
+];
+
+/* Dictatable controls of the signature pad (PND-003): the typed name
+ * for cursive baking. */
+export const SIGNATURE_FIELD_SPECS: ReadonlyArray<DialogFieldSpec> = [
+  { key: 'nombre', label: 'Nombre para la firma', aliases: ['nombre', 'nombre firma', 'firma'], nac_action: 'type_signature_name', kind: 'text' },
+];
+
+/** Field-spec table per modal context (the dictation producer/consumer contract). */
+export const FIELD_SPECS_BY_CONTEXT: Record<Exclude<VoiceContext, 'global'>, ReadonlyArray<DialogFieldSpec>> = {
+  settings_dialog: SETTINGS_FIELD_SPECS,
+  send_dialog:     SEND_FIELD_SPECS,
+  signature_pad:   SIGNATURE_FIELD_SPECS,
+};
+
 /* Articles/connectors dropped before alias matching, so "campo de la
  * cuenta" or "servidor de entrada" resolve. FILLERS already went away
  * during normalize. */
 const FIELD_STOPWORDS = new Set(['el', 'la', 'los', 'las', 'de', 'del', 'al', 'mi', 'su']);
 
 /** Resolve a spoken field name ("servidor de entrada") to its spec. */
-export function resolveSettingsField(spoken: string): SettingsFieldSpec | undefined {
+export function resolveDialogField(spoken: string, specs: ReadonlyArray<DialogFieldSpec>): DialogFieldSpec | undefined {
   const cleaned = normalize(spoken)
     .split(' ')
     .filter((w) => w.length > 0 && !FIELD_STOPWORDS.has(w))
     .join(' ');
   if (cleaned.length === 0) return undefined;
-  return SETTINGS_FIELD_SPECS.find((s) => s.aliases.includes(cleaned));
+  return specs.find((s) => s.aliases.includes(cleaned));
 }
 
 /* Recognisers usually emit numerals, but a slow spelled-out port
@@ -388,7 +423,7 @@ function substSpokenSymbols(s: string): string {
  * Dictation REPLACES the whole field (correcting = dictate again); an
  * empty result means "nothing usable was heard" and the caller re-asks.
  */
-export function spokenFieldValue(raw: string, kind: SettingsFieldKind): string {
+export function spokenFieldValue(raw: string, kind: DialogFieldKind): string {
   /* Keep '.' (literal emails/hosts); drop the rest of the punctuation
    * a recogniser may sprinkle in. */
   const lowered = stripAccents(raw).toLowerCase().replace(/[,!?;:]+/g, ' ').trim();
@@ -398,6 +433,21 @@ export function spokenFieldValue(raw: string, kind: SettingsFieldKind): string {
       if (direct) return direct;
       return substSpokenSymbols(lowered).replace(/\s+/g, '');
     }
+    case 'recipients': {
+      /* One or several addresses, separated by "y" / "coma" / a literal
+       * comma. Extract every email after spoken-symbol substitution and
+       * join them in the comma-separated form SendDialog expects. */
+      const spaced = ' ' + stripAccents(raw).toLowerCase().replace(/\bcoma\b/g, ' , ') + ' ';
+      const sub = substSpokenSymbols(spaced);
+      const found = sub.match(/[a-z0-9._+-]+@[a-z0-9.-]+\.[a-z]{2,}/g);
+      if (found && found.length > 0) return found.join(', ');
+      return substSpokenSymbols(lowered).replace(/\s+/g, '');
+    }
+    case 'body':
+      /* Long free dictation: keep the utterance verbatim (punctuation,
+       * casing). The APPEND-as-paragraph semantics live in the App
+       * layer, which knows the current textarea content. */
+      return raw.trim();
     case 'host':
       return substSpokenSymbols(lowered).replace(/\s+/g, '');
     case 'port': {
@@ -423,33 +473,51 @@ export function spokenCheckboxValue(raw: string): boolean | undefined {
   return undefined;
 }
 
-export function parseCommand(raw: string, context: VoiceContext = 'global'): VoiceCommand {
+export interface ParseOpts {
+  /** True when a dialog field is currently armed for dictation. */
+  armed?: boolean;
+}
+
+export function parseCommand(raw: string, context: VoiceContext = 'global', opts: ParseOpts = {}): VoiceCommand {
   const normalizedRaw = normalize(raw);
   const cleaned = stripFillers(normalizedRaw.split(' ')).join(' ').trim();
   const normalized = cleaned.length > 0 ? cleaned : normalizedRaw;
 
   if (context !== 'global') {
-    if (context === 'settings_dialog') {
-      /* Field commands run first. Order matters within them too:
-       * "borrar campo correo" must clear, not arm. */
-      const clear = normalized.match(/\b(?:borrar|limpiar|vaciar)\s+campo\b\s*(.*)$/);
-      if (clear) {
-        const cmd: VoiceCommand = { type: 'BORRAR_CAMPO', raw, normalized };
-        const spec = resolveSettingsField(clear[1] ?? '');
-        if (spec) cmd.payload = spec.key;
-        return cmd;
-      }
-      const focus = normalized.match(/\bcampo\s+(.+)$/);
-      if (focus) {
-        const cmd: VoiceCommand = { type: 'ENFOCAR_CAMPO', raw, normalized };
-        const spec = resolveSettingsField(focus[1] ?? '');
-        if (spec) cmd.payload = spec.key;
-        return cmd;
-      }
+    const specs = FIELD_SPECS_BY_CONTEXT[context];
+    /* Field commands run first. Order matters within them too:
+     * "borrar campo correo" must clear, not arm; "fin campo" must
+     * release, not arm. */
+    const clear = normalized.match(/\b(?:borrar|limpiar|vaciar)\s+campo\b\s*(.*)$/);
+    if (clear) {
+      const cmd: VoiceCommand = { type: 'BORRAR_CAMPO', raw, normalized };
+      const spec = resolveDialogField(clear[1] ?? '', specs);
+      if (spec) cmd.payload = spec.key;
+      return cmd;
     }
-    for (const m of CONTEXT_MATCHERS[context]) {
-      for (const re of m.patterns) {
-        if (re.test(normalized)) return { type: m.type, raw, normalized };
+    if (/\b(?:fin|finalizar|terminar|cerrar|listo|soltar)\s+(?:de\s+|del\s+|el\s+)?campo\b/.test(normalized)) {
+      return { type: 'FIN_CAMPO', raw, normalized };
+    }
+    const focus = normalized.match(/\bcampo\s+(.+)$/);
+    if (focus) {
+      const cmd: VoiceCommand = { type: 'ENFOCAR_CAMPO', raw, normalized };
+      const spec = resolveDialogField(focus[1] ?? '', specs);
+      if (spec) cmd.payload = spec.key;
+      return cmd;
+    }
+    /* With a field armed in the send dialog or the signature pad,
+     * dictation has precedence: free speech IS the field value, so the
+     * contextual verbs must not fire (a lone "enviar" inside a dictated
+     * sentence would send the email). The user releases the field with
+     * "fin campo" to get the verbs back. Settings keeps its original
+     * verb-first semantics (short structured values, flow ends in
+     * "guardar"). Mic safety still passes below in every case. */
+    const dictationFirst = opts.armed === true && (context === 'send_dialog' || context === 'signature_pad');
+    if (!dictationFirst) {
+      for (const m of CONTEXT_MATCHERS[context]) {
+        for (const re of m.patterns) {
+          if (re.test(normalized)) return { type: m.type, raw, normalized };
+        }
       }
     }
     /* With a modal open, the only global commands that pass through are
@@ -511,11 +579,22 @@ export const COMMAND_CATALOG: ReadonlyArray<CommandCatalogEntry> = [
   /* Contextual: send dialog open. */
   { type: 'CONFIRMAR_ENVIO', sample: 'confirmar envio', action: 'Confirmar y enviar el correo.',      context: 'send_dialog',  nac_action: 'send_email' },
   { type: 'CANCELAR',        sample: 'cancelar',        action: 'Cerrar el dialogo sin enviar.',      context: 'send_dialog',  nac_action: 'cancel_send' },
+  /* Contextual: send dialog field dictation (PND-003). */
+  { type: 'ENFOCAR_CAMPO', sample: 'campo destinatario', action: 'Enfocar los destinatarios para dictarlos (arroba / punto / coma).',      context: 'send_dialog', nac_action: 'set_recipients' },
+  { type: 'ENFOCAR_CAMPO', sample: 'campo asunto',       action: 'Enfocar el asunto para dictarlo.',                                       context: 'send_dialog', nac_action: 'set_subject' },
+  { type: 'ENFOCAR_CAMPO', sample: 'campo cuerpo',       action: 'Enfocar el cuerpo; cada frase dictada se agrega como parrafo nuevo.',    context: 'send_dialog', nac_action: 'set_body' },
+  { type: 'ENFOCAR_CAMPO', sample: 'campo adjuntar',     action: 'Enfocar la casilla del adjunto; despues deci "si" o "no".',              context: 'send_dialog', nac_action: 'toggle_attach' },
+  { type: 'BORRAR_CAMPO',  sample: 'borrar campo',       action: 'Vaciar el campo enfocado para dictarlo de nuevo.',                       context: 'send_dialog', field_scope: true },
+  { type: 'FIN_CAMPO',     sample: 'fin campo',          action: 'Soltar el campo enfocado y recuperar los comandos del dialogo.',         context: 'send_dialog', field_scope: true },
   /* Contextual: signature pad open. */
   { type: 'GUARDAR_FIRMA_PAD', sample: 'guardar',                action: 'Guardar la firma dibujada.',          context: 'signature_pad', nac_action: 'save_signature' },
   { type: 'BORRAR_FIRMA',      sample: 'borrar',                 action: 'Limpiar el lienzo de firma.',         context: 'signature_pad', nac_action: 'clear_signature' },
   { type: 'GENERAR_FIRMA',     sample: 'generar firma cursiva',  action: 'Renderizar el nombre escrito como firma.', context: 'signature_pad', nac_action: 'bake_signature_name' },
   { type: 'CANCELAR',          sample: 'cancelar',               action: 'Cerrar el pad sin guardar.',          context: 'signature_pad', nac_action: 'cancel_signature' },
+  /* Contextual: signature pad field dictation (PND-003). */
+  { type: 'ENFOCAR_CAMPO', sample: 'campo nombre', action: 'Enfocar el nombre para dictarlo y generar la firma cursiva.', context: 'signature_pad', nac_action: 'type_signature_name' },
+  { type: 'BORRAR_CAMPO',  sample: 'borrar campo', action: 'Vaciar el nombre para dictarlo de nuevo.',                    context: 'signature_pad', field_scope: true },
+  { type: 'FIN_CAMPO',     sample: 'fin campo',    action: 'Soltar el campo y recuperar los comandos del pad.',           context: 'signature_pad', field_scope: true },
   /* Contextual: settings dialog open. */
   { type: 'DETECTAR_SERVIDORES', sample: 'detectar servidores', action: 'Autocompletar los servidores a partir de la direccion.', context: 'settings_dialog', nac_action: 'autodetect_servers' },
   { type: 'PROBAR_CONEXION',     sample: 'probar conexion',     action: 'Probar la conexion IMAP y SMTP en vivo.',               context: 'settings_dialog', nac_action: 'test_connection' },
@@ -533,4 +612,5 @@ export const COMMAND_CATALOG: ReadonlyArray<CommandCatalogEntry> = [
   { type: 'ENFOCAR_CAMPO', sample: 'campo puerto smtp',   action: 'Enfocar el puerto SMTP para dictarlo.',                         context: 'settings_dialog', nac_action: 'set_smtp_port' },
   { type: 'ENFOCAR_CAMPO', sample: 'campo ssl smtp',      action: 'Enfocar SSL de SMTP; despues deci "si" o "no".',                context: 'settings_dialog', nac_action: 'toggle_smtp_ssl' },
   { type: 'BORRAR_CAMPO',  sample: 'borrar campo',        action: 'Vaciar el campo enfocado para dictarlo de nuevo.',              context: 'settings_dialog', field_scope: true },
+  { type: 'FIN_CAMPO',     sample: 'fin campo',           action: 'Soltar el campo enfocado.',                                     context: 'settings_dialog', field_scope: true },
 ];
