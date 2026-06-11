@@ -121,6 +121,14 @@
         "stage_title": "Gate 13 aprobado + canal de feedback definido (PND-005, PND-007)",
         "event": "stage_start",
         "content": "Owner dio OK explicito a ARCHITECTURE.md + DESIGN.md (Gate 13) y definio el canal de feedback post-launch: contact@yujin.app. Se registran ambas decisiones en workflow.approvals y workflow.postlaunch y se sincronizan HANDOFF.md, observability.md y el manual de usuario."
+      },
+      {
+        "at": "2026-06-11T18:29:02.569Z",
+        "kind": "evolutive",
+        "stage_id": "owner-decisions-2026-06-11",
+        "stage_title": "Gate 13 aprobado + canal de feedback definido (PND-005, PND-007)",
+        "event": "stage_end",
+        "content": "Cerrado con commit dab3f0f. Gate 13 aprobado por el owner (ARCHITECTURE + DESIGN); feedback channel = contact@yujin.app. Workflow (approvals + postlaunch) y docs (HANDOFF, observability, manual.es) sincronizados. PND-005 y PND-007 cerrados como shipped. El commit ademas incorpora los 4 docs canonicos del audit (PLAN, ITERATIONS, SUCCESS_CASE, HOW_WE_GOT_HERE) + WORKFLOW_LOG.md que habian quedado sin trackear en f87ca9b. Quedan abiertos: PND-003 (dictado en campos de envio/firma) y PND-006 (adenda RFP F14)."
       }
     ]
   },
