@@ -116,7 +116,7 @@ export function SignaturePad({ onCancel, onSave }: SignaturePadProps): React.Rea
             data-nac-action="type_signature_name"
             aria-label="Nombre para firma escrita"
           />
-          <button type="button" onClick={bakeTypedName} data-nac-id="yuemail.signature.btn-bake" data-nac-action="bake_signature_name">
+          <button type="button" onClick={bakeTypedName} disabled={!typedName.trim()} data-nac-id="yuemail.signature.btn-bake" data-nac-action="bake_signature_name">
             Generar firma cursiva
           </button>
         </div>

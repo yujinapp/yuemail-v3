@@ -116,7 +116,17 @@ async function verifyImap(cfg: EffectiveConfig): Promise<VerifyOutcome> {
     return { ok: false, error: shortError(err) };
   } finally {
     if (timer) clearTimeout(timer);
-    try { await client.logout(); } catch { /* ignore */ }
+    /* logout() can hang on a half-open connection (e.g. after the race
+     * timed out while connect() was still pending), so bound it and then
+     * destroy the socket unconditionally -- same hard cap SMTP gets via
+     * its socketTimeout. */
+    try {
+      await Promise.race([
+        client.logout(),
+        new Promise((resolve) => setTimeout(resolve, 2000)),
+      ]);
+    } catch { /* ignore */ }
+    try { client.close(); } catch { /* ignore */ }
   }
 }
 

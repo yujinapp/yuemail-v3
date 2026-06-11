@@ -36,6 +36,9 @@ export interface VaultStatus {
     smtp:     { configured: boolean; missing: string[] };
     identity: { configured: boolean; missing: string[] };
   };
+  /** 'env' = user-provided YUEMAIL_VAULT_PASS; 'derived' = predictable
+   * machine fallback (the UI warns about the weaker threat model). */
+  key_source: 'env' | 'derived';
 }
 
 export const api = {

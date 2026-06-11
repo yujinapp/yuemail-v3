@@ -86,6 +86,111 @@ describe('tier 1 -- known provider table', () => {
   });
 });
 
+/* Full provider-table coverage (verification-honesty: every row, not a
+ * sample). Expected values are written here independently from the
+ * implementation, taken from each provider's published IMAP/SMTP docs.
+ * A future typo in any row of KNOWN_PROVIDERS goes red here. */
+describe('tier 1 -- every known provider row', () => {
+  interface ExpectedRow {
+    domain:       string;            /* representative domain for the row */
+    aliases:      string[];          /* every other domain that must hit the same row */
+    label:        string;
+    imap:         { host: string; port: number; secure: boolean };
+    smtp:         { host: string; port: number; secure: boolean };
+    noteContains: string | undefined; /* app-password / setup caveat the UI must show */
+  }
+
+  const EXPECTED: ExpectedRow[] = [
+    {
+      domain: 'gmail.com', aliases: ['googlemail.com'], label: 'Gmail',
+      imap: { host: 'imap.gmail.com', port: 993, secure: true },
+      smtp: { host: 'smtp.gmail.com', port: 465, secure: true },
+      noteContains: 'App Password',
+    },
+    {
+      domain: 'outlook.com', aliases: ['outlook.es', 'hotmail.com', 'hotmail.es', 'live.com', 'msn.com'], label: 'Outlook / Hotmail',
+      imap: { host: 'outlook.office365.com', port: 993, secure: true },
+      smtp: { host: 'smtp-mail.outlook.com', port: 587, secure: false },
+      noteContains: 'OAuth',
+    },
+    {
+      domain: 'yahoo.com', aliases: ['yahoo.es', 'yahoo.com.ar', 'yahoo.com.mx', 'ymail.com'], label: 'Yahoo',
+      imap: { host: 'imap.mail.yahoo.com', port: 993, secure: true },
+      smtp: { host: 'smtp.mail.yahoo.com', port: 465, secure: true },
+      noteContains: 'App Password',
+    },
+    {
+      domain: 'icloud.com', aliases: ['me.com', 'mac.com'], label: 'iCloud',
+      imap: { host: 'imap.mail.me.com', port: 993, secure: true },
+      smtp: { host: 'smtp.mail.me.com', port: 587, secure: false },
+      noteContains: 'appleid.apple.com',
+    },
+    {
+      domain: 'aol.com', aliases: [], label: 'AOL',
+      imap: { host: 'imap.aol.com', port: 993, secure: true },
+      smtp: { host: 'smtp.aol.com', port: 465, secure: true },
+      noteContains: 'App Password',
+    },
+    {
+      domain: 'gmx.com', aliases: [], label: 'GMX',
+      imap: { host: 'imap.gmx.com', port: 993, secure: true },
+      smtp: { host: 'mail.gmx.com', port: 587, secure: false },
+      noteContains: 'IMAP desactivado por defecto',
+    },
+    {
+      domain: 'gmx.net', aliases: ['gmx.de'], label: 'GMX',
+      imap: { host: 'imap.gmx.net', port: 993, secure: true },
+      smtp: { host: 'mail.gmx.net', port: 587, secure: false },
+      noteContains: 'IMAP desactivado por defecto',
+    },
+    {
+      domain: 'zoho.com', aliases: ['zohomail.com'], label: 'Zoho',
+      imap: { host: 'imap.zoho.com', port: 993, secure: true },
+      smtp: { host: 'smtp.zoho.com', port: 465, secure: true },
+      noteContains: 'contrasena de aplicacion',
+    },
+    {
+      domain: 'fastmail.com', aliases: ['fastmail.fm'], label: 'Fastmail',
+      imap: { host: 'imap.fastmail.com', port: 993, secure: true },
+      smtp: { host: 'smtp.fastmail.com', port: 465, secure: true },
+      noteContains: 'contrasena de app',
+    },
+    {
+      domain: 'yandex.com', aliases: ['yandex.ru'], label: 'Yandex',
+      imap: { host: 'imap.yandex.com', port: 993, secure: true },
+      smtp: { host: 'smtp.yandex.com', port: 465, secure: true },
+      noteContains: 'contrasena de aplicacion',
+    },
+  ];
+
+  for (const row of EXPECTED) {
+    it(row.label + ' (' + row.domain + '): host/port/TLS exact + caveat note', async () => {
+      const res = await autoconfigure('user@' + row.domain, failingFetch());
+      expect(res.ok).toBe(true);
+      if (!res.ok) return;
+      expect(res.source).toBe('known');
+      expect(res.provider).toBe(row.label);
+      expect(res.imap).toEqual(row.imap);
+      expect(res.smtp).toEqual(row.smtp);
+      expect(res.username).toBe('user@' + row.domain);
+      if (row.noteContains !== undefined) {
+        expect(res.note ?? '', row.domain + ' note').toContain(row.noteContains);
+      }
+    });
+
+    for (const alias of row.aliases) {
+      it(row.label + ' alias ' + alias + ' resolves to the same servers', async () => {
+        const res = await autoconfigure('user@' + alias, failingFetch());
+        expect(res.ok).toBe(true);
+        if (!res.ok) return;
+        expect(res.provider).toBe(row.label);
+        expect(res.imap).toEqual(row.imap);
+        expect(res.smtp).toEqual(row.smtp);
+      });
+    }
+  }
+});
+
 describe('tier 2 -- Mozilla ISPDB', () => {
   it('parses hostname / port / socketType / username templates', async () => {
     const res = await autoconfigure('juan@ejemplo.com', fakeFetch(200, ISPDB_SAMPLE_XML));

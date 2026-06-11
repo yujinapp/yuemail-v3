@@ -19,6 +19,14 @@ path still encrypts at rest; `YUEMAIL_VAULT_PASS` overrides for users
 who want a real secret. API surface never returns values -- only key
 names and configured-booleans -- so a UI bug cannot leak a credential.
 
+Threat-model limit (explicit on purpose): the default passphrase is
+predictable. It protects the vault files if they leak ALONE (backup,
+synced folder), but a local attacker who can read the files can also
+read hostname+username and re-derive the key. At-rest secrecy against
+local readers requires `YUEMAIL_VAULT_PASS`. The server reports
+`key_source: env | derived` in `/api/vault/status` and the settings
+dialog shows the caveat whenever the derived fallback is active.
+
 ## D3 -- Per-send SMTP transport, read-only IMAP
 
 Transports are built from vault values per operation and discarded.

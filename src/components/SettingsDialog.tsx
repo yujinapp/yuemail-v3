@@ -46,9 +46,10 @@ export function SettingsDialog(props: SettingsDialogProps): React.ReactElement {
   const [note, setNote]   = React.useState('');
   const [busy, setBusy]   = React.useState<'detect' | 'test' | 'save' | undefined>(undefined);
   const [status, setStatus] = React.useState<CategoryFlags | undefined>(undefined);
+  const [keySource, setKeySource] = React.useState<'env' | 'derived' | undefined>(undefined);
 
   React.useEffect(() => {
-    api.vaultStatus().then((s) => setStatus(s.status)).catch(() => { /* ignore */ });
+    api.vaultStatus().then((s) => { setStatus(s.status); setKeySource(s.key_source); }).catch(() => { /* ignore */ });
   }, []);
 
   async function detect() {
@@ -148,7 +149,9 @@ export function SettingsDialog(props: SettingsDialogProps): React.ReactElement {
       for (const [key, value] of entries) {
         await api.vaultSet(key, value);
       }
-      props.onToast('success', 'Configuracion guardada cifrada en la boveda.');
+      props.onToast('success', keySource === 'derived'
+        ? 'Configuracion guardada en la boveda (cifrada con la clave por defecto de esta maquina).'
+        : 'Configuracion guardada cifrada en la boveda.');
       props.onClose();
     } catch (err) {
       props.onToast('error', err instanceof Error ? err.message : 'No se pudo guardar.');
@@ -173,6 +176,15 @@ export function SettingsDialog(props: SettingsDialogProps): React.ReactElement {
         {status && (
           <p style={{ marginTop: 0, fontSize: 14, opacity: 0.75 }}>
             IMAP {flag(status.imap.configured)} - SMTP {flag(status.smtp.configured)} - Identidad {flag(status.identity.configured)}
+          </p>
+        )}
+
+        {keySource === 'derived' && (
+          <p style={{ fontSize: 13, opacity: 0.8 }} role="note" data-nac-id="yuemail.settings.vault-key-note">
+            La boveda se cifra con una clave derivada de esta maquina (protege el archivo
+            si se filtra solo, pero no contra alguien con acceso a esta computadora).
+            Para una clave propia, defini la variable de entorno YUEMAIL_VAULT_PASS antes
+            de iniciar Yuemail.
           </p>
         )}
 

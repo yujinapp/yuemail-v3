@@ -67,7 +67,7 @@ const KNOWN_PROVIDERS: ProviderEntry[] = [
     domains: ['outlook.com', 'outlook.es', 'hotmail.com', 'hotmail.es', 'live.com', 'msn.com'],
     imap: { host: 'outlook.office365.com', port: 993, secure: true },
     smtp: { host: 'smtp-mail.outlook.com', port: 587, secure: false },
-    note: 'Microsoft puede exigir una contrasena de aplicacion segun la configuracion de seguridad de la cuenta.',
+    note: 'Microsoft puede exigir una contrasena de aplicacion segun la configuracion de seguridad de la cuenta. Ademas esta migrando las cuentas personales a autenticacion moderna (OAuth): si el login con contrasena falla aunque sea correcta, es probable que tu cuenta ya no acepte IMAP con contrasena basica.',
   },
   {
     label: 'Yahoo',
@@ -95,18 +95,21 @@ const KNOWN_PROVIDERS: ProviderEntry[] = [
     domains: ['gmx.com'],
     imap: { host: 'imap.gmx.com', port: 993, secure: true },
     smtp: { host: 'mail.gmx.com', port: 587, secure: false },
+    note: 'GMX trae IMAP desactivado por defecto: activalo primero en la web de GMX (Configuracion > POP3/IMAP > permitir acceso IMAP) o el login va a fallar.',
   },
   {
     label: 'GMX',
     domains: ['gmx.net', 'gmx.de'],
     imap: { host: 'imap.gmx.net', port: 993, secure: true },
     smtp: { host: 'mail.gmx.net', port: 587, secure: false },
+    note: 'GMX trae IMAP desactivado por defecto: activalo primero en la web de GMX (Configuracion > POP3/IMAP > permitir acceso IMAP) o el login va a fallar.',
   },
   {
     label: 'Zoho',
     domains: ['zoho.com', 'zohomail.com'],
     imap: { host: 'imap.zoho.com', port: 993, secure: true },
     smtp: { host: 'smtp.zoho.com', port: 465, secure: true },
+    note: 'Zoho requiere activar IMAP en Mail Settings y, si tenes verificacion en dos pasos, una contrasena de aplicacion generada en la seccion de seguridad de la cuenta.',
   },
   {
     label: 'Fastmail',
@@ -120,6 +123,7 @@ const KNOWN_PROVIDERS: ProviderEntry[] = [
     domains: ['yandex.com', 'yandex.ru'],
     imap: { host: 'imap.yandex.com', port: 993, secure: true },
     smtp: { host: 'smtp.yandex.com', port: 465, secure: true },
+    note: 'Yandex requiere una contrasena de aplicacion (creala en id.yandex.com, seccion de contrasenas de aplicacion) y tener IMAP habilitado en la configuracion del correo.',
   },
 ];
 

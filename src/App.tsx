@@ -171,6 +171,9 @@ export function App(): React.ReactElement {
   function clickNacAction(action: string): boolean {
     const el = document.querySelector<HTMLElement>('[data-nac-action="' + action + '"]');
     if (!el) return false;
+    /* A disabled control swallows click() silently -- report failure so
+     * the voice route does not announce a success that never happened. */
+    if (el instanceof HTMLButtonElement && el.disabled) return false;
     el.click();
     return true;
   }
@@ -215,7 +218,11 @@ export function App(): React.ReactElement {
         if (clickNacAction('clear_signature')) pushToast('info', 'Lienzo de firma borrado.');
         break;
       case 'GENERAR_FIRMA':
-        if (clickNacAction('bake_signature_name')) pushToast('info', 'Firma cursiva generada.');
+        if (clickNacAction('bake_signature_name')) {
+          pushToast('info', 'Firma cursiva generada.');
+        } else {
+          pushToast('info', 'Escribi primero tu nombre en el campo de texto del pad.');
+        }
         break;
       case 'DETECTAR_SERVIDORES':
         clickNacAction('autodetect_servers'); break;
