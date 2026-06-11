@@ -81,9 +81,9 @@
     },
     "approvals": {
       "rfp": "approved-in-use (spec drove the build); adenda settings/v0.3.0/F14 pending owner decision (PND-006)",
-      "architecture": "PENDING owner OK (generated 2026-06-10, refreshed 2026-06-11; PND-005)",
-      "solution_design": "PENDING owner OK (generated 2026-06-10, refreshed 2026-06-11; PND-005)",
-      "gate_13": "blocked on explicit owner si (PND-005)"
+      "architecture": "APPROVED by owner 2026-06-11 (Gate 13, PND-005)",
+      "solution_design": "APPROVED by owner 2026-06-11 (Gate 13, PND-005)",
+      "gate_13": "approved by explicit owner OK 2026-06-11 (PND-005 closed)"
     },
     "bootstrap": {
       "status": "done",
@@ -95,7 +95,7 @@
     "postlaunch": {
       "manual_at": "2026-06-11 (manual real es completo, PND-004; replaces 2026-06-10 stub)",
       "dashboards_at": "2026-06-11 (observability.md rewritten: local-only posture, no remote dashboards by design)",
-      "feedback_channel": "TBD -- owner decision tracked as PND-007"
+      "feedback_channel": "contact@yujin.app (owner decision 2026-06-11, PND-007)"
     },
     "evolution": [
       {
@@ -105,6 +105,22 @@
         "stage_title": "Auditoria integral: docs canonicos + workflow + pendientes (PND-004)",
         "event": "stage_start",
         "content": "Relevamiento completo del repo: 11 suites / 160 tests verificados con npm test (docs citaban 84/105/134). Faltan 4 docs canonicos del RFP (PLAN, ITERATIONS, SUCCESS_CASE, HOW_WE_GOT_HERE); HANDOFF, manual.es y observability son stubs TBD. Version labels v0.2.0 vs paquete 0.3.0. Colision de etiqueta F10 (settings vs design system). Se confeccionan los docs, se sincroniza el workflow y se registran los bloqueos del owner como pendientes."
+      },
+      {
+        "at": "2026-06-11T18:09:01.964Z",
+        "kind": "evolutive",
+        "stage_id": "docs-canon-2026-06-11",
+        "stage_title": "Auditoria integral: docs canonicos + workflow + pendientes (PND-004)",
+        "event": "stage_end",
+        "content": "Cerrado con commit f87ca9b. Confeccionados 4 docs canonicos (PLAN, ITERATIONS, SUCCESS_CASE, HOW_WE_GOT_HERE), reescritos 3 stubs (HANDOFF, manual.es completo, observability con postura local-only real), refrescados ARCHITECTURE + DESIGN (v0.3.0, 160 tests, F10->D9). Workflow sincronizado. Validado: ASCII-puro en docs, sin cifras viejas fuera del audit historico. Quedan en manos del owner: PND-005 (gate 13), PND-006 (adenda RFP), PND-007 (feedback channel); PND-003 sigue abierto por diseno."
+      },
+      {
+        "at": "2026-06-11T18:28:10.239Z",
+        "kind": "evolutive",
+        "stage_id": "owner-decisions-2026-06-11",
+        "stage_title": "Gate 13 aprobado + canal de feedback definido (PND-005, PND-007)",
+        "event": "stage_start",
+        "content": "Owner dio OK explicito a ARCHITECTURE.md + DESIGN.md (Gate 13) y definio el canal de feedback post-launch: contact@yujin.app. Se registran ambas decisiones en workflow.approvals y workflow.postlaunch y se sincronizan HANDOFF.md, observability.md y el manual de usuario."
       }
     ]
   },

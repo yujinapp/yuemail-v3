@@ -33,4 +33,4 @@ contradict the RFP. Therefore:
 The only KPI is the north-star journey: dictate -> sign -> send in
 under 4 minutes with zero strictly-required clicks. It is measured
 by direct user feedback, not instrumentation (feedback channel:
-PND-007, TBD).
+contact@yujin.app, owner decision 2026-06-11).

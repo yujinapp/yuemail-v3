@@ -118,3 +118,5 @@ una ventana abierta.
   Safari y que el microfono este encendido (boton del microfono).
 - Cualquier otra cosa: cerra la terminal donde corre yuemail y
   volve a escribir `yuemail`.
+- Si el problema sigue, o queres sugerir una mejora, escribinos a
+  contact@yujin.app.

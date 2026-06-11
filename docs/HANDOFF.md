@@ -51,9 +51,11 @@ build) protects publishes. Detail per block: docs/PLAN.md.
 
 - PND-003: dictation in SendDialog + SignaturePad fields (body needs
   append semantics, not replace).
-- PND-005: Gate 13 -- owner approval of ARCHITECTURE.md + DESIGN.md.
 - PND-006: RFP adenda (settings feature, v0.3.0 labels, F10 collision).
-- PND-007: post-launch feedback channel TBD.
+
+Resolved 2026-06-11: PND-005 (Gate 13 -- owner approved
+ARCHITECTURE.md + DESIGN.md) and PND-007 (feedback channel:
+contact@yujin.app).
 
 ## Deferred by scope (v0.4+ candidates)
 
