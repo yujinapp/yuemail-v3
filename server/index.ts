@@ -18,7 +18,7 @@
 import express, { type Express } from 'express';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 
 import { registerVaultRoutes }     from './routes/vault.js';
 import { registerDocumentsRoutes } from './routes/documents.js';
@@ -33,6 +33,23 @@ export const PORT = 5180;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname  = path.dirname(__filename);
 
+/** The package version, read from package.json at startup so /api/health
+ *  never drifts from the published version again (the 0.3.0 vs 0.4.0
+ *  mismatch was a hardcoded string). Walks up from the build dir to find it. */
+function readPackageVersion(): string {
+  for (const up of ['..', '../..', '../../..']) {
+    try {
+      const p = path.join(__dirname, up, 'package.json');
+      if (existsSync(p)) {
+        const v = (JSON.parse(readFileSync(p, 'utf-8')) as { version?: unknown }).version;
+        if (typeof v === 'string' && v) return v;
+      }
+    } catch { /* keep walking up */ }
+  }
+  return '0.0.0';
+}
+export const APP_VERSION = readPackageVersion();
+
 export interface BuildAppOpts {
   /** Override the static SPA root. Defaults to ../dist. */
   staticRoot?: string;
@@ -44,7 +61,7 @@ export function buildApp(opts: BuildAppOpts = {}): Express {
   app.use(express.json({ limit: '10mb' }));
 
   app.get('/api/health', (_req, res) => {
-    res.json({ ok: true, version: '0.3.0' });
+    res.json({ ok: true, version: APP_VERSION });
   });
 
   registerVaultRoutes(app);
