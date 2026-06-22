@@ -217,23 +217,28 @@ const MATCHERS: Matcher[] = [
       /\baplicar\s+firma\b/,
     ],
   },
+  /* Dictation toggles. The patterns tolerate the connector word a real
+   * speech-to-text engine slips in ("iniciar EL dictado", "fin DEL dictado")
+   * and the natural verb variants ("detener / cortar dictado"). Without this
+   * width the recogniser's transcript missed the canonical phrase, the toggle
+   * did not fire, and the closing words were written into the document as a
+   * paragraph -- exactly the tester's case #8 (PND-016). */
   {
     type: 'INICIAR_DICTADO',
     patterns: [
-      /\biniciar\s+dictado\b/,
-      /\bcomenzar\s+dictado\b/,
-      /\bempezar\s+a\s+dictar\b/,
+      /\b(?:iniciar|comenzar|empezar|arrancar|activar)\s+(?:el\s+|con\s+(?:el\s+)?)?dictado\b/,
+      /* "a" is a filler word and gets stripped before matching, so accept
+       * "empezar dictar" too (not just "empezar a dictar"). */
+      /\b(?:empezar|comenzar|arrancar)\s+(?:a\s+)?dictar\b/,
       /\bdictado\s+(?:on|encendido)\b/,
     ],
   },
   {
     type: 'FIN_DICTADO',
     patterns: [
-      /\bfin\s+dictado\b/,
-      /\bfinalizar\s+dictado\b/,
-      /\bparar\s+dictado\b/,
-      /\bterminar\s+dictado\b/,
-      /\bdictado\s+(?:off|apagado)\b/,
+      /\bfin\s+(?:de\s+|del\s+)?dictado\b/,
+      /\b(?:finalizar|terminar|parar|detener|cortar)\s+(?:el\s+|de\s+|del\s+)?dictado\b/,
+      /\bdictado\s+(?:off|apagado|terminado)\b/,
     ],
   },
   {

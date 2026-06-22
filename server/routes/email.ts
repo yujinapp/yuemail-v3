@@ -10,8 +10,10 @@
  *   }
  *
  * Rejects with HTTP 400 and a meaningful error message when SMTP
- * credentials are missing (acceptance #4). Specifically: returns
- *   { ok: false, error: 'SMTP not configured', missing: [...] }
+ * credentials are missing (acceptance #4). User-facing error strings are
+ * in Spanish (the product language) and actionable -- they tell the user
+ * what to fix, not just what failed. Shape:
+ *   { ok: false, error: '<mensaje en castellano>', missing: [...] }
  *
  * On send success returns:
  *   { ok: true, message_id, accepted, rejected }
@@ -46,7 +48,7 @@ export function registerEmailRoutes(app: Express): void {
     if (!status.smtp.configured) {
       res.status(400).json({
         ok: false,
-        error: 'SMTP not configured. Run `yuemail vault setup` to configure your SMTP server before sending.',
+        error: 'El correo saliente todavia no esta configurado. Abri Configuracion y carga tu servidor de envio (SMTP) antes de mandar.',
         missing: status.smtp.missing,
       });
       return;
@@ -69,8 +71,8 @@ export function registerEmailRoutes(app: Express): void {
       res.status(400).json({
         ok: false,
         error: badTo.length > 0
-          ? 'No valid recipients. Invalid entries: ' + badTo.join(', ')
-          : 'No recipients provided.',
+          ? 'No hay ningun destinatario valido. Revisa estas direcciones mal escritas: ' + badTo.join(', ') + '.'
+          : 'Falta el destinatario. Escribi al menos una direccion de correo.',
       });
       return;
     }
@@ -85,12 +87,12 @@ export function registerEmailRoutes(app: Express): void {
     const name    = await getKey('identity.name');
 
     if (!host || !portStr || !user || !pass || !from) {
-      res.status(400).json({ ok: false, error: 'SMTP not configured (missing decrypted credential)' });
+      res.status(400).json({ ok: false, error: 'Falta una credencial del correo saliente (SMTP). Volve a guardar la configuracion de tu cuenta.' });
       return;
     }
     const port = Number(portStr);
     if (!Number.isFinite(port) || port <= 0) {
-      res.status(400).json({ ok: false, error: 'smtp.port is not a positive integer' });
+      res.status(400).json({ ok: false, error: 'El puerto del correo saliente (SMTP) no es valido. Corregilo en Configuracion (por ejemplo 587 o 465).' });
       return;
     }
     const secure = (secStr ?? '').toLowerCase() === 'true' || port === 465;
@@ -100,7 +102,7 @@ export function registerEmailRoutes(app: Express): void {
     if (attachId.length > 0) {
       const doc = await getDocument(attachId);
       if (!doc) {
-        res.status(404).json({ ok: false, error: 'attach_document_id not found' });
+        res.status(404).json({ ok: false, error: 'No se encontro el documento que querias adjuntar.' });
         return;
       }
       const buf = await renderDocx(doc);
@@ -135,7 +137,7 @@ export function registerEmailRoutes(app: Express): void {
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
-      res.status(500).json({ ok: false, error: 'SMTP send failed: ' + message });
+      res.status(500).json({ ok: false, error: 'No se pudo enviar el correo: ' + message });
     }
   });
 }

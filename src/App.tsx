@@ -18,6 +18,7 @@ import { VoiceSettings } from './components/VoiceSettings.js';
 import { useVoice } from './voice/useVoice.js';
 import {
   FIELD_SPECS_BY_CONTEXT,
+  parseCommand,
   spokenCheckboxValue,
   spokenFieldValue,
   type DialogFieldSpec,
@@ -392,7 +393,15 @@ export function App(): React.ReactElement {
           if (armedFieldRef.current) applyFieldDictation(armedFieldRef.current, cmd.raw);
         } else if (dictationRef.current) {
           const text = cmd.raw.trim();
-          if (text.length > 0) setBlocks((prev) => [...prev, { type: 'paragraph', text }]);
+          if (text.length === 0) break;
+          /* Safety guard (PND-016): a dictation toggle must NEVER be written
+           * as content. If the recogniser's transcript still resolved here
+           * (e.g. a variant the upstream router missed), act on the toggle
+           * instead of pasting "fin dictado" into the document. */
+          const reparsed = parseCommand(text, 'global').type;
+          if (reparsed === 'FIN_DICTADO') { dictationRef.current = false; setDictation(false); pushToast('info', 'Dictado finalizado.'); break; }
+          if (reparsed === 'INICIAR_DICTADO') break;
+          setBlocks((prev) => [...prev, { type: 'paragraph', text }]);
         }
         break;
     }

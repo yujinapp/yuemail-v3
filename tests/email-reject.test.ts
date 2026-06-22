@@ -58,7 +58,10 @@ describe('POST /api/email/send -- rejection paths', () => {
       expect(status).toBe(400);
       expect(body).toMatchObject({ ok: false });
       const b = body as { error?: string; missing?: string[] };
-      expect(b.error).toMatch(/SMTP not configured/i);
+      /* User-facing message must be in Spanish (product language) and name
+       * the SMTP gap. */
+      expect(b.error).toMatch(/no esta configurado/i);
+      expect(b.error).toMatch(/SMTP/);
       expect(b.missing).toBeDefined();
       expect(Array.isArray(b.missing)).toBe(true);
       expect((b.missing ?? []).length).toBeGreaterThan(0);
@@ -94,7 +97,8 @@ describe('POST /api/email/send -- rejection paths', () => {
       expect(status).toBe(400);
       const b = body as { ok?: boolean; error?: string };
       expect(b.ok).toBe(false);
-      expect(b.error).toMatch(/recipient/i);
+      /* Spanish, actionable: names the invalid recipient problem. */
+      expect(b.error).toMatch(/destinatario/i);
     } finally {
       await server.close();
     }

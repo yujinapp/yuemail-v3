@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { resolveLiterallyFirst } from '../src/voice/resolveCommand.js';
+import { parseCommand } from '../src/voice/commands.js';
 
 /**
  * Regression guard for PND-015 (tester case #8: "dictar texto en el documento").
@@ -54,5 +55,64 @@ describe('dictation routing -- resolveLiterallyFirst (PND-015)', () => {
   it('inside a modal it always defers to the Brain (toggles do not apply there)', () => {
     expect(resolveLiterallyFirst('iniciar dictado', 'send_dialog', {}, false)).toBeUndefined();
     expect(resolveLiterallyFirst('hola', 'settings_dialog', {}, true)).toBeUndefined();
+  });
+});
+
+/**
+ * Tester case #8, second pass (PND-016): the toggle still fired in the unit
+ * test but the user's "fin dictado" got WRITTEN. Root cause: the cloud
+ * speech-to-text returns natural VARIANTS ("fin del dictado", "detener
+ * dictado", "iniciar el dictado") that the narrow canonical patterns missed,
+ * so the closing words fell through to the document-content path. These pin
+ * the widened recognition. Each case is RED before the pattern widening:
+ * the variant resolved to UNKNOWN and, while dictating, would have been
+ * pasted as a paragraph.
+ */
+describe('dictation toggle variants the recogniser really emits (PND-016)', () => {
+  const STOP_VARIANTS = [
+    'fin dictado',
+    'fin de dictado',
+    'fin del dictado',
+    'finalizar dictado',
+    'finalizar el dictado',
+    'terminar el dictado',
+    'parar el dictado',
+    'detener dictado',
+    'detener el dictado',
+    'cortar el dictado',
+    'dictado apagado',
+    'dictado terminado',
+  ];
+  const START_VARIANTS = [
+    'iniciar dictado',
+    'iniciar el dictado',
+    'comenzar dictado',
+    'comenzar el dictado',
+    'empezar el dictado',
+    'arrancar el dictado',
+    'activar el dictado',
+    'empezar a dictar',
+    'dictado encendido',
+  ];
+
+  for (const phrase of STOP_VARIANTS) {
+    it(`"${phrase}" stops dictation, never written (while dictating)`, () => {
+      expect(parseCommand(phrase, 'global').type).toBe('FIN_DICTADO');
+      expect(resolveLiterallyFirst(phrase, 'global', {}, true)?.type).toBe('FIN_DICTADO');
+    });
+  }
+
+  for (const phrase of START_VARIANTS) {
+    it(`"${phrase}" starts dictation instantly (dictation OFF)`, () => {
+      expect(parseCommand(phrase, 'global').type).toBe('INICIAR_DICTADO');
+      expect(resolveLiterallyFirst(phrase, 'global', {}, false)?.type).toBe('INICIAR_DICTADO');
+    });
+  }
+
+  it('a normal dictated sentence that merely mentions "dictado" is still content', () => {
+    /* No toggle verb -> stays UNKNOWN -> becomes a paragraph. Guards against
+     * the widening over-matching ordinary speech. */
+    expect(parseCommand('esto es un dictado de prueba para el informe', 'global').type).toBe('UNKNOWN');
+    expect(parseCommand('hoy escribo un dictado largo', 'global').type).toBe('UNKNOWN');
   });
 });
