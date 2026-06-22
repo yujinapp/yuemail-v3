@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Brain para Yuemail - Analisis aterrizado (v0.5.0)</title><style>body{font-family:Georgia,"Times New Roman",serif;max-width:760px;margin:40px auto;padding:0 20px;color:#1a1a1a;line-height:1.6}h1,h2,h3{font-weight:600;color:#2e3a5e}table{border-collapse:collapse}td,th{border:1px solid #b8ad95;padding:6px 10px}code,pre{font-family:Consolas,monospace;background:#f5f0e6}</style></head><body>
+<h1>Brain de IA para Yuemail</h1>
+<p><strong>Analisis previo al desarrollo.</strong> Leido del codigo real, no de memoria: fuente de Forge en <code>c:\yujin-forge</code> y el codigo de Yuemail. Esperando tu "dale" para arrancar. Version objetivo: <strong>v0.5.0</strong>.</p>
+
+<h2>1. Lo que confirme leyendo los dos codigos</h2>
+<ul>
+<li><strong>Hoy Yuemail no usa nada de IA.</strong> La voz son dos pasos sin inteligencia: el navegador pasa tu voz a texto, y una lista fija de ~12 frases se compara con expresiones exactas. Si no cae en la lista, el pedido se pierde ("no entendido").</li>
+<li><strong>La boveda cifrada que pediste YA EXISTE</strong> en Yuemail (cifrado fuerte, atada a la maquina, las claves nunca salen del servidor). No hay que construirla: se reutiliza y se le suman los casilleros de cada proveedor de IA.</li>
+<li><strong>El catalogo de comandos ya existe</strong> y funciona como un mini-listado de "herramientas" de la app (nuevo documento, firmar, enviar, leer bandeja, configurar, y los comandos dentro de cada ventana). El Brain no inventa acciones: elige una de esas.</li>
+<li><strong>Forge corre su Brain sin librerias pesadas</strong>, hablando con cada proveedor por HTTP. Eso encaja perfecto: el paquete de Yuemail no se infla.</li>
+</ul>
+
+<h2>2. Lo que vas a tener (con tus 3 respuestas)</h2>
+<ul>
+<li><strong>Brain PRENDIDO por default.</strong> Apenas haya una clave cargada, la IA entiende pedidos en lenguaje natural, no solo las frases exactas. Tu prioridad: eficiencia para personas que necesitan la ayuda.</li>
+<li><strong>Un solo tipo de Brain, con todas las variantes de proveedor y modelo</strong> (Google / Gemini, Anthropic / Claude, OpenAI, y los demas que trae Forge). <strong>Default: Gemini 3.1 Flash Lite</strong> (rapido y barato, ideal como enrutador).</li>
+<li><strong>Boveda de credenciales</strong> reutilizada, con un casillero por proveedor. Se carga la clave una vez; nunca se muestra ni se manda al navegador.</li>
+<li><strong>La IA desambigua y enruta:</strong> toma lo que la persona dice y elige la herramienta + comando de Yuemail a ejecutar. Ese es el corazon del pedido.</li>
+</ul>
+
+<h2>3. La arquitectura en una imagen</h2>
+<p>Dos capas que se complementan:</p>
+<ol>
+<li><strong>Piso instantaneo (lo de hoy):</strong> si lo que dijiste cae en una frase conocida, se ejecuta al toque, gratis y sin red.</li>
+<li><strong>Cerebro (lo nuevo):</strong> si no cae, o si es ambiguo, entra el Brain. Recibe el catalogo de comandos y devuelve cual aplicar y con que datos (por ejemplo: a quien enviar). El comando se ejecuta igual que si lo hubiera dicho exacto.</li>
+</ol>
+<p>Todo el Brain vive en el <strong>servidor</strong>: las claves quedan adentro, no viajan al navegador.</p>
+
+<h2>4. La red de seguridad (esto te protege al usuario)</h2>
+<p>El piso instantaneo NO se saca: queda como respaldo. Asi, si se cae la red o falta la clave, la persona discapacitada <strong>nunca queda sin app</strong>: sigue funcionando con las frases conocidas. La IA suma inteligencia arriba; nunca es el unico camino. Es la forma correcta de tener "Brain prendido" sin crear un punto unico de falla para quien mas depende del producto.</p>
+
+<h2>5. Que se toca del paquete</h2>
+<ul>
+<li><strong>Nuevo modulo Brain en el servidor:</strong> registro de proveedores y modelos (con respaldo offline), configuracion del Brain activo, y un cliente que habla con el proveedor elegido por HTTP.</li>
+<li><strong>Un punto de entrada</strong> para que la voz, cuando no entiende, le pregunte al Brain cual comando aplicar.</li>
+<li><strong>Pantalla de configuracion ampliada:</strong> elegir proveedor y modelo, cargar la clave, y un boton para probar que la clave funciona.</li>
+<li><strong>La boveda</strong> gana los casilleros de cada proveedor.</li>
+</ul>
+
+<h2>6. Plan de prueba de punta a punta (hasta el 100%)</h2>
+<ol>
+<li>Armo un <strong>banco de frases reales</strong> dichas de mil formas ("mandale un correo a Ana", "abri lo de la configuracion", "leeme lo que llego", etc.).</li>
+<li>Mido <strong>que porcentaje enruta bien</strong> al comando correcto.</li>
+<li><strong>Itero</strong> el catalogo y las instrucciones del Brain hasta llegar al 100% sobre ese banco, repitiendo la medicion cada vez.</li>
+<li><strong>Pruebas de regresion:</strong> que las frases exactas de hoy sigan andando igual de rapido, y que con la red caida la app no se rompa.</li>
+<li>Te entrego el numero final y el detalle de cada caso.</li>
+</ol>
+
+<h2>7. Versionado y documentos</h2>
+<p>Esto revierte una decision ya aprobada ("Yuemail sin IA, 100% local"). Por eso sale como <strong>v0.5.0</strong> con una nota de cambio en los tres documentos aprobados (propuesta, arquitectura y diseno), dejando registrado el porque: accesibilidad para personas que necesitan la ayuda de la IA. Tu "dale" vale como esa aprobacion.</p>
+<p><strong>Privacidad, con honestidad:</strong> cuando el Brain entra, lo que la persona dice viaja al proveedor de IA elegido. Las claves quedan en el servidor, pero el texto del pedido sale. Lo dejo escrito en el instructivo para que el tester (y el usuario) lo sepan.</p>
+
+<h2>8. Instructivos</h2>
+<p>Al final, reescribo los dos instructivos de prueba para que lo PRIMERO sea configurar un Brain (elegir proveedor, cargar la clave, probarla) antes de cualquier caso de voz. Eso resuelve el problema original: el tester ya no busca una configuracion que no existia.</p>
+
+<h2>9. Lo que necesito de vos</h2>
+<p>Solo tu <strong>"dale"</strong>. Con eso: registro el pedido, hago el desarrollo, lo pruebo de punta a punta hasta el 100%, y reescribo los instructivos. Tengo la noche para esto.</p>
+<p>Si algo de este plan no te cierra (el default de modelo, la red de seguridad, el alcance), decimelo y lo ajusto antes de tocar una linea.</p>
+</body></html>

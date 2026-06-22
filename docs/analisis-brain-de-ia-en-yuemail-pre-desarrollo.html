@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Analisis: Brain de IA en Yuemail (pre-desarrollo)</title><style>body{font-family:Georgia,"Times New Roman",serif;max-width:760px;margin:40px auto;padding:0 20px;color:#1a1a1a;line-height:1.6}h1,h2,h3{font-weight:600;color:#2e3a5e}table{border-collapse:collapse}td,th{border:1px solid #b8ad95;padding:6px 10px}code,pre{font-family:Consolas,monospace;background:#f5f0e6}</style></head><body>
+<h1>Yuemail + Brain de IA &mdash; Analisis previo al desarrollo</h1>
+<p><em>22-jun-2026 &middot; pedido por Pablo &middot; estado: ANALISIS, sin tocar codigo todavia. Arranco el desarrollo cuando digas <strong>&laquo;dale&raquo;</strong>.</em></p>
+
+<h2>1. Como funciona Yuemail HOY (verificado en el codigo)</h2>
+<p>Confirmo lo que te dije antes: <strong>Yuemail no usa ninguna IA</strong>. La voz funciona en dos pasos, los dos sin inteligencia artificial:</p>
+<ul>
+<li><strong>El navegador</strong> (Chrome/Edge) convierte tu voz en texto (Web Speech API).</li>
+<li><strong>Yuemail compara ese texto contra una lista fija</strong> de unas 12 frases (&laquo;nuevo documento&raquo;, &laquo;firmar&raquo;, &laquo;enviar a...&raquo;, etc.) mas algunos comandos dentro de cada ventana. Es busqueda por patron, no comprension.</li>
+</ul>
+<p>Por eso &laquo;algunas pruebas funcionan sin Brain&raquo;: <strong>todas</strong> funcionan sin Brain, porque hoy no hay Brain en ninguna parte. Lo unico que se configura es la cuenta de correo (IMAP/SMTP/identidad), guardada cifrada en un vault local (AES-256). El vault ya existe, pero <strong>solo guarda credenciales de correo, no claves de IA</strong>.</p>
+
+<h2>2. Lo que me pedis</h2>
+<p>Traer a Yuemail el esquema de &laquo;Brains&raquo; de Yujin-Forge:</p>
+<ul>
+<li>Un tipo de Brain, con todas las variedades de proveedor y modelo. <strong>Default: Gemini 3.1 Flash Lite</strong>.</li>
+<li>Vault de credenciales extendido para claves de IA (BYOK / &laquo;trae tu propia clave&raquo;).</li>
+<li>Que la <strong>desambiguacion del pedido la haga la IA</strong>: vos hablas natural, la IA entiende la intencion y elige la herramienta + comando a ejecutar en Yuemail (via las &laquo;NAC3 tools&raquo;).</li>
+</ul>
+<p>Es un cambio grande y de fondo: pasamos de &laquo;lista fija de frases&raquo; a &laquo;la IA interpreta cualquier forma de pedirlo&raquo;.</p>
+
+<h2>3. Tres choques con lo que YA esta aprobado (esto necesita tu OK explicito)</h2>
+<p>Yuemail v0.4.0 esta publicado en npm y su RFP/Arquitectura/Diseno fueron aprobados por vos. Tres puntos aprobados chocan con este pedido. No los puedo pasar por alto en silencio; te los marco para que el &laquo;dale&raquo; sea informado:</p>
+<table>
+<thead><tr><th>Lo aprobado hoy</th><th>El choque</th><th>Mi recomendacion</th></tr></thead>
+<tbody>
+<tr><td><strong>&laquo;100% en tu computadora, sin telemetria&raquo;</strong> (es el argumento de venta para usuarios con discapacidad)</td><td>La IA manda tu pedido hablado (que puede incluir contenido del correo) a un proveedor externo (Google/Anthropic/OpenAI). Eso ya no es 100% local.</td><td>El Brain <strong>opt-in y apagado por default</strong>. Sin clave configurada, Yuemail sigue 100% local con la lista fija de siempre. El usuario activa la IA a conciencia, con un aviso claro de privacidad.</td></tr>
+<tr><td><strong>Presupuesto de paquete</strong>: tarball &lt;100 KB, JS &lt;60 KB</td><td>Los SDK de los proveedores son pesados y lo reventarian.</td><td>El Brain corre en el <strong>servidor</strong> llamando a las APIs por HTTP (sin SDK pesado). El navegador no suma casi bytes y las claves nunca salen del servidor (igual que el vault actual).</td></tr>
+<tr><td><strong>Decision &laquo;sin IA&raquo;</strong> en el RFP</td><td>Este pedido la revierte.</td><td>Lo registramos como <strong>adenda evolutiva</strong> al RFP/Arq/Diseno con bump de version (v0.5.0) y tu aprobacion de gate. Tu &laquo;dale&raquo; vale como esa aprobacion.</td></tr>
+</tbody>
+</table>
+
+<h2>4. Diseno propuesto (lo que construiria)</h2>
+<h3>4.1 Hibrido: rapido primero, IA solo cuando hace falta</h3>
+<p>No tiramos lo que ya anda. El flujo queda en cascada:</p>
+<ol>
+<li><strong>Matcher rapido</strong> (lo actual): si lo que dijiste cae en las 12 frases conocidas, se ejecuta al instante, gratis y offline. Sin cambios para el usuario.</li>
+<li><strong>Brain (fallback)</strong>: solo si el matcher no entendio o hay ambiguedad, entra la IA, interpreta la intencion y elige el comando. Por eso el default es un modelo barato y rapido (Flash Lite): es un enrutador, no un chat.</li>
+</ol>
+<p>Asi preservamos velocidad, costo y privacidad para el caso comun, y la IA cubre la cola larga (formas raras de pedir las cosas).</p>
+
+<h3>4.2 Manifest NAC3 de Yuemail (lo que la IA puede elegir)</h3>
+<p>Para que la IA &laquo;elija herramienta y comando&raquo; necesita un catalogo formal de acciones. Hoy Yuemail tiene esas acciones como una lista interna de comandos, no como verbos NAC3. Primer entregable: convertir ese listado en un <strong>manifest de verbos de Yuemail</strong> (crear documento, firmar, enviar, leer bandeja, abrir config, etc.), cada uno con su esquema de argumentos y su politica (ej.: &laquo;enviar&raquo; pide confirmacion). La buena noticia: el mapeo es casi 1 a 1 con los comandos actuales, asi que el catalogo esta bien definido.</p>
+
+<h3>4.3 Registro unico de proveedores y modelos + vault</h3>
+<ul>
+<li>Una sola fuente de verdad con proveedores (Google, Anthropic, OpenAI...) y sus modelos. Default Gemini 3.1 Flash Lite. <em>Confirmo el id exacto de cada modelo contra la doc del proveedor antes de cablear &mdash; no hardcodeo un nombre que pueda no existir.</em></li>
+<li>El vault actual se extiende con claves <code>brain.&lt;proveedor&gt;.api_key</code> y la eleccion de modelo. Misma postura de seguridad: cifrado, server-internal, nunca devuelto por la API.</li>
+<li>La ventana de Configuracion suma una seccion &laquo;Inteligencia (opcional)&raquo; con eleccion de proveedor/modelo y carga de clave, mas el aviso de privacidad.</li>
+</ul>
+
+<h2>5. Sobre &laquo;copiar de Yujin-Forge&raquo; &mdash; honestidad</h2>
+<p>Corro adentro de Forge, pero <strong>no tengo el codigo fuente de Forge en este proyecto</strong>: no puedo copiar archivos que no puedo leer. Lo que si puedo (y propongo) es <strong>replicar el patron</strong> de Forge &mdash; registro de modelos como fuente unica, BYOK por vault, IA que desambigua y enruta a verbos &mdash; adaptado a Yuemail. Es equivalente en arquitectura, escrito a medida del paquete. Si tenes la carpeta del codigo de Forge accesible y queres que copie piezas literales, pasame la ruta y las leo.</p>
+
+<h2>6. Plan para la noche + como mido &laquo;100%&raquo;</h2>
+<p>Lo encaro como ciclo evolutivo, en fases, con tests despues de cada una:</p>
+<ol>
+<li>Manifest de verbos de Yuemail + registro de proveedores/modelos.</li>
+<li>Vault extendido (claves de IA) + UI de configuracion + aviso de privacidad.</li>
+<li>Enrutador hibrido (matcher rapido -&gt; Brain fallback), server-side.</li>
+<li><strong>Banco de evaluacion</strong>: un corpus de frases doradas (&laquo;mandale esto a Juan&raquo;, &laquo;arranca a dictar&raquo;, etc.) con el verbo esperado de cada una. Mido aciertos, ajusto el prompt/enrutador y repito hasta converger.</li>
+</ol>
+<p><strong>Honestidad sobre el &laquo;100%&raquo;</strong>: una IA de enrutamiento no es deterministica. Puedo llegar a 100% de aciertos <em>sobre ese banco de frases definido</em> e iterar hasta ahi; no es una garantia universal para cualquier frase del mundo. Te reporto el numero real medido, no una promesa.</p>
+
+<h2>7. Impacto en los instructivos (tu pedido original)</h2>
+<p>El arreglo que ibamos a hacer (&laquo;Yuemail no usa IA&raquo;) <strong>queda al reves</strong> con este cambio. Una vez que exista el Brain, los dos instructivos se renuevan para explicar, primero, <strong>como configurar el Brain</strong> (que es, opcional, como cargar la clave, que pasa si no la cargas) antes de la tanda de pruebas. Eso lo hago al final, ya con la funcionalidad andando, como pediste.</p>
+
+<h2>8. Lo que necesito de vos para arrancar</h2>
+<ul>
+<li><strong>&laquo;dale&raquo;</strong> = aprobas la adenda (revertir &laquo;sin IA&raquo;, v0.5.0) y arranco el desarrollo + test de la noche.</li>
+<li>Confirmame estos tres defaults (o corregilos): (a) Brain <strong>opt-in, apagado por default</strong>; (b) corre <strong>server-side</strong> por privacidad y peso; (c) replico el <strong>patron</strong> de Forge (no copia literal, salvo que me pases el source).</li>
+</ul>
+<p>Si algo de esto no es lo que tenias en mente, decimelo y lo reajusto antes de tocar una linea.</p>
+</body></html>
