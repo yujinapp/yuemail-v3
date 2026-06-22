@@ -25,6 +25,7 @@ import { useEffect, useRef, useState } from 'react';
 import { parseCommand, type VoiceCommand, type VoiceContext } from './commands.js';
 import { UtteranceRecorder } from './audioCapture.js';
 import { voiceReady, serverTranscribe, serverSpeak, playAudioBlob } from './serverVoice.js';
+import { diagLog } from './diagnostics.js';
 
 const LANG = 'es-AR';
 
@@ -105,6 +106,11 @@ export function useVoice(opts: UseVoiceOpts = {}): VoiceHandle {
 
   async function finaliseUtterance(browserText: string, current: UseVoiceOpts): Promise<void> {
     let text = browserText;
+    /* Diagnostic tracer (PND-019): record what each ear heard so a real test
+     * run reveals the exact transcript Google returned vs. the browser's. */
+    let googleText: string | undefined;
+    let usedSource: 'google' | 'browser' | 'none' = browserText ? 'browser' : 'none';
+    let transcribeOk = false;
     /* Camino 1: replace the browser transcript with Google's, when we have
      * the audio and the server path is live. Any failure keeps browserText. */
     try {
@@ -113,10 +119,24 @@ export function useVoice(opts: UseVoiceOpts = {}): VoiceHandle {
         const utt = rec.takeUtterance();
         if (utt) {
           const r = await serverTranscribe(utt.blob, utt.format, LANG);
-          if (r.ok && r.text.trim().length > 0) text = r.text;
+          transcribeOk = r.ok;
+          if (r.ok) googleText = r.text;
+          if (r.ok && r.text.trim().length > 0) { text = r.text; usedSource = 'google'; }
         }
       }
     } catch { /* keep browser text */ }
+
+    const traceContext = current.getContext?.() ?? 'global';
+    diagLog('hear', {
+      interim: false,
+      browserText,
+      googleText,
+      usedSource,
+      serverReady: serverReadyRef.current,
+      transcribeOk,
+      context: traceContext,
+      armedField: current.getArmed?.() ? 'armed' : undefined,
+    });
 
     if (text) current.onTranscript?.(text, true);
     if (!current.onCommand) return;
@@ -145,7 +165,10 @@ export function useVoice(opts: UseVoiceOpts = {}): VoiceHandle {
       const isFinal     = Boolean(result.isFinal);
       const current     = optsRef.current;
       if (!isFinal) {
-        if (browserText) current.onTranscript?.(browserText, false);
+        if (browserText) {
+          current.onTranscript?.(browserText, false);
+          diagLog('hear', { interim: true, browserText, context: current.getContext?.() ?? 'global' });
+        }
         return;
       }
       /* Final: prefer Google's transcript of the captured audio (camino 1),

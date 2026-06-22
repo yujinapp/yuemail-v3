@@ -24,7 +24,10 @@ export interface SendDialogProps {
 export function SendDialog(props: SendDialogProps): React.ReactElement {
   const [to, setTo]               = React.useState(props.prefillTo ?? '');
   const [subject, setSubject]     = React.useState(props.prefillSubject ?? '');
-  const [bodyText, setBodyText]   = React.useState('Adjunto el documento. Saludos.');
+  /* No default body (PND-019, bug 2): a pre-filled "Adjunto el documento.
+   * Saludos." forced the user to clear it every time -- extra work for the
+   * very people the voice flow exists to spare. Start empty. */
+  const [bodyText, setBodyText]   = React.useState('');
   const [attach, setAttach]       = React.useState(true);
 
   function submit() {

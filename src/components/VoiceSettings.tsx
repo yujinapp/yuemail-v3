@@ -18,6 +18,9 @@ import {
   getVoiceConfig, setVoiceConfig, serverSpeak, playAudioBlob,
   type VoiceConfigPublic,
 } from '../voice/serverVoice.js';
+import {
+  diagEnabled, setDiagEnabled, diagCount, diagClear, diagDownload, diagSubscribe,
+} from '../voice/diagnostics.js';
 import { api } from '../lib/api.js';
 
 const SPEECH_VAULT_SLOT = 'speech.google';
@@ -45,6 +48,16 @@ export function VoiceSettings(props: VoiceSettingsProps): React.ReactElement {
   const [hasKey, setHasKey]     = React.useState(false);
   const [keyInput, setKeyInput] = React.useState('');
   const [busy, setBusy]         = React.useState<'load' | 'save' | 'test' | undefined>('load');
+  /* Voice diagnostics (PND-019): an opt-in verbose tracer the tester runs once
+   * to capture exactly what each ear heard and what the app did with it. */
+  const [diagOn, setDiagOn]     = React.useState(diagEnabled());
+  const [diagN, setDiagN]       = React.useState(diagCount());
+
+  React.useEffect(() => {
+    /* Keep the event counter live while the panel is open. */
+    setDiagN(diagCount());
+    return diagSubscribe(() => { setDiagOn(diagEnabled()); setDiagN(diagCount()); });
+  }, []);
 
   React.useEffect(() => {
     let alive = true;
@@ -106,6 +119,30 @@ export function VoiceSettings(props: VoiceSettingsProps): React.ReactElement {
     } finally {
       setBusy(undefined);
     }
+  }
+
+  function onToggleDiag(on: boolean) {
+    setDiagEnabled(on);
+    setDiagOn(on);
+    props.onToast('info', on
+      ? 'Modo diagnostico encendido. Corre la prueba y despues toca "Exportar diagnostico".'
+      : 'Modo diagnostico apagado.');
+  }
+
+  function onExportDiag() {
+    if (diagCount() === 0) {
+      props.onToast('info', 'Todavia no hay nada grabado. Encende el diagnostico y corre la prueba primero.');
+      return;
+    }
+    const res = diagDownload();
+    if (res) props.onToast('success', 'Diagnostico exportado: ' + res.textName);
+    else props.onToast('error', 'No se pudo exportar el diagnostico.');
+  }
+
+  function onClearDiag() {
+    diagClear();
+    setDiagN(0);
+    props.onToast('info', 'Traza de diagnostico borrada.');
   }
 
   const fieldStyle: React.CSSProperties = { width: '100%' };
@@ -184,6 +221,50 @@ export function VoiceSettings(props: VoiceSettingsProps): React.ReactElement {
           Una sola clave de Google sirve para escuchar y hablar. Habilita Speech-to-Text
           y Text-to-Speech, y quita las restricciones de sitio web (la usa el servidor).
         </p>
+
+        <fieldset
+          style={{ marginTop: 16, border: '1px solid rgba(0,0,0,0.15)', borderRadius: 6, padding: '10px 12px' }}
+          data-nac-id="yuemail.voice.diag-section"
+        >
+          <legend style={{ fontSize: 13, fontWeight: 600, padding: '0 6px' }}>Modo diagnostico (para reportar fallas de voz)</legend>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+            <input
+              type="checkbox"
+              checked={diagOn}
+              onChange={(e) => onToggleDiag(e.target.checked)}
+              data-nac-id="yuemail.voice.diag-enabled"
+              data-nac-role="checkbox"
+              data-nac-action="toggle_voice_diagnostics"
+              aria-label="Modo diagnostico de voz"
+            />
+            Grabar lo que se escucha y lo que hace la app ({diagN} eventos)
+          </label>
+          <p style={{ fontSize: 12, opacity: 0.7, margin: '0 0 10px' }} role="note">
+            Para reportar una falla: encende esto, corre la prueba una sola vez hablando normal,
+            y despues toca "Exportar diagnostico". Se baja un archivo que muestra exactamente
+            que escucho y que hizo. No se envia nada solo; vos mandas el archivo.
+          </p>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button
+              type="button"
+              onClick={onExportDiag}
+              data-nac-id="yuemail.voice.diag-export"
+              data-nac-role="button"
+              data-nac-action="export_voice_diagnostics"
+            >
+              Exportar diagnostico
+            </button>
+            <button
+              type="button"
+              onClick={onClearDiag}
+              data-nac-id="yuemail.voice.diag-clear"
+              data-nac-role="button"
+              data-nac-action="clear_voice_diagnostics"
+            >
+              Borrar traza
+            </button>
+          </div>
+        </fieldset>
 
         <div style={{ display: 'flex', gap: 8, justifyContent: 'space-between', marginTop: 16 }}>
           <button

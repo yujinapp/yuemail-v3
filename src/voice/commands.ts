@@ -239,6 +239,12 @@ const MATCHERS: Matcher[] = [
       /\bfin\s+(?:de\s+|del\s+)?dictado\b/,
       /\b(?:finalizar|terminar|parar|detener|cortar)\s+(?:el\s+|de\s+|del\s+)?dictado\b/,
       /\bdictado\s+(?:off|apagado|terminado)\b/,
+      /* Bare stop words, but ONLY as the WHOLE utterance (PND-019, bug 1).
+       * The tester said just "fin" to stop and it got written as a paragraph.
+       * Anchoring to ^...$ keeps a "fin" inside dictated prose (e.g. "el fin
+       * de semana") from cutting dictation -- a lone "fin" stops, "...fin..."
+       * mid-sentence does not. */
+      /^(?:fin|terminar|finalizar|basta|parar|stop)$/,
     ],
   },
   {
@@ -520,7 +526,9 @@ export function parseCommand(raw: string, context: VoiceContext = 'global', opts
       if (spec) cmd.payload = spec.key;
       return cmd;
     }
-    if (/\b(?:fin|finalizar|terminar|cerrar|listo|soltar)\s+(?:de\s+|del\s+|el\s+)?campo\b/.test(normalized)) {
+    /* "campos?" tolerates the plural the recogniser sometimes returns
+     * ("fin campos"), part of the bug-3 inconsistency (PND-019). */
+    if (/\b(?:fin|finalizar|terminar|cerrar|listo|soltar)\s+(?:de\s+|del\s+|el\s+)?campos?\b/.test(normalized)) {
       return { type: 'FIN_CAMPO', raw, normalized };
     }
     const focus = normalized.match(/\bcampo\s+(.+)$/);

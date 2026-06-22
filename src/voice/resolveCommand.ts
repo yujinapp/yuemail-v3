@@ -103,6 +103,8 @@ export function resolveLiterallyFirst(
 export interface ResolveDeps {
   /** Test seam: stub the brain call. Defaults to api.brainResolve. */
   brainResolve?: (utterance: string, context: string) => Promise<BrainResolveResponse>;
+  /** Diagnostics hook (PND-019): reports which lane resolved the utterance. */
+  onTrace?: (info: { lane: 'armed-field' | 'brain' | 'fallback'; brainOk?: boolean }) => void;
 }
 
 /**
@@ -123,6 +125,7 @@ export async function resolveCommand(
    * The matcher already routes armed dictation to UNKNOWN, which the App
    * turns into the field value. */
   if (opts.armed === true && (context === 'send_dialog' || context === 'signature_pad')) {
+    deps.onTrace?.({ lane: 'armed-field' });
     return fallback();
   }
 
@@ -131,10 +134,13 @@ export async function resolveCommand(
   try {
     brain = await call(raw, context);
   } catch {
+    deps.onTrace?.({ lane: 'fallback', brainOk: false });
     return fallback();
   }
-  if (!brain.ok) return fallback();
+  if (!brain.ok) { deps.onTrace?.({ lane: 'fallback', brainOk: false }); return fallback(); }
 
   const mapped = brainToCommand(brain, raw, context);
-  return mapped ?? fallback();
+  if (mapped) { deps.onTrace?.({ lane: 'brain', brainOk: true }); return mapped; }
+  deps.onTrace?.({ lane: 'fallback', brainOk: true });
+  return fallback();
 }

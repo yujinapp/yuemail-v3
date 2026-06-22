@@ -26,6 +26,7 @@ import {
   type VoiceContext,
 } from './voice/commands.js';
 import { resolveCommand, resolveLiterallyFirst } from './voice/resolveCommand.js';
+import { diagLog } from './voice/diagnostics.js';
 import { announce, ensureRegions } from './lib/ariaLive.js';
 import { api } from './lib/api.js';
 
@@ -281,6 +282,11 @@ export function App(): React.ReactElement {
   }
 
   function onVoiceCommand(cmd: VoiceCommand) {
+    diagLog('act', {
+      commandType: cmd.type, payload: cmd.payload, raw: cmd.raw, normalized: cmd.normalized,
+      context: voiceContextRef.current, dictationOn: dictationRef.current,
+      armedField: armedFieldRef.current?.key,
+    });
     switch (cmd.type) {
       case 'NUEVO_DOCUMENTO':
         void onNewDocument(); break;
@@ -390,7 +396,12 @@ export function App(): React.ReactElement {
          * ("iniciar dictado" / "fin dictado") OUT of the document -- they
          * resolve to their own command cases above and never reach here. */
         if (voiceContextRef.current !== 'global') {
-          if (armedFieldRef.current) applyFieldDictation(armedFieldRef.current, cmd.raw);
+          if (armedFieldRef.current) {
+            diagLog('act', { outcome: 'dictado_a_campo', armedField: armedFieldRef.current.key, detail: cmd.raw, context: voiceContextRef.current });
+            applyFieldDictation(armedFieldRef.current, cmd.raw);
+          } else {
+            diagLog('act', { outcome: 'ignorado_sin_campo_armado', context: voiceContextRef.current, detail: cmd.raw });
+          }
         } else if (dictationRef.current) {
           const text = cmd.raw.trim();
           if (text.length === 0) break;
@@ -399,9 +410,12 @@ export function App(): React.ReactElement {
            * (e.g. a variant the upstream router missed), act on the toggle
            * instead of pasting "fin dictado" into the document. */
           const reparsed = parseCommand(text, 'global').type;
-          if (reparsed === 'FIN_DICTADO') { dictationRef.current = false; setDictation(false); pushToast('info', 'Dictado finalizado.'); break; }
-          if (reparsed === 'INICIAR_DICTADO') break;
+          if (reparsed === 'FIN_DICTADO') { dictationRef.current = false; setDictation(false); pushToast('info', 'Dictado finalizado.'); diagLog('act', { outcome: 'red_seguridad_fin_dictado', dictationOn: false, detail: text }); break; }
+          if (reparsed === 'INICIAR_DICTADO') { diagLog('act', { outcome: 'red_seguridad_iniciar_ignorado', dictationOn: true, detail: text }); break; }
+          diagLog('act', { outcome: 'escribio_parrafo', dictationOn: true, detail: text });
           setBlocks((prev) => [...prev, { type: 'paragraph', text }]);
+        } else {
+          diagLog('act', { outcome: 'ignorado_sin_dictado', context: 'global', detail: cmd.raw });
         }
         break;
     }
@@ -425,8 +439,26 @@ export function App(): React.ReactElement {
      * literal matcher (no network), so dictation starts/stops instantly and
      * dictated content is never re-read by the Brain as a command. */
     resolveCommand: (raw, context, o) => {
-      const instant = resolveLiterallyFirst(raw, context, o, dictationRef.current);
-      return instant ? Promise.resolve(instant) : resolveCommand(raw, context, o);
+      const dictationOn = dictationRef.current;
+      const armedKey = armedFieldRef.current?.key;
+      const instant = resolveLiterallyFirst(raw, context, o, dictationOn);
+      if (instant) {
+        diagLog('resolve', {
+          lane: 'literal-first', context, dictationOn, armedField: armedKey,
+          commandType: instant.type, payload: instant.payload, raw, normalized: instant.normalized,
+        });
+        return Promise.resolve(instant);
+      }
+      let lane: 'armed-field' | 'brain' | 'fallback' = 'brain';
+      return resolveCommand(raw, context, o, {
+        onTrace: (info) => { lane = info.lane; },
+      }).then((cmd) => {
+        diagLog('resolve', {
+          lane, context, dictationOn, armedField: armedKey,
+          commandType: cmd.type, payload: cmd.payload, raw, normalized: cmd.normalized,
+        });
+        return cmd;
+      });
     },
   });
 
