@@ -49,6 +49,13 @@ export interface UseVoiceOpts {
    * verbs (see ParseOpts.armed). Defaults to false.
    */
   getArmed?:     () => boolean;
+  /**
+   * Camino 1 (v0.5.0): async resolver that lets the server-side Brain
+   * classify the utterance first, falling back to the fixed-phrase matcher
+   * on any miss. When omitted, the synchronous matcher is used directly
+   * (the pre-Brain behaviour). It never throws.
+   */
+  resolveCommand?: (raw: string, context: VoiceContext, opts: { armed: boolean }) => Promise<VoiceCommand>;
 }
 
 export interface VoiceHandle {
@@ -86,8 +93,19 @@ export function useVoice(opts: UseVoiceOpts = {}): VoiceHandle {
       const current    = optsRef.current;
       if (transcript) current.onTranscript?.(transcript, isFinal);
       if (isFinal && current.onCommand) {
-        const cmd = parseCommand(transcript, current.getContext?.() ?? 'global', { armed: current.getArmed?.() ?? false });
-        current.onCommand(cmd);
+        const context = current.getContext?.() ?? 'global';
+        const armed   = current.getArmed?.() ?? false;
+        const onCommand = current.onCommand;
+        if (current.resolveCommand) {
+          /* Camino 1: async Brain resolution. The resolver never throws and
+           * falls back to the matcher internally; we still guard so a bug
+           * there can never silence the mic. */
+          void current.resolveCommand(transcript, context, { armed })
+            .then((cmd) => onCommand(cmd))
+            .catch(() => onCommand(parseCommand(transcript, context, { armed })));
+        } else {
+          onCommand(parseCommand(transcript, context, { armed }));
+        }
       }
     };
     rec.onerror = () => {

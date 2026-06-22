@@ -73,6 +73,26 @@ export type VoiceCommandType =
   | 'FIN_CAMPO'
   | 'UNKNOWN';
 
+/* Runtime list of every command type the client can dispatch -- the single
+ * source of truth the Brain catalog is checked against (producer/consumer
+ * symmetry, SQ 14). The `satisfies` keeps every entry a valid type; the
+ * exhaustiveness check below fails the build if a new type is left out. */
+export const ALL_VOICE_COMMAND_TYPES = [
+  'NUEVO_DOCUMENTO', 'ABRIR_DOCUMENTO', 'GUARDAR_FIRMA', 'FIRMAR',
+  'INICIAR_DICTADO', 'FIN_DICTADO', 'ENVIAR', 'LEER_BANDEJA',
+  'ABRIR_CONFIGURACION', 'DETENER_VOZ', 'ENCENDER_MICROFONO', 'APAGAR_MICROFONO',
+  'CONFIRMAR_ENVIO', 'CANCELAR', 'GUARDAR_FIRMA_PAD', 'BORRAR_FIRMA',
+  'GENERAR_FIRMA', 'DETECTAR_SERVIDORES', 'PROBAR_CONEXION', 'GUARDAR_CONFIG',
+  'ENFOCAR_CAMPO', 'BORRAR_CAMPO', 'FIN_CAMPO', 'UNKNOWN',
+] as const satisfies readonly VoiceCommandType[];
+
+/* Compile-time exhaustiveness: if a VoiceCommandType is missing from the
+ * list above, _MissingVoiceType resolves to that type (not never) and the
+ * assignment errors. */
+type _MissingVoiceType = Exclude<VoiceCommandType, (typeof ALL_VOICE_COMMAND_TYPES)[number]>;
+const _voiceTypesExhaustive: _MissingVoiceType extends never ? true : false = true;
+void _voiceTypesExhaustive;
+
 /**
  * Where the utterance is being parsed. With a modal open, global commands
  * are suppressed (except the mic-safety pair + "detener voz") so a phrase

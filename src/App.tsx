@@ -13,15 +13,18 @@ import { Editor, type DocumentBlock } from './components/Editor.js';
 import { SignaturePad } from './components/SignaturePad.js';
 import { SendDialog } from './components/SendDialog.js';
 import { SettingsDialog } from './components/SettingsDialog.js';
+import { BrainSettings } from './components/BrainSettings.js';
 import { useVoice } from './voice/useVoice.js';
 import {
   FIELD_SPECS_BY_CONTEXT,
+  parseCommand,
   spokenCheckboxValue,
   spokenFieldValue,
   type DialogFieldSpec,
   type VoiceCommand,
   type VoiceContext,
 } from './voice/commands.js';
+import { resolveCommand } from './voice/resolveCommand.js';
 import { announce, ensureRegions } from './lib/ariaLive.js';
 import { api } from './lib/api.js';
 
@@ -37,10 +40,17 @@ export function App(): React.ReactElement {
   const [showSignaturePad, setShowSignaturePad] = React.useState(false);
   const [showSendDialog, setShowSendDialog]   = React.useState(false);
   const [showSettings, setShowSettings]       = React.useState(false);
+  const [showBrain, setShowBrain]             = React.useState(false);
   const [sendPrefillTo, setSendPrefillTo]     = React.useState('');
   const [envelopes, setEnvelopes] = React.useState<InboxEnvelope[]>([]);
   const [toasts, setToasts]       = React.useState<Toast[]>([]);
   const [dictation, setDictation] = React.useState(false);
+  /* Mirror dictation into a ref so the voice resolver always reads the
+   * current value: while dictating, speech is CONTENT, not a command, so
+   * the Brain must not re-interpret it (the matcher still catches the
+   * literal "fin dictado" to stop). */
+  const dictationRef = React.useRef(false);
+  dictationRef.current = dictation;
 
   React.useEffect(() => { ensureRegions(); }, []);
   React.useEffect(() => {
@@ -389,6 +399,14 @@ export function App(): React.ReactElement {
     onTranscript: onVoiceTranscript,
     getContext:   () => voiceContextRef.current,
     getArmed:     () => armedFieldRef.current !== undefined,
+    /* Camino 1: the Brain classifies each utterance first; resolveCommand
+     * falls back to the fixed-phrase matcher on any miss. During active
+     * dictation the literal matcher leads instead, so dictated content is
+     * never re-read by the Brain as a command. */
+    resolveCommand: (raw, context, o) =>
+      (dictationRef.current && context === 'global')
+        ? Promise.resolve(parseCommand(raw, context, o))
+        : resolveCommand(raw, context, o),
   });
 
   function onToolbarAction(action: ToolbarAction) {
@@ -403,6 +421,18 @@ export function App(): React.ReactElement {
       <header className="yuemail-topbar" data-nac-id="yuemail.topbar.root">
         <h1>Yuemail</h1>
         <div className="yuemail-topbar-actions">
+          <button
+            type="button"
+            className="yuemail-brain-btn"
+            aria-label="Asistente de voz"
+            title="Asistente de voz (IA)"
+            onClick={() => setShowBrain(true)}
+            data-nac-id="yuemail.voice.btn-brain"
+            data-nac-role="button"
+            data-nac-action="open_brain"
+          >
+            Asistente
+          </button>
           <button
             type="button"
             className="yuemail-settings-gear"
@@ -481,6 +511,13 @@ export function App(): React.ReactElement {
       {showSettings && (
         <SettingsDialog
           onClose={() => setShowSettings(false)}
+          onToast={pushToast}
+        />
+      )}
+
+      {showBrain && (
+        <BrainSettings
+          onClose={() => setShowBrain(false)}
           onToast={pushToast}
         />
       )}

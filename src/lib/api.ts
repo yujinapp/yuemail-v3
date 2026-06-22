@@ -128,4 +128,45 @@ export const api = {
       '/api/inbox/list?limit=' + limit,
     );
   },
+
+  /* --- Brain (camino 1, v0.5.0) --- */
+  brainConfig() {
+    return send<BrainConfigResponse>('/api/brain/config');
+  },
+  brainConfigSet(patch: Partial<BrainConfigPublic>) {
+    return send<BrainConfigResponse>('/api/brain/config', {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(patch),
+    });
+  },
+  brainModels(provider: string) {
+    return send<{ ok: true; provider: string; models: Array<{ id: string; display_name: string }>; source: 'live' | 'static'; error?: string }>(
+      '/api/brain/models?provider=' + encodeURIComponent(provider),
+    );
+  },
+  brainResolve(utterance: string, context: string) {
+    return send<BrainResolveResponse>('/api/brain/resolve', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ utterance, context }),
+    });
+  },
 };
+
+export interface BrainConfigPublic {
+  enabled: boolean;
+  provider: string;
+  model: string;
+  min_confidence: number;
+  timeout_ms: number;
+  all_providers: string[];
+}
+export interface BrainConfigResponse {
+  ok: true;
+  config: BrainConfigPublic;
+  has_key: boolean;
+}
+export type BrainResolveResponse =
+  | { ok: true; type: string; payload?: string; confidence: number; source: 'brain'; model: string }
+  | { ok: false; reason: string; detail?: string };

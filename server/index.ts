@@ -26,6 +26,7 @@ import { registerSignatureRoutes } from './routes/signature.js';
 import { registerEmailRoutes }     from './routes/email.js';
 import { registerInboxRoutes }     from './routes/inbox.js';
 import { registerSettingsRoutes }  from './routes/settings.js';
+import { registerBrainRoutes }     from './routes/brain.js';
 
 export const HOST = '127.0.0.1';
 export const PORT = 5180;
@@ -70,6 +71,7 @@ export function buildApp(opts: BuildAppOpts = {}): Express {
   registerEmailRoutes(app);
   registerInboxRoutes(app);
   registerSettingsRoutes(app);
+  registerBrainRoutes(app);
 
   /* Static SPA -- present in production builds, absent in dev. */
   const staticRoot = opts.staticRoot ?? path.resolve(__dirname, '..', 'dist');

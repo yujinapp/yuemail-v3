@@ -8,6 +8,9 @@
 - **Distribution**: public npm package `@yujinapp/yuemail` + binary `yuemail`
 - **License**: MIT
 - **Status**: greenfield, no prior implementation in this directory
+- **v0.5.0 adenda**: la decision "sin IA" fue revertida por el owner
+  (2026-06-22). Yuemail incorpora un Asistente de voz (Brain) como
+  camino 1 por defecto; ver docs/ADENDA_v0.5.0_BRAIN.md (PND-010).
 
 ## Primary user
 

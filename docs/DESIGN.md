@@ -4,6 +4,8 @@ Status: generated 2026-06-10 from the as-built codebase; refreshed
 2026-06-11 (PND-004: version labels, pending references). Approved by
 owner 2026-06-11 (gate 13). Iterated same day under the approved-spec
 flow: D11 added with PND-003 (owner-approved), version label v0.4.0.
+Iterated at v0.5.0 (PND-010, owner-approved 2026-06-22): decisiones
+D-BRAIN-1..7 del Asistente de voz; ver docs/ADENDA_v0.5.0_BRAIN.md.
 RFP: docs/SPEC.md. Architecture: docs/ARCHITECTURE.md.
 
 ## D1 -- JSON-on-filesystem, no database

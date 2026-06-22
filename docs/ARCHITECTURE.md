@@ -5,7 +5,9 @@ Status: generated 2026-06-10 from the as-built codebase; refreshed
 feature relabelled D9 to undo the F10 collision). Approved by owner
 2026-06-11 (gate 13). Refreshed at v0.4.0: settings feature is now
 F14 (RFP adenda PND-006); dialog field dictation generalised (D11).
-RFP: docs/SPEC.md.
+Refreshed at v0.5.0: Asistente de voz (Brain) anadido como camino 1
+(server/brain/*, BrainSettings.tsx); ver docs/ADENDA_v0.5.0_BRAIN.md
+(PND-010). RFP: docs/SPEC.md.
 
 ## System overview
 

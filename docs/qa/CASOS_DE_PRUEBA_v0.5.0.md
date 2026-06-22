@@ -1,4 +1,4 @@
-# Yuemail v0.4.0 -- Casos de prueba para QA manual
+# Yuemail v0.5.0 -- Casos de prueba para QA manual
 
 Leer primero: `INSTRUCTIVO_TESTERS.md` (como instalar, como anotar,
 a donde enviar los resultados). La planilla de resultados esta al
@@ -7,11 +7,101 @@ final de este documento.
 Convenciones:
 
 - Las frases entre comillas ("nuevo documento") se DICEN por voz
-  con el microfono encendido, salvo que el paso diga "escribi".
+  con el microfono encendido, salvo que el paso diga "escribi". Son
+  comandos fijos (camino 2): andan con o sin asistente.
+- Las frases marcadas **(pedido libre)** son ejemplos para el
+  asistente de IA (camino 1): podes decir eso o algo parecido con tus
+  palabras. Miden que tan bien interpreta la IA.
 - "La app" = el navegador en http://127.0.0.1:5180.
 - "Aviso" = el cartel que aparece abajo en la pantalla (toast).
+- "El asistente" = la IA / Brain que interpreta los pedidos libres.
 - Salvo indicacion contraria, cada seccion arranca con la app
   abierta y sin ninguna ventana emergente abierta.
+
+---
+
+## Seccion BRAIN -- Asistente de voz (IA) [PRIMERO]
+
+Esta seccion va antes que todo lo demas: el asistente es el camino 1
+por defecto y el resto de las pruebas de voz lo asumen configurado.
+Necesitas una clave de API (ver INSTRUCTIVO, seccion 2).
+
+### BRAIN-01 -- Abrir el panel del asistente
+- Pasos: click en el boton "Asistente" (arriba a la derecha).
+- Esperado: se abre la ventana "Asistente de voz (IA)" con el
+  interruptor "Asistente de voz encendido" MARCADO, Proveedor en
+  "Google Gemini", un Modelo de Gemini (Flash Lite) y el campo
+  "Clave de API".
+
+### BRAIN-02 -- Lista de proveedores
+- Precondicion: BRAIN-01.
+- Pasos: abri el desplegable "Proveedor de IA".
+- Esperado: aparecen varios (Google Gemini, Anthropic Claude, OpenAI,
+  DeepSeek, xAI Grok, Mistral, Qwen, Z.ai/GLM, Ollama local).
+
+### BRAIN-03 -- La clave nunca se muestra
+- Pasos: en "Clave de API" escribi algo; mira como se ve; cerra y
+  reabri el panel.
+- Esperado: el campo se muestra como puntos (tipo contrasena) y al
+  reabrir aparece vacio (la clave guardada NO se vuelve a mostrar; si
+  ya habia una, dice "ya configurada").
+
+### BRAIN-04 -- Guardar la clave
+- Pasos: pega tu clave de API real y apreta "Guardar".
+- Esperado: aviso "Asistente de voz configurado" y la ventana se
+  cierra.
+
+### BRAIN-05 -- Pedido libre simple (la IA elige la accion)
+- Precondicion: BRAIN-04, microfono encendido.
+- Pasos: deci **(pedido libre)** "che, fijate si me llego algun correo".
+- Esperado: la app lee la bandeja (igual que "leer bandeja"). Anota
+  TEXTUAL lo que dijiste y que hizo.
+
+### BRAIN-06 -- Pedido libre con dato (correo)
+- Pasos: deci **(pedido libre)** "quiero mandarle esto a juan arroba
+  ejemplo punto com".
+- Esperado: se abre el dialogo de envio con el destinatario
+  juan@ejemplo.com cargado.
+
+### BRAIN-07 -- Pedido libre para configurar
+- Pasos: deci **(pedido libre)** "donde configuro mi correo".
+- Esperado: se abre la ventana de configuracion del correo.
+
+### BRAIN-08 -- Red de seguridad: asistente apagado
+- Pasos: abri "Asistente", DESmarca "Asistente de voz encendido",
+  Guardar. Despues deci "leer bandeja" (comando fijo) y luego un
+  pedido libre cualquiera.
+- Esperado: el comando fijo "leer bandeja" funciona igual; el pedido
+  libre puede no entenderse (es esperado: sin asistente solo andan los
+  comandos fijos). La app NUNCA queda inutilizable.
+
+### BRAIN-09 -- Red de seguridad: sin internet
+- Precondicion: volve a ENCENDER el asistente (BRAIN-04). Desconecta
+  el wifi / cable de red.
+- Pasos: deci el comando fijo "nuevo documento".
+- Esperado: funciona igual (el comando fijo no necesita internet). Un
+  pedido libre puede tardar y caer al comando fijo o no entenderse;
+  lo importante es que la app sigue respondiendo. Volve a conectar la
+  red al terminar.
+
+### BRAIN-10 -- (Opcional) IA local con Ollama
+- Solo si tenes Ollama instalado (ollama.com). Elegi proveedor
+  "Ollama (local, sin clave)", Guardar, y proba un pedido libre.
+- Esperado: funciona sin clave y sin que nada salga de tu maquina.
+  Si no tenes Ollama, marca N/A.
+
+### BRAIN-11 -- CRITICO: el asistente NO ejecuta lo que no pediste
+- Precondicion: BRAIN-04 (asistente encendido y con clave),
+  microfono on, sin ninguna ventana emergente abierta.
+- Pasos: deci, uno por uno, estos pedidos que NO son comandos:
+  - una negacion: "no, no lo mandes todavia";
+  - charla suelta: "que lindo dia hace hoy".
+- Esperado: en NINGUNO de los dos casos la app ejecuta una accion
+  (no abre el envio, no apaga el microfono, no abre configuracion,
+  etc.). A lo sumo avisa que no entendio. Para una persona que
+  depende de la app, ejecutar el comando equivocado es peor que no
+  hacer nada: si la app dispara CUALQUIER accion con estas frases,
+  marca FALLA con severidad alta y anota TEXTUAL que hizo.
 
 ---
 
@@ -24,7 +114,7 @@ Convenciones:
 ### INS-02 -- Version
 - Precondicion: INS-01.
 - Pasos: `yuemail version`.
-- Esperado: imprime `0.4.0` (o superior).
+- Esperado: imprime `0.5.0` (o superior).
 
 ### INS-03 -- Ayuda
 - Pasos: `yuemail help`.
@@ -514,9 +604,21 @@ Datos de la corrida:
 - Version de Node (`node --version`):
 - Version de Yuemail (`yuemail version`):
 - Proveedor de correo usado:
+- Proveedor y modelo de IA usado (asistente):
 
 | Caso | Resultado | Observaciones | Captura |
 |------|-----------|---------------|---------|
+| BRAIN-01 | | | |
+| BRAIN-02 | | | |
+| BRAIN-03 | | | |
+| BRAIN-04 | | | |
+| BRAIN-05 | | | |
+| BRAIN-06 | | | |
+| BRAIN-07 | | | |
+| BRAIN-08 | | | |
+| BRAIN-09 | | | |
+| BRAIN-10 | | | |
+| BRAIN-11 | | | |
 | INS-01 | | | |
 | INS-02 | | | |
 | INS-03 | | | |
@@ -594,5 +696,5 @@ Datos de la corrida:
 | SEG-05 | | | |
 | REG-01 | | | |
 
-Total: 73 casos. Enviar a contact@yujin.app con asunto
-`QA Yuemail v0.4.0 -- <tu nombre>`. Gracias!
+Total: 87 casos. Enviar a contact@yujin.app con asunto
+`QA Yuemail v0.5.0 -- <tu nombre>`. Gracias!

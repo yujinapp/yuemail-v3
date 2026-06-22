@@ -73,6 +73,19 @@ export const VAULT_KEYS = [
   'smtp.secure',
   'identity.from',
   'identity.name',
+  /* Brain provider API keys (v0.5.0). One slot per provider; the router
+   * reads them server-side and they never reach the browser, exactly like
+   * the mail credentials above. Ollama is local + keyless but kept in the
+   * allowlist for symmetry. */
+  'brain.google_ai',
+  'brain.anthropic',
+  'brain.openai',
+  'brain.deepseek',
+  'brain.xai',
+  'brain.mistral',
+  'brain.qwen',
+  'brain.zai',
+  'brain.ollama',
 ] as const;
 
 export type VaultKey = (typeof VAULT_KEYS)[number];
