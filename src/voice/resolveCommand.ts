@@ -70,6 +70,36 @@ function brainToCommand(
   return cmd;
 }
 
+/**
+ * Decide whether an utterance must be resolved by the fast literal matcher
+ * instead of the cloud Brain. Two cases need instant, network-free routing
+ * in the global (no-modal) context:
+ *
+ *   1. The dictation toggles ("iniciar dictado" / "fin dictado"). If these
+ *      waited on the Brain, dictation would flip LATE: the first phrases get
+ *      dropped while "iniciar" is still resolving, and "fin dictado" gets
+ *      written as a paragraph because "stop" has not landed yet. They must
+ *      take effect the instant they are heard. (PND-015)
+ *   2. Any utterance WHILE dictation is already active: spoken words are
+ *      document CONTENT, not commands, so the Brain must not re-read them.
+ *
+ * Returns the literal VoiceCommand to use, or undefined to defer to the
+ * Brain. The toggles short-circuit even when dictation is OFF -- that is the
+ * fix for the "first phrases lost" half of the bug.
+ */
+export function resolveLiterallyFirst(
+  raw: string,
+  context: VoiceContext,
+  opts: ParseOpts,
+  dictationOn: boolean,
+): VoiceCommand | undefined {
+  if (context !== 'global') return undefined;
+  const literal = parseCommand(raw, context, opts);
+  if (literal.type === 'INICIAR_DICTADO' || literal.type === 'FIN_DICTADO') return literal;
+  if (dictationOn) return literal;
+  return undefined;
+}
+
 export interface ResolveDeps {
   /** Test seam: stub the brain call. Defaults to api.brainResolve. */
   brainResolve?: (utterance: string, context: string) => Promise<BrainResolveResponse>;

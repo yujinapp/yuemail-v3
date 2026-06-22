@@ -18,14 +18,13 @@ import { VoiceSettings } from './components/VoiceSettings.js';
 import { useVoice } from './voice/useVoice.js';
 import {
   FIELD_SPECS_BY_CONTEXT,
-  parseCommand,
   spokenCheckboxValue,
   spokenFieldValue,
   type DialogFieldSpec,
   type VoiceCommand,
   type VoiceContext,
 } from './voice/commands.js';
-import { resolveCommand } from './voice/resolveCommand.js';
+import { resolveCommand, resolveLiterallyFirst } from './voice/resolveCommand.js';
 import { announce, ensureRegions } from './lib/ariaLive.js';
 import { api } from './lib/api.js';
 
@@ -291,8 +290,12 @@ export function App(): React.ReactElement {
       case 'FIRMAR':
         void onSignDocument(); break;
       case 'INICIAR_DICTADO':
+        /* Flip the ref imperatively too, so the very next utterance is
+         * already treated as content even before React re-renders. */
+        dictationRef.current = true;
         setDictation(true); pushToast('info', 'Dictado iniciado.'); break;
       case 'FIN_DICTADO':
+        dictationRef.current = false;
         setDictation(false); pushToast('info', 'Dictado finalizado.'); break;
       case 'ENVIAR':
         void onSendEmail(cmd.payload); break;
@@ -378,22 +381,28 @@ export function App(): React.ReactElement {
         break;
       }
       default:
-        /* UNKNOWN -- with a field armed inside a modal, the utterance IS
-         * the dictated value. Everywhere else, ignore silently. */
-        if (voiceContextRef.current !== 'global' && armedFieldRef.current) {
-          applyFieldDictation(armedFieldRef.current, cmd.raw);
+        /* Not a recognised command. Two homes for free speech:
+         *  - inside a modal with a field armed: it is that field's value.
+         *  - in the document with dictation active: it is a new paragraph.
+         * Routing the text HERE (after the command is resolved) instead of
+         * at the transcript stage is what keeps the control phrases
+         * ("iniciar dictado" / "fin dictado") OUT of the document -- they
+         * resolve to their own command cases above and never reach here. */
+        if (voiceContextRef.current !== 'global') {
+          if (armedFieldRef.current) applyFieldDictation(armedFieldRef.current, cmd.raw);
+        } else if (dictationRef.current) {
+          const text = cmd.raw.trim();
+          if (text.length > 0) setBlocks((prev) => [...prev, { type: 'paragraph', text }]);
         }
         break;
     }
   }
 
-  function onVoiceTranscript(text: string, isFinal: boolean) {
-    if (!isFinal || !dictation) return;
-    /* A modal owns the voice channel: do not dictate into the document
-     * sitting behind it. */
-    if (voiceContextRef.current !== 'global') return;
-    /* Append the transcript as a new paragraph block. */
-    setBlocks((prev) => [...prev, { type: 'paragraph', text }]);
+  function onVoiceTranscript(_text: string, _isFinal: boolean) {
+    /* Document dictation no longer appends here. The final transcript is
+     * routed through onVoiceCommand instead (see the default case), so a
+     * control phrase like "fin dictado" is acted on rather than written.
+     * Kept wired for any future live-interim display. */
   }
 
   const voice = useVoice({
@@ -402,13 +411,14 @@ export function App(): React.ReactElement {
     getContext:   () => voiceContextRef.current,
     getArmed:     () => armedFieldRef.current !== undefined,
     /* Camino 1: the Brain classifies each utterance first; resolveCommand
-     * falls back to the fixed-phrase matcher on any miss. During active
-     * dictation the literal matcher leads instead, so dictated content is
-     * never re-read by the Brain as a command. */
-    resolveCommand: (raw, context, o) =>
-      (dictationRef.current && context === 'global')
-        ? Promise.resolve(parseCommand(raw, context, o))
-        : resolveCommand(raw, context, o),
+     * falls back to the fixed-phrase matcher on any miss. But the dictation
+     * toggles and all content spoken while dictating are routed by the fast
+     * literal matcher (no network), so dictation starts/stops instantly and
+     * dictated content is never re-read by the Brain as a command. */
+    resolveCommand: (raw, context, o) => {
+      const instant = resolveLiterallyFirst(raw, context, o, dictationRef.current);
+      return instant ? Promise.resolve(instant) : resolveCommand(raw, context, o);
+    },
   });
 
   function onToolbarAction(action: ToolbarAction) {
