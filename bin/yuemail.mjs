@@ -25,7 +25,12 @@ const require = createRequire(import.meta.url);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname  = path.dirname(__filename);
 
-const VERSION = '0.3.0';
+/* Read the version from package.json so `yuemail version` never drifts from
+ * the published package (the bin used to hardcode '0.3.0'). require() here
+ * resolves relative to this file -> the package root package.json, both in
+ * dev and when installed globally. */
+let VERSION = '0.0.0';
+try { VERSION = require('../package.json').version || VERSION; } catch { /* keep fallback */ }
 
 function printHelp() {
   process.stdout.write(
