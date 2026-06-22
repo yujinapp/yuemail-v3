@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LEEME - Paquete de prueba Yuemail v0.6.0</title>
+<style>
+  :root{
+    --ink:#23201c; --ink-soft:#4a463f; --paper:#f5f1e8; --paper-2:#fbf8f1;
+    --line:#d8cfbd; --accent:#7a5c3e; --accent-soft:#a98a63; --seal:#9c3b2e;
+    --ok:#3a6b4f; --warn:#8a6d1f;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0; background:var(--paper);
+    color:var(--ink);
+    font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+    line-height:1.7; font-size:18px;
+  }
+  .wrap{max-width:780px; margin:0 auto; padding:48px 28px 96px}
+  .sheet{
+    background:var(--paper-2); border:1px solid var(--line);
+    border-radius:14px; padding:44px 48px;
+    box-shadow:0 1px 0 #fff inset, 0 18px 40px -28px rgba(35,32,28,.5);
+  }
+  .kicker{font-size:13px; letter-spacing:.22em; text-transform:uppercase;
+    color:var(--accent-soft); margin:0 0 6px}
+  h1{font-size:34px; line-height:1.2; margin:0 0 8px; font-weight:600}
+  h2{font-size:22px; margin:34px 0 10px; padding-bottom:6px;
+    border-bottom:1px solid var(--line); font-weight:600}
+  p{margin:0 0 14px; color:var(--ink-soft)}
+  strong{color:var(--ink)}
+  a{color:var(--accent); text-decoration:none; border-bottom:1px solid var(--accent-soft)}
+  a:hover{background:#efe7d6}
+  code{font-family:"SFMono-Regular",Consolas,"Liberation Mono",monospace;
+    background:#efe7d6; padding:2px 6px; border-radius:5px; font-size:.86em; color:#5a4631}
+  ol.steps{counter-reset:step; list-style:none; padding:0; margin:18px 0}
+  ol.steps>li{position:relative; padding:14px 16px 14px 60px; margin:0 0 12px;
+    background:#fff; border:1px solid var(--line); border-radius:10px}
+  ol.steps>li::before{counter-increment:step; content:counter(step);
+    position:absolute; left:14px; top:14px; width:32px; height:32px;
+    background:var(--accent); color:#fff; border-radius:50%;
+    display:flex; align-items:center; justify-content:center; font-weight:700; font-size:16px}
+  ol.steps b{color:var(--ink)}
+  .note{border-left:4px solid var(--accent-soft); background:#f3ecdd;
+    padding:14px 18px; border-radius:0 10px 10px 0; margin:18px 0}
+  .alert{border-left:4px solid var(--seal); background:#f7e8e4;
+    padding:14px 18px; border-radius:0 10px 10px 0; margin:18px 0}
+  .lead{font-size:20px; color:var(--ink)}
+  .seal{display:inline-block; margin-top:8px; color:var(--seal);
+    border:1.5px solid var(--seal); border-radius:8px; padding:2px 10px;
+    font-size:13px; letter-spacing:.12em; text-transform:uppercase}
+  footer{margin-top:36px; padding-top:16px; border-top:1px solid var(--line);
+    font-size:13px; color:var(--accent-soft); text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="sheet">
+  <p class="kicker">Paquete de prueba</p>
+  <h1>Yuemail v0.6.0</h1>
+  <span class="seal">Para el tester</span>
+
+  <p class="lead" style="margin-top:22px">Gracias por ayudarnos a probar Yuemail. Esta carpeta tiene TODO lo que necesitas, en orden. No hace falta saber programar.</p>
+
+  <h2>Que es Yuemail (en una frase)</h2>
+  <p>Un correo electronico que se maneja hablando, pensado para personas con dificultades motrices o de vision: dictas un documento, lo firmas y lo envias por mail, todo con la voz.</p>
+
+  <h2>Por donde empiezo</h2>
+  <p>Abri y segui los archivos EN ESTE ORDEN:</p>
+  <ol class="steps">
+    <li><b><a href="1_INSTALACION_Y_CONFIGURACION.html">1. Instalacion y configuracion</a></b><br>
+      Como descargar, instalar y dejar Yuemail listo para usar. Paso a paso, con todo lo que tenes que tener a mano antes de empezar.</li>
+    <li><b><a href="2_PRUEBAS_TIPICAS.html">2. Pruebas tipicas</a></b><br>
+      20 pruebas tipicas, una por una, con lo que tenes que hacer y lo que tiene que pasar. Es el recorrido normal de un usuario.</li>
+    <li><b><a href="PLANILLA_RESULTADOS.html">3. Planilla de resultados</a></b><br>
+      Una tabla para anotar como te fue en cada prueba (PASA / FALLA / etc.). Al final dice a donde enviarla.</li>
+  </ol>
+
+  <h2>Lo nuevo de esta version (v0.6.0)</h2>
+  <div class="note">
+    <p style="margin:0">Yuemail ahora <strong>escucha y habla con la voz de Google</strong>: entiende mejor lo que decis y te lee las cosas con una voz mas clara. Viene encendido de fabrica. Por eso lo PRIMERO que vas a configurar es la Voz (Paso 1 de la guia de instalacion). Si se cae internet o falta la clave, Yuemail sigue funcionando con la voz del navegador: nunca te quedas sin app.</p>
+  </div>
+
+  <h2>Si algo se rompe del todo</h2>
+  <div class="alert">
+    <p style="margin:0">Si Yuemail no instala o no arranca, no esperes a terminar todas las pruebas: escribinos de inmediato a <a href="mailto:contact@yujin.app">contact@yujin.app</a> con el asunto <code>QA Yuemail v0.6.0</code>.</p>
+  </div>
+
+  <footer>Yuemail &middot; Yujin &mdash; La tecnologia desaparece. El sistema aprende de vos.</footer>
+</div>
+</div>
+</body>
+</html>

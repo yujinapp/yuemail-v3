@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Planilla de resultados - Yuemail v0.6.0</title>
+<style>
+  :root{
+    --ink:#23201c; --ink-soft:#4a463f; --paper:#f5f1e8; --paper-2:#fbf8f1;
+    --line:#d8cfbd; --accent:#7a5c3e; --accent-soft:#a98a63; --seal:#9c3b2e;
+    --ok:#3a6b4f; --warn:#8a6d1f;
+  }
+  *{box-sizing:border-box}
+  body{margin:0; background:var(--paper); color:var(--ink);
+    font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+    line-height:1.6; font-size:17px}
+  .wrap{max-width:900px; margin:0 auto; padding:48px 28px 96px}
+  .sheet{background:var(--paper-2); border:1px solid var(--line);
+    border-radius:14px; padding:44px 48px;
+    box-shadow:0 1px 0 #fff inset, 0 18px 40px -28px rgba(35,32,28,.5)}
+  .kicker{font-size:13px; letter-spacing:.22em; text-transform:uppercase;
+    color:var(--accent-soft); margin:0 0 6px}
+  h1{font-size:30px; line-height:1.2; margin:0 0 6px; font-weight:600}
+  h2{font-size:21px; margin:34px 0 12px; padding-bottom:6px;
+    border-bottom:2px solid var(--accent-soft); font-weight:600; color:var(--accent)}
+  p{margin:0 0 14px; color:var(--ink-soft)}
+  strong{color:var(--ink)}
+  a{color:var(--accent); text-decoration:none; border-bottom:1px solid var(--accent-soft)}
+  a:hover{background:#efe7d6}
+  code{font-family:"SFMono-Regular",Consolas,monospace;
+    background:#efe7d6; padding:2px 6px; border-radius:5px; font-size:.85em; color:#5a4631}
+  .topnav{margin-bottom:24px; font-size:14px}
+  .legend li{margin:0 0 8px; color:var(--ink-soft)}
+  .pill{display:inline-block; font-weight:700; font-size:13px; letter-spacing:.05em;
+    padding:2px 10px; border-radius:6px; color:#fff}
+  .p-pass{background:var(--ok)} .p-fail{background:var(--seal)}
+  .p-block{background:var(--warn)} .p-na{background:#7a756c}
+  .meta{background:#fff; border:1px solid var(--line); border-radius:12px; padding:8px 22px; margin:16px 0}
+  .meta .field{display:flex; align-items:baseline; gap:10px; padding:9px 0;
+    border-bottom:1px dashed var(--line)}
+  .meta .field:last-child{border-bottom:none}
+  .meta .field b{flex:0 0 auto; min-width:260px; color:var(--ink)}
+  .meta .blank{flex:1; border-bottom:1px solid var(--accent-soft); min-height:1.3em}
+  table{width:100%; border-collapse:collapse; margin:14px 0; font-size:15px}
+  th{background:var(--accent); color:#fff; text-align:left; padding:10px 12px; font-weight:600}
+  th:first-child{border-top-left-radius:8px} th:last-child{border-top-right-radius:8px}
+  td{border:1px solid var(--line); padding:10px 12px; vertical-align:top; color:var(--ink-soft)}
+  tbody tr:nth-child(even){background:#f6f0e3}
+  td.n{text-align:center; font-weight:700; color:var(--accent); width:36px}
+  td.fill{background:#fffdf8; min-width:90px}
+  tr.crit td:nth-child(2){color:var(--seal); font-weight:600}
+  .send{background:#f3ecdd; border-left:4px solid var(--accent-soft);
+    padding:16px 20px; border-radius:0 10px 10px 0; margin:20px 0}
+  .gold li{margin:0 0 8px; color:var(--ink-soft)}
+  .print-hint{font-size:14px; color:var(--accent-soft); margin-top:8px}
+  @media print{body{background:#fff} .sheet{box-shadow:none; border:none} .topnav,.print-hint{display:none}}
+  footer{margin-top:36px; padding-top:16px; border-top:1px solid var(--line);
+    font-size:13px; color:var(--accent-soft); text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="sheet">
+  <p class="topnav"><a href="LEEME.html">&larr; Indice</a> &nbsp;&middot;&nbsp; <a href="2_PRUEBAS_TIPICAS.html">Pruebas tipicas</a></p>
+  <p class="kicker">Guia 3 de 3</p>
+  <h1>Planilla de resultados</h1>
+  <p>Anota aca como te fue en cada prueba de <a href="2_PRUEBAS_TIPICAS.html">las 20 pruebas tipicas</a>. Podes imprimir esta pagina y completarla a mano, o copiar la tabla a Excel / Google Sheets.</p>
+  <p class="print-hint">Sugerencia: para imprimir o guardar como PDF, abri el menu del navegador y elegi Imprimir (Ctrl + P).</p>
+
+  <p>En la columna <strong>Resultado</strong> escribi una de estas:</p>
+  <ul class="legend">
+    <li><span class="pill p-pass">PASA</span> &nbsp; paso exactamente lo esperado.</li>
+    <li><span class="pill p-fail">FALLA</span> &nbsp; paso otra cosa (anota QUE paso, palabra por palabra si hay un mensaje en pantalla).</li>
+    <li><span class="pill p-block">BLOQUEADO</span> &nbsp; no se pudo probar (por ejemplo, depende de una prueba anterior que fallo). Anota por que.</li>
+    <li><span class="pill p-na">N/A</span> &nbsp; no aplica a tu equipo (por ejemplo, no tenes microfono). Anota por que.</li>
+  </ul>
+
+  <h2>Datos de la corrida</h2>
+  <div class="meta">
+    <div class="field"><b>Tester (tu nombre)</b><span class="blank"></span></div>
+    <div class="field"><b>Fecha</b><span class="blank"></span></div>
+    <div class="field"><b>Sistema operativo y version</b><span class="blank"></span></div>
+    <div class="field"><b>Navegador y version</b><span class="blank"></span></div>
+    <div class="field"><b>Version de Node (<code>node --version</code>)</b><span class="blank"></span></div>
+    <div class="field"><b>Version de Yuemail (<code>yuemail version</code>)</b><span class="blank"></span></div>
+    <div class="field"><b>Proveedor de correo usado</b><span class="blank"></span></div>
+    <div class="field"><b>Proveedor y modelo de IA del Asistente<br><small>(Gemini Flash Lite por defecto)</small></b><span class="blank"></span></div>
+    <div class="field"><b>Voz de Google: encendida / navegador</b><span class="blank"></span></div>
+  </div>
+
+  <h2>Resultados</h2>
+  <table>
+    <thead><tr><th>#</th><th>Prueba</th><th>Resultado</th><th>Observaciones</th><th>Captura</th></tr></thead>
+    <tbody>
+      <tr><td class="n">1</td><td>Instalar y verificar la version</td><td class="fill"></td><td class="fill"></td><td class="fill"></td></tr>
+      <tr><td class="n">2</td><td>Arrancar la aplicacion</td><td class="fill"></td><td class="fill"></td><td class="fill"></td></tr>
+      <tr><td class="n">3</td><td>Probar la voz de Google (que te hable)</td><td class="fill"></td><td class="fill"></td><td class="fill"></td></tr>
+      <tr><td class="n">4</td><td>Que el oido de Google te entienda</td><td class="fill"></td><td class="fill"></td><td class="fill"></td></tr>
+      <tr><td class="n">5</td><td>Configurar el Asistente (la IA)</td><td class="fill"></td><td class="fill"></td><td class="fill"></td></tr>
+      <tr><td class="n">6</td><td>Configurar la cuenta de correo</td><td class="fill"></td><td class="fill"></td><td class="fill"></td></tr>
+      <tr><td class="n">7</td><td>Crear un documento nuevo por voz</td><td class="fill"></td><td class="fill"></td><td class="fill"></td></tr>
+      <tr><td class="n">8</td><td>Dictar texto en el documento</td><td class="fill"></td><td class="fill"></td><td class="fill"></td></tr>
+      <tr><td class="n">9</td><td>Pedirle algo con tus palabras</td><td class="fill"></td><td class="fill"></td><td class="fill"></td></tr>
+      <tr><td class="n">10</td><td>Dictar un correo con tus palabras</td><td class="fill"></td><td class="fill"></td><td class="fill"></td></tr>
+      <tr><td class="n">11</td><td>Guardar y poner una firma</td><td class="fill"></td><td class="fill"></td><td class="fill"></td></tr>
+      <tr><td class="n">12</td><td>Enviar el documento por voz</td><td class="fill"></td><td class="fill"></td><td class="fill"></td></tr>
+      <tr><td class="n">13</td><td>Que el correo llegue con el adjunto</td><td class="fill"></td><td class="fill"></td><td class="fill"></td></tr>
+      <tr><td class="n">14</td><td>Leer la bandeja de entrada</td><td class="fill"></td><td class="fill"></td><td class="fill"></td></tr>
+      <tr class="crit"><td class="n">15</td><td>El Asistente NO ejecuta lo que no pediste</td><td class="fill"></td><td class="fill"></td><td class="fill"></td></tr>
+      <tr class="crit"><td class="n">16</td><td>"enviar" mientras dictas NO manda el correo</td><td class="fill"></td><td class="fill"></td><td class="fill"></td></tr>
+      <tr><td class="n">17</td><td>Red de seguridad: apagar la voz de Google</td><td class="fill"></td><td class="fill"></td><td class="fill"></td></tr>
+      <tr><td class="n">18</td><td>Privacidad: las claves no se ven</td><td class="fill"></td><td class="fill"></td><td class="fill"></td></tr>
+      <tr><td class="n">19</td><td>Destinatario mal escrito avisa con claridad</td><td class="fill"></td><td class="fill"></td><td class="fill"></td></tr>
+      <tr><td class="n">20</td><td>El viaje completo, solo con la voz</td><td class="fill"></td><td class="fill"></td><td class="fill"></td></tr>
+    </tbody>
+  </table>
+  <p><strong>Tiempo del viaje completo (prueba 20), en minutos:</strong> <span style="display:inline-block; border-bottom:1px solid var(--accent-soft); min-width:120px">&nbsp;</span></p>
+
+  <h2>Como enviar los resultados</h2>
+  <div class="send">
+    <p style="margin:0 0 8px">Envia esta planilla y las capturas a <a href="mailto:contact@yujin.app">contact@yujin.app</a> con el asunto:</p>
+    <p style="margin:0"><code>QA Yuemail v0.6.0 -- &lt;tu nombre&gt;</code></p>
+  </div>
+
+  <p><strong>Reglas de oro al anotar:</strong></p>
+  <ul class="gold">
+    <li>Anota lo que VISTE, no lo que crees que deberia pasar.</li>
+    <li>Los textos exactos de los mensajes de error valen oro: copialos tal cual aparecen.</li>
+    <li>Si dudas entre PASA y FALLA, marca FALLA y explica la duda.</li>
+    <li>Tu contrasena y tus claves son tuyas: no las pongas en la planilla ni en las capturas (si una captura las muestra, tachalas antes de enviar).</li>
+    <li>En las pruebas 9 y 10 (Asistente), anota TEXTUAL lo que dijiste y que hizo la app: asi medimos que tan bien interpreta la IA.</li>
+  </ul>
+
+  <footer>Yuemail v0.6.0 &middot; Yujin</footer>
+</div>
+</div>
+</body>
+</html>

@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>2. Veinte pruebas tipicas - Yuemail v0.6.0</title>
+<style>
+  :root{
+    --ink:#23201c; --ink-soft:#4a463f; --paper:#f5f1e8; --paper-2:#fbf8f1;
+    --line:#d8cfbd; --accent:#7a5c3e; --accent-soft:#a98a63; --seal:#9c3b2e;
+    --ok:#3a6b4f; --warn:#8a6d1f;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0; background:var(--paper); color:var(--ink);
+    font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+    line-height:1.65; font-size:18px}
+  .wrap{max-width:840px; margin:0 auto; padding:48px 28px 96px}
+  .sheet{background:var(--paper-2); border:1px solid var(--line);
+    border-radius:14px; padding:44px 48px;
+    box-shadow:0 1px 0 #fff inset, 0 18px 40px -28px rgba(35,32,28,.5)}
+  .kicker{font-size:13px; letter-spacing:.22em; text-transform:uppercase;
+    color:var(--accent-soft); margin:0 0 6px}
+  h1{font-size:32px; line-height:1.2; margin:0 0 6px; font-weight:600}
+  h2{font-size:22px; margin:34px 0 12px; padding-bottom:6px;
+    border-bottom:2px solid var(--accent-soft); font-weight:600; color:var(--accent)}
+  p{margin:0 0 14px; color:var(--ink-soft)}
+  strong{color:var(--ink)}
+  a{color:var(--accent); text-decoration:none; border-bottom:1px solid var(--accent-soft)}
+  a:hover{background:#efe7d6}
+  code{font-family:"SFMono-Regular",Consolas,monospace;
+    background:#efe7d6; padding:2px 6px; border-radius:5px; font-size:.84em; color:#5a4631}
+  ul.how{background:#fff; border:1px solid var(--line); border-radius:12px;
+    padding:16px 20px 16px 38px; margin:18px 0}
+  ul.how li{margin:0 0 8px; color:var(--ink-soft)}
+  .topnav{margin-bottom:24px; font-size:14px}
+  .test{background:#fff; border:1px solid var(--line); border-radius:12px;
+    padding:18px 22px; margin:16px 0; position:relative}
+  .test .num{position:absolute; left:-14px; top:18px; background:var(--accent);
+    color:#fff; width:40px; height:40px; border-radius:50%; display:flex;
+    align-items:center; justify-content:center; font-weight:700; font-size:17px;
+    box-shadow:0 4px 10px -4px rgba(35,32,28,.6)}
+  .test h3{margin:0 0 12px 34px; font-size:19px; font-weight:600}
+  .test .row{display:flex; gap:10px; margin:0 0 8px}
+  .test .tag{flex:0 0 auto; font-size:12px; font-weight:700; letter-spacing:.06em;
+    text-transform:uppercase; color:var(--accent); padding-top:2px; min-width:118px}
+  .test .tag.exp{color:var(--ok)}
+  .test .txt{flex:1; color:var(--ink-soft)}
+  .test.crit{border:2px solid var(--seal); background:#fdf4f2}
+  .test.crit .num{background:var(--seal)}
+  .crit-badge{display:inline-block; background:var(--seal); color:#fff;
+    font-size:11px; letter-spacing:.1em; text-transform:uppercase;
+    padding:2px 9px; border-radius:5px; margin-left:8px; vertical-align:middle}
+  .test.crit .txt em{color:var(--seal); font-style:normal; font-weight:600}
+  footer{margin-top:36px; padding-top:16px; border-top:1px solid var(--line);
+    font-size:13px; color:var(--accent-soft); text-align:center}
+  .closing{background:#f3ecdd; border-left:4px solid var(--accent-soft);
+    padding:14px 18px; border-radius:0 10px 10px 0; margin:26px 0 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="sheet">
+  <p class="topnav"><a href="LEEME.html">&larr; Indice</a> &nbsp;&middot;&nbsp; <a href="1_INSTALACION_Y_CONFIGURACION.html">Instalacion</a> &nbsp;&middot;&nbsp; <a href="PLANILLA_RESULTADOS.html">Planilla &rarr;</a></p>
+  <p class="kicker">Guia 2 de 3</p>
+  <h1>Veinte pruebas tipicas</h1>
+  <p>Estas 20 pruebas son el recorrido normal de un usuario, de la primera vez que instala hasta enviar un correo solo con la voz. Hacelas EN ORDEN: algunas dependen de la anterior.</p>
+
+  <h2>Como hacer cada prueba</h2>
+  <ul class="how">
+    <li>Cada prueba dice <strong>Que hacer</strong> y <strong>Que tiene que pasar</strong>.</li>
+    <li>Las frases <strong>entre comillas</strong> ("nuevo documento") se DICEN por voz, con el microfono encendido, hablando natural, sin gritar.</li>
+    <li>Las frases marcadas <strong>(con tus palabras)</strong> son para el Asistente: podes decir eso o algo parecido a tu manera.</li>
+    <li>"Aviso" = el cartel que aparece abajo en la pantalla.</li>
+    <li>Despues de cada prueba, anota el resultado en <a href="PLANILLA_RESULTADOS.html">la planilla</a> (PASA / FALLA / etc.).</li>
+    <li>Si algo falla, proba UNA vez mas antes de marcarlo FALLA (a veces la voz entiende mal una palabra; anotalo igual como observacion).</li>
+    <li>Sacale una foto a la pantalla (captura) a CUALQUIER falla.</li>
+  </ul>
+
+  <div class="test"><span class="num">1</span><h3>Instalar y verificar la version</h3>
+    <div class="row"><span class="tag">Que hacer</span><span class="txt">en la terminal, <code>npm install -g @yujinapp/yuemail</code> y despues <code>yuemail version</code>.</span></div>
+    <div class="row"><span class="tag exp">Que tiene que pasar</span><span class="txt">la instalacion termina sin errores en rojo y la version responde <code>0.6.0</code> (o mayor).</span></div></div>
+
+  <div class="test"><span class="num">2</span><h3>Arrancar la aplicacion</h3>
+    <div class="row"><span class="tag">Que hacer</span><span class="txt">escribi <code>yuemail</code> en la terminal.</span></div>
+    <div class="row"><span class="tag exp">Que tiene que pasar</span><span class="txt">se abre solo el navegador en http://127.0.0.1:5180 con Yuemail (titulo "Yuemail", una barra de botones arriba y un editor en el medio).</span></div></div>
+
+  <div class="test"><span class="num">3</span><h3>Probar la voz de Google (que te hable)</h3>
+    <div class="row"><span class="tag">Que hacer</span><span class="txt">apreta el boton "Voz", pega tu clave de Google y apreta "Probar voz".</span></div>
+    <div class="row"><span class="tag exp">Que tiene que pasar</span><span class="txt">ESCUCHAS a Yuemail decir una frase con una voz clara y natural, y aparece un aviso de voz reproducida. Apreta Guardar.</span></div></div>
+
+  <div class="test"><span class="num">4</span><h3>Que el oido de Google te entienda</h3>
+    <div class="row"><span class="tag">Que hacer</span><span class="txt">con el microfono encendido y con internet, deci "leer bandeja".</span></div>
+    <div class="row"><span class="tag exp">Que tiene que pasar</span><span class="txt">la app reacciona al comando (lee la bandeja o avisa que falta configurar la cuenta, segun donde estes). Anota si te entendio al primer intento.</span></div></div>
+
+  <div class="test"><span class="num">5</span><h3>Configurar el Asistente (la IA)</h3>
+    <div class="row"><span class="tag">Que hacer</span><span class="txt">apreta el boton "Asistente", pega tu clave de IA y apreta Guardar.</span></div>
+    <div class="row"><span class="tag exp">Que tiene que pasar</span><span class="txt">aviso "Asistente de voz configurado" y la ventana se cierra.</span></div></div>
+
+  <div class="test"><span class="num">6</span><h3>Configurar la cuenta de correo</h3>
+    <div class="row"><span class="tag">Que hacer</span><span class="txt">apreta el engranaje, escribi tu direccion de prueba, espera la autodeteccion, pega tu contrasena de aplicacion, apreta "Probar conexion" y despues "Guardar".</span></div>
+    <div class="row"><span class="tag exp">Que tiene que pasar</span><span class="txt">"Probar conexion" avisa "IMAP OK / SMTP OK"; al guardar, avisa que la configuracion quedo cifrada y la ventana se cierra.</span></div></div>
+
+  <div class="test"><span class="num">7</span><h3>Crear un documento nuevo por voz</h3>
+    <div class="row"><span class="tag">Que hacer</span><span class="txt">con el microfono encendido, deci "nuevo documento".</span></div>
+    <div class="row"><span class="tag exp">Que tiene que pasar</span><span class="txt">el editor queda vacio y aparece el aviso "Documento nuevo abierto".</span></div></div>
+
+  <div class="test"><span class="num">8</span><h3>Dictar texto en el documento</h3>
+    <div class="row"><span class="tag">Que hacer</span><span class="txt">deci "iniciar dictado"; deci dos frases con una pausa entre ellas; deci "fin dictado".</span></div>
+    <div class="row"><span class="tag exp">Que tiene que pasar</span><span class="txt">cada frase aparece como un parrafo nuevo en el documento. Despues de "fin dictado", lo que digas ya no se escribe.</span></div></div>
+
+  <div class="test"><span class="num">9</span><h3>Pedirle algo con tus palabras (Asistente)</h3>
+    <div class="row"><span class="tag">Que hacer</span><span class="txt">deci <strong>(con tus palabras)</strong> "che, fijate si me llego algun correo".</span></div>
+    <div class="row"><span class="tag exp">Que tiene que pasar</span><span class="txt">la app lee la bandeja, igual que si hubieras dicho "leer bandeja". Anota TEXTUAL lo que dijiste y que hizo.</span></div></div>
+
+  <div class="test"><span class="num">10</span><h3>Dictar un correo con tus palabras (Asistente)</h3>
+    <div class="row"><span class="tag">Que hacer</span><span class="txt">deci <strong>(con tus palabras)</strong> "quiero mandarle esto a juan arroba ejemplo punto com".</span></div>
+    <div class="row"><span class="tag exp">Que tiene que pasar</span><span class="txt">se abre la ventana de envio con el destinatario <strong>juan@ejemplo.com</strong> ya cargado.</span></div></div>
+
+  <div class="test"><span class="num">11</span><h3>Guardar y poner una firma</h3>
+    <div class="row"><span class="tag">Que hacer</span><span class="txt">deci "guardar firma"; dibuja un garabato con el mouse en el lienzo; apreta "Guardar". Despues, con un documento abierto, deci "firmar".</span></div>
+    <div class="row"><span class="tag exp">Que tiene que pasar</span><span class="txt">la firma se guarda (aviso "Firma guardada") y al decir "firmar" la imagen aparece al final del documento.</span></div></div>
+
+  <div class="test"><span class="num">12</span><h3>Enviar el documento por voz</h3>
+    <div class="row"><span class="tag">Que hacer</span><span class="txt">con un documento con titulo y texto abierto, deci "enviar a" seguido de tu segunda direccion hablada (por ejemplo "enviar a ana arroba gmail punto com"); cuando se abra la ventana, deci "confirmar".</span></div>
+    <div class="row"><span class="tag exp">Que tiene que pasar</span><span class="txt">se abre "Enviar correo" con el destinatario y el asunto cargados; al confirmar, aviso "Enviado: ..." y la ventana se cierra.</span></div></div>
+
+  <div class="test"><span class="num">13</span><h3>Que el correo llegue con el documento adjunto</h3>
+    <div class="row"><span class="tag">Que hacer</span><span class="txt">abri la bandeja de tu segunda direccion de correo.</span></div>
+    <div class="row"><span class="tag exp">Que tiene que pasar</span><span class="txt">llega el correo con el asunto del documento y un adjunto <strong>.docx</strong> (Word) que, al abrirlo, muestra el titulo, los parrafos y la firma.</span></div></div>
+
+  <div class="test"><span class="num">14</span><h3>Leer la bandeja de entrada</h3>
+    <div class="row"><span class="tag">Que hacer</span><span class="txt">deci "leer bandeja".</span></div>
+    <div class="row"><span class="tag exp">Que tiene que pasar</span><span class="txt">aviso con la cantidad de correos y, en el panel de la derecha, la lista con remitente y asunto de los ultimos.</span></div></div>
+
+  <div class="test crit"><span class="num">15</span><h3>El Asistente NO ejecuta lo que no pediste <span class="crit-badge">Seguridad critica</span></h3>
+    <div class="row"><span class="tag">Que hacer</span><span class="txt">con el microfono encendido y sin ninguna ventana abierta, deci una negacion: "no, no lo mandes todavia". Despues una charla suelta: "que lindo dia hace hoy".</span></div>
+    <div class="row"><span class="tag exp">Que tiene que pasar</span><span class="txt">en NINGUNO de los dos casos la app hace algo (no abre el envio, no apaga el microfono, no abre configuracion). A lo sumo avisa que no entendio. <em>Para una persona que depende de la app, ejecutar la accion equivocada es peor que no hacer nada:</em> si la app dispara CUALQUIER accion con estas frases, marca FALLA con severidad alta y anota textual que hizo.</span></div></div>
+
+  <div class="test crit"><span class="num">16</span><h3>"enviar" mientras dictas NO manda el correo <span class="crit-badge">Seguridad critica</span></h3>
+    <div class="row"><span class="tag">Que hacer</span><span class="txt">abri la ventana de envio, deci "campo cuerpo" y despues deci una frase que contenga la palabra enviar, por ejemplo "manana te vuelvo a enviar el resumen completo".</span></div>
+    <div class="row"><span class="tag exp">Que tiene que pasar</span><span class="txt">el correo NO se envia. La frase entera aparece como un parrafo del cuerpo del mensaje. <em>Si el correo se manda, marca FALLA con la maxima severidad.</em> (Para salir despues, deci "fin campo" y luego "cancelar".)</span></div></div>
+
+  <div class="test"><span class="num">17</span><h3>Red de seguridad: apagar la voz de Google</h3>
+    <div class="row"><span class="tag">Que hacer</span><span class="txt">apreta "Voz", DESmarca "Voz de Google encendida", Guardar. Despues, con el microfono encendido, deci "nuevo documento".</span></div>
+    <div class="row"><span class="tag exp">Que tiene que pasar</span><span class="txt">el comando funciona igual (ahora escucha el navegador). La app nunca se queda sin oir. Volve a ENCENDER la Voz de Google al terminar.</span></div></div>
+
+  <div class="test"><span class="num">18</span><h3>Privacidad: las claves y la contrasena no se ven</h3>
+    <div class="row"><span class="tag">Que hacer</span><span class="txt">abri "Voz" (o "Asistente") y mira el campo de la clave mientras escribis; despues abri el engranaje, deci "campo contrasena" y deci unas letras y numeros.</span></div>
+    <div class="row"><span class="tag exp">Que tiene que pasar</span><span class="txt">el campo de la clave se muestra como puntos y al reabrir aparece vacio; al dictar la contrasena, el aviso solo dice CUANTOS caracteres capturo, nunca el contenido.</span></div></div>
+
+  <div class="test"><span class="num">19</span><h3>Un destinatario mal escrito avisa con claridad</h3>
+    <div class="row"><span class="tag">Que hacer</span><span class="txt">abri la ventana de envio, escribi <code>noesuncorreo</code> como destinatario y envia.</span></div>
+    <div class="row"><span class="tag exp">Que tiene que pasar</span><span class="txt">aparece un aviso de error claro, en castellano entendible, y la app sigue funcionando (no se cuelga).</span></div></div>
+
+  <div class="test"><span class="num">20</span><h3>El viaje completo, solo con la voz</h3>
+    <div class="row"><span class="tag">Que hacer</span><span class="txt">con la cuenta y la firma ya configuradas y el microfono encendido, deci en orden: "nuevo documento" / "iniciar dictado" / dos frases / "fin dictado" / "firmar" / "enviar a" + tu segunda direccion / "campo cuerpo" / un saludo / "fin campo" / "confirmar".</span></div>
+    <div class="row"><span class="tag exp">Que tiene que pasar</span><span class="txt">el correo llega con el documento adjunto, firmado, y el cuerpo dictado, SIN haber usado el mouse (salvo encender el microfono al principio). El objetivo es que todo el viaje tome menos de 4 minutos. Cronometralo y anotalo.</span></div></div>
+
+  <div class="closing"><p style="margin:0">Cuando termines, pasa a <strong><a href="PLANILLA_RESULTADOS.html">la planilla de resultados</a></strong> para volcar los resultados y enviarlos. Gracias!</p></div>
+
+  <footer>Yuemail v0.6.0 &middot; Yujin</footer>
+</div>
+</div>
+</body>
+</html>
