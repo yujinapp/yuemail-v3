@@ -1,4 +1,7 @@
-/* Yuemail app styles -- all values reference tokens.css. */
+/* Yuemail app styles -- Yujin Design System: art deco moderna.
+   All values reference tokens.css; no hardcoded hex / px here.
+   Deco language: warm cream surfaces, emerald action, gold hairline
+   frames, geometric uppercase display headings. ASCII-only. */
 
 * {
   box-sizing: border-box;
@@ -10,8 +13,12 @@ html, body {
   font-family: var(--font-family-sans);
   font-size: var(--font-size-md);
   line-height: var(--line-height-normal);
-  background: var(--color-bg-subtle);
   color: var(--color-text-primary);
+  /* Faint warm gold wash at the top -- subtle deco atmosphere. */
+  background:
+    linear-gradient(180deg, var(--gold-faint), transparent 160px),
+    var(--color-bg-subtle);
+  background-attachment: fixed;
 }
 
 #root {
@@ -20,21 +27,112 @@ html, body {
   flex-direction: column;
 }
 
+/* --- Topbar (deco banner) --- */
+
 .yuemail-topbar {
   background: var(--color-bg-surface);
-  border-bottom: 1px solid var(--color-border-subtle);
+  border-bottom: 1px solid var(--color-border-default); /* gold hairline */
+  box-shadow: inset 0 -3px 0 var(--gold-faint), var(--shadow-low);
   padding: var(--space-3) var(--space-5);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  box-shadow: var(--shadow-low);
 }
 
 .yuemail-topbar h1 {
   margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-family: var(--font-family-display);
   font-size: var(--font-size-lg);
   font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--tracking-display);
+  text-transform: uppercase;
+  color: var(--color-text-primary);
 }
+
+/* Deco diamond bullet before the wordmark. */
+.yuemail-topbar h1::before {
+  content: "";
+  width: 10px;
+  height: 10px;
+  transform: rotate(45deg);
+  background: var(--gold-line);
+  box-shadow: 0 0 0 3px var(--gold-faint);
+}
+
+.yuemail-topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+/* Assistant / Voice pills -- gold-outlined tertiary controls. */
+.yuemail-brain-btn {
+  background: transparent;
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-4);
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: var(--tracking-button);
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background var(--motion-fast) var(--motion-ease),
+              color var(--motion-fast) var(--motion-ease);
+}
+
+.yuemail-brain-btn:hover {
+  background: var(--gold-faint);
+  color: var(--color-text-primary);
+}
+
+.yuemail-settings-gear {
+  display: inline-flex;
+  align-items: center;
+  background: transparent;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-md);
+  color: var(--color-text-secondary);
+  padding: var(--space-2) var(--space-3);
+  cursor: pointer;
+  transition: background var(--motion-fast) var(--motion-ease),
+              color var(--motion-fast) var(--motion-ease);
+}
+
+.yuemail-settings-gear:hover {
+  color: var(--color-text-primary);
+  background: var(--gold-faint);
+}
+
+.yuemail-mic-toggle {
+  background: var(--accent-rose);
+  color: var(--color-paper-cool);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: var(--tracking-button);
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: filter var(--motion-fast) var(--motion-ease);
+}
+
+.yuemail-mic-toggle:hover {
+  filter: brightness(1.06);
+}
+
+.yuemail-mic-toggle[data-state="on"] {
+  background: var(--accent-jade);
+  box-shadow: 0 0 0 2px var(--gold-soft);
+}
+
+/* --- Toolbar --- */
 
 .yuemail-toolbar {
   background: var(--color-bg-surface);
@@ -44,26 +142,75 @@ html, body {
   gap: var(--space-3);
 }
 
-.yuemail-toolbar button {
+/* --- Shared deco action button (toolbar + card + modal) --- */
+
+.yuemail-toolbar button,
+.yuemail-card button,
+.yuemail-modal-card button {
   background: var(--accent-jade);
   color: var(--color-paper-cool);
-  border: none;
+  border: 1px solid var(--gold-line);
   border-radius: var(--radius-md);
   padding: var(--space-3) var(--space-4);
-  font-size: var(--font-size-md);
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
+  letter-spacing: var(--tracking-button);
+  text-transform: uppercase;
   cursor: pointer;
-  transition: filter var(--motion-fast) var(--motion-ease);
+  transition: filter var(--motion-fast) var(--motion-ease),
+              box-shadow var(--motion-fast) var(--motion-ease);
 }
 
-.yuemail-toolbar button:hover {
-  filter: brightness(1.1);
+.yuemail-toolbar button:hover,
+.yuemail-card button:hover,
+.yuemail-modal-card button:hover {
+  filter: brightness(1.07);
+  box-shadow: 0 0 0 2px var(--gold-soft);
 }
 
-.yuemail-toolbar button:focus-visible {
-  outline: 3px solid var(--accent-amber);
+.yuemail-toolbar button:disabled,
+.yuemail-card button:disabled,
+.yuemail-modal-card button:disabled {
+  background: var(--color-bg-hover);
+  color: var(--color-text-muted);
+  border-color: var(--color-border-subtle);
+  filter: none;
+  box-shadow: none;
+  cursor: default;
+}
+
+/* Secondary (Cancel) -- gold-outlined ghost. Targets the cancel controls
+   by their NAC3 action or id, so no component markup changes are needed. */
+.yuemail-modal-card [data-nac-action^="cancel_"],
+.yuemail-modal-card [data-nac-id$="-cancel"] {
+  background: transparent;
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border-default);
+}
+
+.yuemail-modal-card [data-nac-action^="cancel_"]:hover,
+.yuemail-modal-card [data-nac-id$="-cancel"]:hover {
+  background: var(--gold-faint);
+  color: var(--color-text-primary);
+  filter: none;
+}
+
+/* Unified focus ring -- gold, deco. */
+.yuemail-topbar button:focus-visible,
+.yuemail-toolbar button:focus-visible,
+.yuemail-card button:focus-visible,
+.yuemail-modal-card button:focus-visible,
+.yuemail-modal-card input:focus-visible,
+.yuemail-modal-card select:focus-visible,
+.yuemail-modal-card textarea:focus-visible,
+.yuemail-editor input:focus-visible,
+.yuemail-editor textarea:focus-visible {
+  outline: 2px solid var(--gold-line);
   outline-offset: 2px;
 }
+
+/* --- Main + editor --- */
 
 .yuemail-main {
   flex: 1;
@@ -76,17 +223,20 @@ html, body {
   flex: 1;
   background: var(--color-bg-surface);
   border: 1px solid var(--color-border-subtle);
+  border-top: 3px solid var(--gold-line);
   border-radius: var(--radius-md);
   padding: var(--space-5);
-  box-shadow: var(--shadow-low);
+  box-shadow: var(--shadow-mid);
 }
 
 .yuemail-editor input[type="text"] {
   width: 100%;
+  font-family: var(--font-family-display);
   font-size: var(--font-size-lg);
   font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.02em;
   border: none;
-  border-bottom: 1px solid var(--color-border-subtle);
+  border-bottom: 2px solid var(--color-border-default);
   padding: var(--space-2) 0;
   margin-bottom: var(--space-4);
   background: transparent;
@@ -107,6 +257,8 @@ html, body {
   resize: vertical;
 }
 
+/* --- Side panel cards --- */
+
 .yuemail-side {
   width: 320px;
   display: flex;
@@ -117,6 +269,7 @@ html, body {
 .yuemail-card {
   background: var(--color-bg-surface);
   border: 1px solid var(--color-border-subtle);
+  border-top: 3px solid var(--gold-line);
   border-radius: var(--radius-md);
   padding: var(--space-4);
   box-shadow: var(--shadow-low);
@@ -124,72 +277,147 @@ html, body {
 
 .yuemail-card h2 {
   margin: 0 0 var(--space-3) 0;
-  font-size: var(--font-size-md);
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--gold-soft);
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--tracking-display);
+  text-transform: uppercase;
   color: var(--color-text-secondary);
 }
 
-.yuemail-topbar-actions {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
+.yuemail-card ul {
+  list-style: none;
+  margin: var(--space-3) 0 0 0;
+  padding: 0;
 }
 
-.yuemail-settings-gear {
-  display: inline-flex;
-  align-items: center;
-  background: transparent;
-  border: 1px solid var(--color-border-subtle);
-  border-radius: var(--radius-md);
-  color: var(--color-text-secondary);
-  padding: var(--space-2) var(--space-3);
-  cursor: pointer;
-  transition: filter var(--motion-fast) var(--motion-ease);
+.yuemail-card li {
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--color-border-subtle);
+  font-size: var(--font-size-sm);
 }
 
-.yuemail-settings-gear:hover {
-  color: var(--color-text-primary);
-  background: var(--color-bg-subtle);
-}
-
-.yuemail-settings-gear:focus-visible {
-  outline: 3px solid var(--accent-amber);
-  outline-offset: 2px;
-}
-
-.yuemail-mic-toggle {
-  background: var(--accent-rose);
-  color: var(--color-paper-cool);
-  border: none;
-  border-radius: var(--radius-md);
-  padding: var(--space-3) var(--space-4);
-  font-size: var(--font-size-md);
-  font-weight: var(--font-weight-medium);
-  cursor: pointer;
-}
-
-.yuemail-mic-toggle[data-state="on"] {
-  background: var(--accent-amber);
-}
+/* --- Modal (deco framed surface) --- */
 
 .yuemail-modal {
   position: fixed;
   inset: 0;
-  background: rgba(15, 20, 25, 0.4);
+  background: rgba(38, 31, 46, 0.46);
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: var(--space-5);
   z-index: 100;
 }
 
 .yuemail-modal-card {
   background: var(--color-bg-surface);
+  border: 1px solid var(--color-border-default);     /* gold frame      */
+  border-top: 4px solid var(--gold-line);            /* deco top band   */
   border-radius: var(--radius-lg);
-  padding: var(--space-5);
+  padding: var(--space-6);
   min-width: 360px;
   max-width: 90vw;
-  box-shadow: var(--shadow-high);
+  max-height: 88vh;
+  overflow-y: auto;
+  /* Outer drop + inner gold hairline (classic deco double frame). */
+  box-shadow: var(--shadow-high), inset 0 0 0 1px var(--gold-faint);
 }
+
+.yuemail-modal-card h2 {
+  margin: 0 0 var(--space-4) 0;
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--gold-soft);
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--tracking-display);
+  text-transform: uppercase;
+  color: var(--color-text-primary);
+}
+
+.yuemail-modal-card p {
+  color: var(--color-text-secondary);
+}
+
+.yuemail-modal-card label {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+/* Form controls inside the modals -- previously unstyled (browser look). */
+.yuemail-modal-card input[type="text"],
+.yuemail-modal-card input[type="email"],
+.yuemail-modal-card input[type="password"],
+.yuemail-modal-card select,
+.yuemail-modal-card textarea {
+  width: 100%;
+  margin-top: var(--space-1);
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-md);
+  color: var(--color-text-primary);
+  background: var(--color-bg-subtle);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-sm);
+  padding: var(--space-2) var(--space-3);
+  transition: border-color var(--motion-fast) var(--motion-ease),
+              box-shadow var(--motion-fast) var(--motion-ease);
+}
+
+.yuemail-modal-card input[type="text"]:focus,
+.yuemail-modal-card input[type="email"]:focus,
+.yuemail-modal-card input[type="password"]:focus,
+.yuemail-modal-card select:focus,
+.yuemail-modal-card textarea:focus {
+  border-color: var(--color-border-default);
+  box-shadow: 0 0 0 2px var(--gold-faint);
+  outline: none;
+}
+
+.yuemail-modal-card textarea {
+  resize: vertical;
+  min-height: 96px;
+  font-family: var(--font-family-serif);
+  line-height: var(--line-height-loose);
+}
+
+/* Checkboxes + slider pick up the deco emerald. */
+.yuemail-modal-card input[type="checkbox"],
+.yuemail-modal-card input[type="range"] {
+  accent-color: var(--accent-jade);
+  width: auto;
+}
+
+.yuemail-modal-card input[type="range"] {
+  width: 100%;
+}
+
+/* Advanced servers block -- gold deco fieldset. */
+.yuemail-modal-card fieldset {
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-sm);
+  padding: var(--space-3) var(--space-4) var(--space-4);
+  margin: 0 0 var(--space-4) 0;
+}
+
+.yuemail-modal-card legend {
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--tracking-button);
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  padding: 0 var(--space-2);
+}
+
+.yuemail-modal-card [role="note"] {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+/* --- Toast --- */
 
 .yuemail-toast {
   position: fixed;
@@ -197,16 +425,21 @@ html, body {
   right: var(--space-5);
   background: var(--color-ink-deep);
   color: var(--color-paper-cool);
+  border-left: 4px solid var(--gold-line);
   padding: var(--space-3) var(--space-4);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-sm);
   box-shadow: var(--shadow-mid);
+  font-size: var(--font-size-sm);
+  letter-spacing: 0.01em;
   z-index: 200;
 }
 
 .yuemail-toast[data-kind="error"] {
   background: var(--accent-rose);
+  border-left-color: var(--gold-line);
 }
 
 .yuemail-toast[data-kind="success"] {
   background: var(--accent-jade);
+  border-left-color: var(--gold-line);
 }

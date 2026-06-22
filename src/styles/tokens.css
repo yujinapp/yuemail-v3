@@ -1,22 +1,29 @@
-/* Yujin Design System tokens (F10).
+/* Yujin Design System tokens (F10) -- variant: art deco moderna.
    Single source of truth for the visual identity. Components reference
-   these CSS variables; no hardcoded hex / rem / px outside this file. */
+   these CSS variables; no hardcoded hex / rem / px outside this file.
+   Token NAMES are stable (consumers in app.css + components depend on
+   them); only the VALUES carry the art deco moderna look. */
 
 :root {
-  /* Sumi-e ink palette. */
-  --color-ink-deep:        #0f1419;  /* near-black brushstroke      */
-  --color-ink-mid:         #2a3036;
-  --color-ink-soft:        #4a5159;
-  --color-paper-warm:      #f8f4ec;  /* warm rice-paper background  */
-  --color-paper-cool:      #ffffff;
-  --color-paper-shadow:    #e6e1d6;
+  /* Art deco ink palette -- deep aubergine charcoal instead of pure black. */
+  --color-ink-deep:        #261f2e;  /* deep plum ink (primary text)   */
+  --color-ink-mid:         #423a4e;
+  --color-ink-soft:        #6c6377;
+  --color-paper-warm:      #f6efe1;  /* warm ivory / cream             */
+  --color-paper-cool:      #fffdf7;  /* soft warm white                */
+  --color-paper-shadow:    #ece1cd;  /* deeper cream (hover)           */
 
-  /* Accent palette. */
-  --accent-sakura:         #d97a8e;  /* warm pink                   */
-  --accent-jade:           #5fa68a;  /* deep green                  */
-  --accent-sky:            #6592c5;  /* daytime blue                */
-  --accent-amber:          #d99450;  /* warm orange                 */
-  --accent-rose:           #c25b5b;  /* signal red                  */
+  /* Accent palette (art deco jewel + metallic). Names kept for consumers. */
+  --accent-sakura:         #d98aa8;  /* blush rose                     */
+  --accent-jade:           #2f8f7f;  /* deco emerald (primary action)  */
+  --accent-sky:            #6f93b8;  /* powder deco blue               */
+  --accent-amber:          #c2a14d;  /* brass / gold (brand metallic)  */
+  --accent-rose:           #b4574e;  /* deco burgundy (signal)         */
+
+  /* Brand metallic ramp (gold) -- used for hairline frames + accents. */
+  --gold-line:             #c2a14d;
+  --gold-soft:             rgba(194, 161, 77, 0.35);
+  --gold-faint:           rgba(194, 161, 77, 0.14);
 
   /* Surface tokens. */
   --color-bg-surface:      var(--color-paper-cool);
@@ -25,8 +32,8 @@
   --color-text-primary:    var(--color-ink-deep);
   --color-text-secondary:  var(--color-ink-mid);
   --color-text-muted:      var(--color-ink-soft);
-  --color-border-subtle:   #d8d2c5;
-  --color-border-default:  #b4ad9d;
+  --color-border-subtle:   #e6dcc6;
+  --color-border-default:  #c2a14d;
 
   /* 8px grid spacing scale. */
   --space-1: 4px;
@@ -38,7 +45,10 @@
   --space-7: 48px;
   --space-8: 64px;
 
-  /* Typography. */
+  /* Typography. Display = geometric art deco (Century Gothic ships on
+     Windows; Poppins/Futura when present). Body keeps a clean sans;
+     serif stays for letter-like body + the signature. */
+  --font-family-display: 'Poppins', 'Century Gothic', 'Futura', 'Twentieth Century', 'Avenir Next', 'Inter', sans-serif;
   --font-family-sans: 'Inter', 'Helvetica Neue', Arial, sans-serif;
   --font-family-serif: 'Source Serif Pro', Georgia, 'Times New Roman', serif;
   --font-family-mono:  'JetBrains Mono', 'Consolas', monospace;
@@ -53,16 +63,19 @@
   --line-height-tight: 1.2;
   --line-height-normal: 1.5;
   --line-height-loose: 1.75;
+  /* Deco display tracking (uppercase headings + buttons). */
+  --tracking-display: 0.14em;
+  --tracking-button:  0.08em;
 
-  /* Radius. */
-  --radius-sm: 4px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
+  /* Radius -- crisp geometry for the deco look. */
+  --radius-sm: 2px;
+  --radius-md: 4px;
+  --radius-lg: 6px;
 
-  /* Shadow. */
-  --shadow-low:  0 1px 2px rgba(15, 20, 25, 0.06);
-  --shadow-mid:  0 4px 12px rgba(15, 20, 25, 0.08);
-  --shadow-high: 0 8px 24px rgba(15, 20, 25, 0.12);
+  /* Shadow -- soft, warm plum-tinted. */
+  --shadow-low:  0 1px 2px rgba(38, 31, 46, 0.07);
+  --shadow-mid:  0 6px 18px rgba(38, 31, 46, 0.10);
+  --shadow-high: 0 14px 40px rgba(38, 31, 46, 0.18);
 
   /* Motion. */
   --motion-fast:   120ms;
@@ -73,13 +86,15 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --color-bg-surface:     #1a1f24;
-    --color-bg-subtle:      #232830;
-    --color-bg-hover:       #2c333c;
-    --color-text-primary:   #f0ece2;
-    --color-text-secondary: #c8c4b8;
-    --color-text-muted:     #918d80;
-    --color-border-subtle:  #383f48;
-    --color-border-default: #565d66;
+    /* Art deco at night -- deep teal-charcoal with the same gold. */
+    --color-bg-surface:     #1c2230;
+    --color-bg-subtle:      #161b27;
+    --color-bg-hover:       #283142;
+    --color-text-primary:   #f3ecdc;
+    --color-text-secondary: #d4ccbb;
+    --color-text-muted:     #9a9484;
+    --color-border-subtle:  #34405a;
+    --color-border-default: #c2a14d;
+    --gold-faint:          rgba(194, 161, 77, 0.10);
   }
 }

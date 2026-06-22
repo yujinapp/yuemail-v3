@@ -3,6 +3,7 @@ dist/
 server-dist/
 .yuemail/
 .yujin-forge/
+.forge/
 # Runtime vault data only (never the vault source code): the data files
 # live in .yuemail/ anyway, but guard against a stray copy at repo root.
 /vault.salt
