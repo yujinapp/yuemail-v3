@@ -1,19 +1,32 @@
 /**
- * Web Speech API hook (F2).
+ * Voice hook (F2, extended to camino 1 in v0.6.0).
  *
- * Provides a tiny imperative surface:
+ * Imperative surface, unchanged for callers:
  *   const v = useVoice({ onCommand, onTranscript });
- *   v.start();
- *   v.stop();
- *   v.speak(text);
+ *   v.start(); v.stop(); v.speak(text);
  *
- * Recognises Spanish utterances. Other browsers (no Web Speech) degrade
- * silently -- buttons still work, mic does not.
+ * HEARING. The browser's SpeechRecognition stays on as a free Voice Activity
+ * Detector and as the camino-2 transcript. When camino 1 (Google) is enabled
+ * and keyed, an UtteranceRecorder captures the audio in parallel; on each
+ * finalised utterance we send that audio to Google and prefer its transcript
+ * -- the accessibility win for atypical speech -- falling back to the browser
+ * transcript on any miss.
+ *
+ * SPEAKING. speak() tries Google's neural voice first (clearer than the
+ * robotic system voice) and falls back to the browser's speechSynthesis.
+ *
+ * A person who depends on this app is never left without it: every Google
+ * path degrades to the browser, and a browser with no Web Speech at all still
+ * leaves the buttons working.
  *
  * ASCII-only.
  */
 import { useEffect, useRef, useState } from 'react';
 import { parseCommand, type VoiceCommand, type VoiceContext } from './commands.js';
+import { UtteranceRecorder } from './audioCapture.js';
+import { voiceReady, serverTranscribe, serverSpeak, playAudioBlob } from './serverVoice.js';
+
+const LANG = 'es-AR';
 
 type Ctor = new () => SpeechRecognitionLike;
 
@@ -75,38 +88,69 @@ export function useVoice(opts: UseVoiceOpts = {}): VoiceHandle {
    * died as soon as a toast or a modal re-rendered the app. */
   const optsRef = useRef(opts);
   optsRef.current = opts;
+  /* Camino-1 state: is Google voice enabled+keyed, and the parallel
+   * audio recorder while listening. */
+  const serverReadyRef = useRef(false);
+  const recorderRef = useRef<UtteranceRecorder | null>(null);
   const Ctor   = pickRecognitionCtor();
   const supported = Ctor !== undefined;
+
+  /* Probe camino 1 once on mount. A failure leaves serverReadyRef false, so
+   * everything runs browser-only -- the safety net. */
+  useEffect(() => {
+    let alive = true;
+    void voiceReady().then((ready) => { if (alive) serverReadyRef.current = ready; });
+    return () => { alive = false; };
+  }, []);
+
+  async function finaliseUtterance(browserText: string, current: UseVoiceOpts): Promise<void> {
+    let text = browserText;
+    /* Camino 1: replace the browser transcript with Google's, when we have
+     * the audio and the server path is live. Any failure keeps browserText. */
+    try {
+      const rec = recorderRef.current;
+      if (serverReadyRef.current && rec && rec.running) {
+        const utt = rec.takeUtterance();
+        if (utt) {
+          const r = await serverTranscribe(utt.blob, utt.format, LANG);
+          if (r.ok && r.text.trim().length > 0) text = r.text;
+        }
+      }
+    } catch { /* keep browser text */ }
+
+    if (text) current.onTranscript?.(text, true);
+    if (!current.onCommand) return;
+    const context = current.getContext?.() ?? 'global';
+    const armed   = current.getArmed?.() ?? false;
+    const onCommand = current.onCommand;
+    if (current.resolveCommand) {
+      try { onCommand(await current.resolveCommand(text, context, { armed })); }
+      catch { onCommand(parseCommand(text, context, { armed })); }
+    } else {
+      onCommand(parseCommand(text, context, { armed }));
+    }
+  }
 
   useEffect(() => {
     if (!Ctor) return;
     const rec = new Ctor();
-    rec.lang           = 'es-AR';
+    rec.lang           = LANG;
     rec.interimResults = true;
     rec.continuous     = true;
     rec.onresult = (ev) => {
       const lastIdx = ev.results.length - 1;
       const result  = ev.results[lastIdx];
       if (!result) return;
-      const transcript = result[0]?.transcript ?? '';
-      const isFinal    = Boolean(result.isFinal);
-      const current    = optsRef.current;
-      if (transcript) current.onTranscript?.(transcript, isFinal);
-      if (isFinal && current.onCommand) {
-        const context = current.getContext?.() ?? 'global';
-        const armed   = current.getArmed?.() ?? false;
-        const onCommand = current.onCommand;
-        if (current.resolveCommand) {
-          /* Camino 1: async Brain resolution. The resolver never throws and
-           * falls back to the matcher internally; we still guard so a bug
-           * there can never silence the mic. */
-          void current.resolveCommand(transcript, context, { armed })
-            .then((cmd) => onCommand(cmd))
-            .catch(() => onCommand(parseCommand(transcript, context, { armed })));
-        } else {
-          onCommand(parseCommand(transcript, context, { armed }));
-        }
+      const browserText = result[0]?.transcript ?? '';
+      const isFinal     = Boolean(result.isFinal);
+      const current     = optsRef.current;
+      if (!isFinal) {
+        if (browserText) current.onTranscript?.(browserText, false);
+        return;
       }
+      /* Final: prefer Google's transcript of the captured audio (camino 1),
+       * else the browser's (camino 2). finaliseUtterance never throws. */
+      void finaliseUtterance(browserText, current);
     };
     rec.onerror = () => {
       setListening(false);
@@ -118,27 +162,58 @@ export function useVoice(opts: UseVoiceOpts = {}): VoiceHandle {
     return () => {
       try { rec.stop(); } catch { /* ignore */ }
       recRef.current = null;
+      recorderRef.current?.stop();
+      recorderRef.current = null;
     };
   }, [Ctor]);
 
   function start() {
     if (!recRef.current) return;
     try { recRef.current.start(); setListening(true); } catch { /* already started */ }
+    /* Camino 1: start capturing audio for Google in parallel. Fire-and-
+     * forget; if the mic/recorder is unavailable or denied we drop the
+     * recorder and run browser-only. */
+    if (serverReadyRef.current && !recorderRef.current) {
+      const recorder = new UtteranceRecorder();
+      recorderRef.current = recorder;
+      void recorder.start().then((started) => {
+        if (!started && recorderRef.current === recorder) recorderRef.current = null;
+      });
+    }
   }
 
   function stop() {
-    if (!recRef.current) return;
-    try { recRef.current.stop(); } catch { /* ignore */ }
+    if (recRef.current) { try { recRef.current.stop(); } catch { /* ignore */ } }
     setListening(false);
+    if (recorderRef.current) {
+      recorderRef.current.stop();
+      recorderRef.current = null;
+    }
   }
 
-  function speak(text: string) {
+  function browserSpeak(text: string) {
     if (typeof window === 'undefined') return;
     const synth = window.speechSynthesis;
     if (!synth) return;
     const utter = new SpeechSynthesisUtterance(text);
-    utter.lang = 'es-AR';
+    utter.lang = LANG;
     synth.speak(utter);
+  }
+
+  function speak(text: string) {
+    const clean = (text ?? '').trim();
+    if (clean.length === 0) return;
+    /* Camino 1: Google neural voice. On any miss, browser speechSynthesis. */
+    if (serverReadyRef.current) {
+      void serverSpeak(clean, { language: LANG })
+        .then(async (r) => {
+          if (r.ok && (await playAudioBlob(r.audio))) return;
+          browserSpeak(clean);
+        })
+        .catch(() => browserSpeak(clean));
+      return;
+    }
+    browserSpeak(clean);
   }
 
   return { supported, listening, start, stop, speak };

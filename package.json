@@ -1,7 +1,7 @@
 {
   "name": "@yujinapp/yuemail",
-  "version": "0.5.0",
-  "description": "Voice-first single-user email client. Dictate, sign, send. AI voice assistant (Brain) with BYOK encrypted vault; works offline via fixed-phrase commands.",
+  "version": "0.6.0",
+  "description": "Voice-first single-user email client. Dictate, sign, send. AI voice assistant (Brain) plus Google STT/TTS hearing+speaking, BYOK encrypted vault; degrades to the browser + fixed-phrase commands offline.",
   "license": "MIT",
   "type": "module",
   "engines": {

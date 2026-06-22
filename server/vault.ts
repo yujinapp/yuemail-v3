@@ -86,6 +86,10 @@ export const VAULT_KEYS = [
   'brain.qwen',
   'brain.zai',
   'brain.ollama',
+  /* Voice (v0.6.0). One Google Cloud key powers both Speech-to-Text
+   * (hearing) and Text-to-Speech (speaking); the voice router reads it
+   * server-side and it never reaches the browser, like every slot above. */
+  'speech.google',
 ] as const;
 
 export type VaultKey = (typeof VAULT_KEYS)[number];

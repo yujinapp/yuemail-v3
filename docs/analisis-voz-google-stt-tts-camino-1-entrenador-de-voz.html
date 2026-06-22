@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Análisis: Voz Google (STT/TTS) camino 1 + entrenador de voz</title><style>body{font-family:Georgia,"Times New Roman",serif;max-width:760px;margin:40px auto;padding:0 20px;color:#1a1a1a;line-height:1.6}h1,h2,h3{font-weight:600;color:#2e3a5e}table{border-collapse:collapse}td,th{border:1px solid #b8ad95;padding:6px 10px}code,pre{font-family:Consolas,monospace;background:#f5f0e6}</style></head><body>
+<h1>Voz de Google como camino 1 + entrenador para voces atípicas</h1>
+<p><em>Análisis aterrizado sobre código verificado. Nada de esto es suposición: leí el subsistema de voz de Forge y probé tu clave contra Google.</em></p>
+
+<h2>1. Lo que confirmé (hechos, no opinión)</h2>
+<ul>
+<li><strong>Forge sí tiene el paquete de voz.</strong> En <code>c:\yujin-forge\src\voice</code> hay proveedores de Google, Whisper y ElevenLabs, un router que elige proveedor según config, y hasta un módulo de "huella de voz". Portarlo a Yuemail es real: hay de dónde copiar.</li>
+<li><strong>El proveedor Google ya está escrito así:</strong> habla con los servidores de Google por HTTP (sin SDK pesado), la clave va del lado servidor y nunca toca el navegador. Es el mismo molde que ya usa el Asistente (Brain). Encaja perfecto.</li>
+<li><strong>Tu clave quedó guardada</strong> en la bóveda local (encriptada, verificada). Fuera del repositorio, imposible que entre a git.</li>
+</ul>
+
+<h2>2. El punto honesto: "afinar para voces atípicas"</h2>
+<p>Acá hay una diferencia que tengo que dejarte clarísima, porque cambia qué se puede prometer:</p>
+<ul>
+<li><strong>Lo que Google NO hace con una clave:</strong> NO reentrena su "oído" sobre la voz de una persona. El reentrenamiento acústico real para habla atípica (disartria, etc.) es un programa aparte de Google (Project Euphonia / Speech Accessibility), con inscripción y aprobación; no es algo que se prenda con una clave y un endpoint.</li>
+<li><strong>El módulo "huella de voz" de Forge tampoco es eso:</strong> sirve para reconocer <em>quién</em> habla (identidad y prueba de vida antes de una acción irreversible), no para entender <em>mejor</em> a una voz difícil.</li>
+<li><strong>Lo que SÍ se puede construir, y ayuda de verdad:</strong> un <em>entrenador</em> en la configuración donde la persona dice cada comando y cada contacto unas pocas veces. Con eso armo dos cosas: (a) una lista de "palabras esperadas" que se le manda a Google en cada pedido para que <strong>sesgue</strong> el reconocimiento hacia el vocabulario de esa persona, y (b) una <strong>capa de corrección local</strong> que aprende sus confusiones típicas ("band eja" -> "bandeja") y las arregla antes de actuar. No es reentrenar el oído de Google, pero para un vocabulario fijo y conocido sube bastante el acierto de esa persona puntual.</li>
+</ul>
+<p><strong>Mi recomendación:</strong> construyo el entrenador como adaptación + aprendizaje local (entregable hoy, real), y dejo anotado que si querés el reentrenamiento acústico de verdad, ese es un trámite tuyo con Google (Euphonia), aparte. Si te sirve esta versión, la hago.</p>
+
+<h2>3. El bloqueo de hoy: la clave está restringida</h2>
+<p>Probé la clave contra los dos servicios de Google. Los dos responden:</p>
+<blockquote><code>403 PERMISSION_DENIED — Requests from referer &lt;empty&gt; are blocked.</code></blockquote>
+<p>Eso significa que la clave tiene una <strong>restricción por "referer HTTP" (sitios web)</strong>: sirve si la llama un navegador desde ciertas webs, pero <strong>se bloquea cuando la llama un servidor</strong>. Y Yuemail tiene que llamarla desde el servidor, justamente para que la clave nunca baje al navegador. Mientras esté así, el camino 1 nunca llegaría a usar Google: caería siempre al navegador. Es el mismo tipo de freno que la vez pasada.</p>
+<p><strong>Cómo lo arreglás vos (2 minutos, en tu consola de Google):</strong></p>
+<ol>
+<li>Entrá a <code>console.cloud.google.com</code> -> APIs y servicios -> Credenciales -> esa clave.</li>
+<li>En <strong>"Restricciones de aplicación"</strong> cambiá de "Sitios web (referer HTTP)" a <strong>"Ninguna"</strong> (o "Direcciones IP" si querés acotar al servidor).</li>
+<li>En <strong>"Restricciones de API"</strong> asegurate de permitir <strong>Cloud Text-to-Speech API</strong> y <strong>Cloud Speech-to-Text API</strong> (y que ambas estén habilitadas en el proyecto).</li>
+</ol>
+<p>Apenas la destrabes, vuelvo a probar y, si pasa, recién ahí arranco el build.</p>
+
+<h2>4. El plan, si me das luz verde</h2>
+<ol>
+<li><strong>Portar el subsistema de voz</strong> de Forge a Yuemail: proveedor Google de STT y TTS, server-side, clave desde la bóveda (slot <code>speech.google</code>, ya creado).</li>
+<li><strong>Camino 1:</strong> Google es el oído y la voz por defecto; el navegador queda como <strong>red de seguridad</strong> (si se cae la red o falla la clave, la persona nunca se queda sin app).</li>
+<li><strong>Capturar el audio del micrófono</strong> en el navegador, mandarlo al servidor, y que el servidor hable con Google. La clave nunca baja al navegador.</li>
+<li><strong>Entrenador de voz</strong> en configuración (la versión real del punto 2): grabar patrones -> lista de palabras esperadas + corrección local.</li>
+<li><strong>Probar de punta a punta</strong> sobre un banco de frases reales y medir el acierto de verdad, igual que con el Asistente.</li>
+<li><strong>Sale como v0.6.0</strong> con nota de cambio en los documentos aprobados, y al final <strong>reescribo los instructivos</strong> del tester para que configurar la voz de Google sea parte del arranque.</li>
+</ol>
+
+<h2>5. Lo que necesito de vos para arrancar la noche</h2>
+<ul>
+<li><strong>(a)</strong> Destrabar la clave en la consola de Google (punto 3). Sin eso, el camino 1 con Google no se puede medir y no arranco a ciegas.</li>
+<li><strong>(b)</strong> Confirmar que el entrenador va en su versión <em>real</em> (adaptación + aprendizaje local), no reentrenamiento acústico de Google (que es un trámite aparte tuyo con Euphonia).</li>
+</ul>
+<p>Con esos dos OK, te digo "clave verde" y arranco desarrollo + test toda la noche, hasta el máximo de acierto. Si querés cambiar algo del alcance, decímelo antes de que toque una línea.</p>
+</body></html>

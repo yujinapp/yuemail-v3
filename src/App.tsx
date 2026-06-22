@@ -14,6 +14,7 @@ import { SignaturePad } from './components/SignaturePad.js';
 import { SendDialog } from './components/SendDialog.js';
 import { SettingsDialog } from './components/SettingsDialog.js';
 import { BrainSettings } from './components/BrainSettings.js';
+import { VoiceSettings } from './components/VoiceSettings.js';
 import { useVoice } from './voice/useVoice.js';
 import {
   FIELD_SPECS_BY_CONTEXT,
@@ -41,6 +42,7 @@ export function App(): React.ReactElement {
   const [showSendDialog, setShowSendDialog]   = React.useState(false);
   const [showSettings, setShowSettings]       = React.useState(false);
   const [showBrain, setShowBrain]             = React.useState(false);
+  const [showVoice, setShowVoice]             = React.useState(false);
   const [sendPrefillTo, setSendPrefillTo]     = React.useState('');
   const [envelopes, setEnvelopes] = React.useState<InboxEnvelope[]>([]);
   const [toasts, setToasts]       = React.useState<Toast[]>([]);
@@ -435,6 +437,18 @@ export function App(): React.ReactElement {
           </button>
           <button
             type="button"
+            className="yuemail-brain-btn"
+            aria-label="Voz: escuchar y hablar"
+            title="Voz (Google): escuchar y hablar"
+            onClick={() => setShowVoice(true)}
+            data-nac-id="yuemail.voice.btn-voice"
+            data-nac-role="button"
+            data-nac-action="open_voice"
+          >
+            Voz
+          </button>
+          <button
+            type="button"
             className="yuemail-settings-gear"
             aria-label="Configuracion del correo"
             title="Configuracion del correo"
@@ -518,6 +532,13 @@ export function App(): React.ReactElement {
       {showBrain && (
         <BrainSettings
           onClose={() => setShowBrain(false)}
+          onToast={pushToast}
+        />
+      )}
+
+      {showVoice && (
+        <VoiceSettings
+          onClose={() => setShowVoice(false)}
           onToast={pushToast}
         />
       )}

@@ -36,16 +36,20 @@ describe('vault round-trip (F8 / acceptance #3, #8)', () => {
     expect(v.isValidVaultKey('attacker.key')).toBe(false);
   });
 
-  it('VAULT_KEYS lists the 12 mail keys plus the 9 brain key slots', async () => {
+  it('VAULT_KEYS lists the 12 mail keys, 9 brain key slots and the voice key', async () => {
     const v = await loadVault();
-    const mailKeys = v.VAULT_KEYS.filter((k) => !k.startsWith('brain.'));
+    const mailKeys = v.VAULT_KEYS.filter((k) => !k.startsWith('brain.') && !k.startsWith('speech.'));
     const brainKeys = v.VAULT_KEYS.filter((k) => k.startsWith('brain.'));
+    const voiceKeys = v.VAULT_KEYS.filter((k) => k.startsWith('speech.'));
     expect(mailKeys.length).toBe(12);
     expect(brainKeys.length).toBe(9);
-    expect(v.VAULT_KEYS.length).toBe(21);
+    expect(voiceKeys.length).toBe(1);
+    expect(v.VAULT_KEYS.length).toBe(22);
     /* The brain provider key slots are accepted by the vault. */
     expect(v.isValidVaultKey('brain.google_ai')).toBe(true);
     expect(v.isValidVaultKey('brain.anthropic')).toBe(true);
+    /* The single Google voice slot (STT + TTS) is accepted too. */
+    expect(v.isValidVaultKey('speech.google')).toBe(true);
   });
 
   it('setKey + getKey round-trips a value', async () => {

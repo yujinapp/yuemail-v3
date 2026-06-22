@@ -1,4 +1,4 @@
-# Yuemail v0.5.0 -- Casos de prueba para QA manual
+# Yuemail v0.6.0 -- Casos de prueba para QA manual
 
 Leer primero: `INSTRUCTIVO_TESTERS.md` (como instalar, como anotar,
 a donde enviar los resultados). La planilla de resultados esta al
@@ -12,11 +12,85 @@ Convenciones:
 - Las frases marcadas **(pedido libre)** son ejemplos para el
   asistente de IA (camino 1): podes decir eso o algo parecido con tus
   palabras. Miden que tan bien interpreta la IA.
+- Hay DOS capas de voz, no confundirlas: la **Voz** (boton "Voz") es
+  el OIDO y la VOZ (Google o navegador); el **Asistente** (boton
+  "Asistente") es la IA que ENTIENDE el pedido. La Voz pasa tu audio a
+  texto; el Asistente decide la accion sobre ese texto.
 - "La app" = el navegador en http://127.0.0.1:5180.
 - "Aviso" = el cartel que aparece abajo en la pantalla (toast).
 - "El asistente" = la IA / Brain que interpreta los pedidos libres.
 - Salvo indicacion contraria, cada seccion arranca con la app
   abierta y sin ninguna ventana emergente abierta.
+
+---
+
+## Seccion VOICE -- Voz de Google: escuchar y hablar [PRIMERO]
+
+Esta seccion va antes que todo lo demas junto con BRAIN: la Voz es el
+camino 1 por defecto para oir y hablar, y el resto de las pruebas de
+voz la asumen configurada. Necesitas la clave de Google de Voz, con
+Speech-to-Text y Text-to-Speech habilitados y sin restriccion de sitio
+web (ver INSTRUCTIVO, seccion 2).
+
+### VOICE-01 -- Abrir el panel de Voz
+- Pasos: click en el boton "Voz" (arriba a la derecha).
+- Esperado: se abre la ventana "Voz (escuchar y hablar)" con el
+  interruptor "Voz de Google encendida" MARCADO, un selector de
+  Idioma (Espanol Argentina), un control de Velocidad y el campo
+  "Clave de Google".
+
+### VOICE-02 -- La clave nunca se muestra
+- Pasos: en "Clave de Google" escribi algo; mira como se ve; cerra y
+  reabri el panel.
+- Esperado: el campo se muestra como puntos (tipo contrasena) y al
+  reabrir aparece vacio (la clave guardada NO se vuelve a mostrar; si
+  ya habia una, dice "ya configurada").
+
+### VOICE-03 -- Probar voz: se escucha la voz de Google (TTS, camino 1)
+- Precondicion: VOICE-01, parlantes/auriculares con volumen.
+- Pasos: pega tu clave de Google real y apreta "Probar voz".
+- Esperado: ESCUCHAS a Yuemail diciendo una frase con una voz clara y
+  natural (la de Google), y aparece el aviso "Voz de Google
+  reproducida". Si avisa que no pudo, revisa la clave (lo mas comun:
+  falta habilitar Text-to-Speech o quitar la restriccion de sitio
+  web); anota TEXTUAL el aviso.
+
+### VOICE-04 -- Guardar la Voz
+- Precondicion: VOICE-03.
+- Pasos: apreta "Guardar".
+- Esperado: aviso "Voz configurada" y la ventana se cierra.
+
+### VOICE-05 -- Oido de Google: hablar natural y que entienda (STT, camino 1)
+- Precondicion: VOICE-04; cuenta de correo configurada o no (da igual);
+  microfono encendido; con internet.
+- Pasos: deci el comando fijo "leer bandeja" hablando natural, a
+  velocidad normal.
+- Esperado: la app ejecuta el comando (lee la bandeja o avisa que
+  falta configurar la cuenta). Con clave + internet, quien transcribio
+  tu voz fue el oido de Google. Anota si entendio bien al primer
+  intento.
+
+### VOICE-06 -- Velocidad de la voz
+- Precondicion: VOICE-04.
+- Pasos: abri "Voz", mové la Velocidad mas alta, apreta "Probar voz".
+- Esperado: la frase de prueba se escucha mas rapido. (Dejala en un
+  valor comodo y Guardar.)
+
+### VOICE-07 -- Red de seguridad: Voz de Google apagada cae al navegador
+- Pasos: abri "Voz", DESmarca "Voz de Google encendida", Guardar.
+  Despues, con microfono on, deci "nuevo documento".
+- Esperado: el comando funciona igual (ahora el oido es el del
+  navegador). La app NUNCA queda sin escuchar. (En Firefox, donde no
+  hay voz de navegador, el boton de microfono queda deshabilitado: eso
+  es esperado.)
+
+### VOICE-08 -- Red de seguridad: sin internet, la voz cae al navegador
+- Precondicion: volve a ENCENDER la Voz de Google (VOICE-04). Desconecta
+  el wifi / cable de red.
+- Pasos: deci "nuevo documento".
+- Esperado: sigue funcionando (al no poder hablar con Google, Yuemail
+  usa el navegador para oir y hablar). La app sigue respondiendo. Volve
+  a conectar la red al terminar.
 
 ---
 
@@ -114,7 +188,7 @@ Necesitas una clave de API (ver INSTRUCTIVO, seccion 2).
 ### INS-02 -- Version
 - Precondicion: INS-01.
 - Pasos: `yuemail version`.
-- Esperado: imprime `0.5.0` (o superior).
+- Esperado: imprime `0.6.0` (o superior).
 
 ### INS-03 -- Ayuda
 - Pasos: `yuemail help`.
@@ -565,11 +639,15 @@ Necesitas una clave de API (ver INSTRUCTIVO, seccion 2).
 - Esperado: en ningun momento la contrasena aparece escrita en un
   aviso (solo el conteo de caracteres).
 
-### SEG-04 -- Sin telemetria
+### SEG-04 -- Sin telemetria (el navegador solo habla con tu maquina)
 - Pasos: usa la app 5 minutos con la pestana Red (F12 > Network)
-  abierta del navegador.
-- Esperado: solo trafico hacia 127.0.0.1:5180; ninguna llamada a
-  dominios externos.
+  abierta del navegador (inclui un par de comandos por voz y un
+  "Probar voz").
+- Esperado: en el navegador, solo trafico hacia 127.0.0.1:5180;
+  ninguna llamada directa a dominios externos. (Las llamadas a Google
+  para la Voz y el Asistente las hace el SERVIDOR de Yuemail, no el
+  navegador, y son funcionales -- no telemetria; por eso no aparecen
+  aca. Tu clave nunca viaja al navegador.)
 
 ### SEG-05 -- El documento queda local
 - Pasos: verifica que tus documentos esten en `~/.yuemail/documents/`
@@ -605,9 +683,18 @@ Datos de la corrida:
 - Version de Yuemail (`yuemail version`):
 - Proveedor de correo usado:
 - Proveedor y modelo de IA usado (asistente):
+- Voz de Google: encendida / usaste el navegador:
 
 | Caso | Resultado | Observaciones | Captura |
 |------|-----------|---------------|---------|
+| VOICE-01 | | | |
+| VOICE-02 | | | |
+| VOICE-03 | | | |
+| VOICE-04 | | | |
+| VOICE-05 | | | |
+| VOICE-06 | | | |
+| VOICE-07 | | | |
+| VOICE-08 | | | |
 | BRAIN-01 | | | |
 | BRAIN-02 | | | |
 | BRAIN-03 | | | |
@@ -696,5 +783,5 @@ Datos de la corrida:
 | SEG-05 | | | |
 | REG-01 | | | |
 
-Total: 87 casos. Enviar a contact@yujin.app con asunto
-`QA Yuemail v0.5.0 -- <tu nombre>`. Gracias!
+Total: 95 casos. Enviar a contact@yujin.app con asunto
+`QA Yuemail v0.6.0 -- <tu nombre>`. Gracias!

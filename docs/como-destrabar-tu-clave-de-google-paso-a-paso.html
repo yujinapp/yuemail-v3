@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Como destrabar tu clave de Google (paso a paso)</title><style>body{font-family:Georgia,"Times New Roman",serif;max-width:760px;margin:40px auto;padding:0 20px;color:#1a1a1a;line-height:1.6}h1,h2,h3{font-weight:600;color:#2e3a5e}table{border-collapse:collapse}td,th{border:1px solid #b8ad95;padding:6px 10px}code,pre{font-family:Consolas,monospace;background:#f5f0e6}</style></head><body>
+<h1>Destrabar tu clave de Google para voz y oido</h1>
+<p><strong>Por que hay que hacer esto:</strong> tu clave funciona, pero tiene puesta una restriccion que solo permite usarla desde paginas web (un navegador). Yuemail la usa desde el <em>servidor</em>, y por eso Google la rechaza con un error de permiso. Vamos a sacarle esa restriccion. Son unos 5 minutos. Es tu cuenta de Google; yo no puedo entrar, asi que estos pasos los haces vos.</p>
+
+<h2>Antes de empezar</h2>
+<ul>
+<li>Entra desde una computadora (no celular), es mas comodo.</li>
+<li>Usa la <strong>misma cuenta de Google</strong> con la que se creo la clave.</li>
+<li>Vas a tener dos tareas: <strong>(A)</strong> sacarle la restriccion a la clave y <strong>(B)</strong> asegurarte de que los dos servicios de voz esten encendidos.</li>
+</ul>
+
+<h2>Parte A — Sacarle la restriccion a la clave</h2>
+<ol>
+<li>Abri tu navegador y anda a: <strong>console.cloud.google.com</strong></li>
+<li>Arriba a la izquierda, al lado del logo de Google Cloud, hay un <strong>selector de proyecto</strong> (un menu desplegable con el nombre del proyecto). Hace clic y elegi el proyecto correcto. Si solo tenes uno, ya estas.</li>
+<li>En el buscador de arriba (la lupa que dice "Buscar"), escribi <strong>Credenciales</strong> y entra a la opcion <strong>"APIs y servicios — Credenciales"</strong>.</li>
+<li>En la lista vas a ver tus claves bajo el titulo <strong>"Claves de API"</strong>. Hace clic en el <strong>nombre de la clave</strong> que me pasaste (en el nombre, no en el icono de copiar, para abrir su configuracion).</li>
+<li>Bajas hasta la seccion <strong>"Restricciones de aplicacion"</strong> (en ingles, "Application restrictions"). Ahi va a estar marcada la opcion <strong>"Sitios web"</strong> ("Websites" o "HTTP referrers"). <strong>Cambiala a la opcion "Ninguna"</strong> ("None").</li>
+<li>Un poco mas abajo esta <strong>"Restricciones de API"</strong> ("API restrictions"). Tenes dos opciones validas:
+<ul>
+<li><strong>Opcion simple:</strong> elegi <strong>"No restringir la clave"</strong> ("Don't restrict key").</li>
+<li><strong>Opcion mas prolija:</strong> dejala en "Restringir clave" pero en la lista marca <strong>Cloud Text-to-Speech API</strong>, <strong>Cloud Speech-to-Text API</strong> y la que ya usa el Asistente, <strong>Generative Language API</strong>. (Si alguna no aparece en la lista, es porque todavia no esta encendida: hacela en la Parte B y despues volves a marcarla aca.)</li>
+</ul>
+</li>
+<li>Abajo de todo, hace clic en <strong>"Guardar"</strong>.</li>
+</ol>
+
+<h2>Parte B — Encender los dos servicios de voz</h2>
+<p>Esto asegura que Google tenga prendidos el oido y la voz para tu proyecto.</p>
+<ol>
+<li>En el buscador de arriba escribi <strong>"Cloud Text-to-Speech API"</strong> y entra al resultado.</li>
+<li>Si ves un boton azul que dice <strong>"Habilitar"</strong> ("Enable"), hace clic. Si en cambio dice <strong>"Administrar"</strong> ("Manage"), ya esta encendida — perfecto, no toques nada.</li>
+<li>Repeti lo mismo buscando <strong>"Cloud Speech-to-Text API"</strong>: habilitala si hace falta.</li>
+</ol>
+
+<h2>Para cerrar</h2>
+<ul>
+<li>Despues de guardar, Google puede tardar <strong>entre 1 y 5 minutos</strong> en aplicar el cambio. Es normal.</li>
+<li>Cuando termines, escribime <strong>"listo"</strong> y yo vuelvo a probar la clave contra los dos servicios. Si quedo bien, arranco el desarrollo y la prueba de la noche. Si todavia da error, te digo exactamente que falta.</li>
+</ul>
+
+<h2>Si algo no coincide</h2>
+<p>Si no encontras alguna pantalla o el texto esta distinto (Google cambia los nombres a veces), sacame una foto o describime lo que ves y te guio desde ahi. No adivines ni borres nada que no estemos tocando.</p>
+</body></html>
