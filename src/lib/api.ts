@@ -7,6 +7,8 @@
  * ASCII-only.
  */
 
+import type { Contact } from './contactMatch.js';
+
 const BASE = '';
 
 async function send<T>(path: string, init: RequestInit = {}): Promise<T> {
@@ -127,6 +129,28 @@ export const api = {
     return send<{ ok: true; envelopes: Array<{ uid: number; from: string; subject: string; date: string }> }>(
       '/api/inbox/list?limit=' + limit,
     );
+  },
+
+  /* --- Contacts (address book, v0.6.4 / PND-022) --- */
+  contactsList() {
+    return send<{ ok: true; contacts: Contact[] }>('/api/contacts');
+  },
+  contactAdd(input: { name?: string; email: string; aliases?: string[] }) {
+    return send<{ ok: true; contact: Contact }>('/api/contacts', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(input),
+    });
+  },
+  contactUpdate(id: string, patch: { name?: string; email?: string; aliases?: string[] }) {
+    return send<{ ok: true; contact: Contact }>('/api/contacts/' + encodeURIComponent(id), {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(patch),
+    });
+  },
+  contactDelete(id: string) {
+    return send<{ ok: true }>('/api/contacts/' + encodeURIComponent(id), { method: 'DELETE' });
   },
 
   /* --- Brain (camino 1, v0.5.0) --- */

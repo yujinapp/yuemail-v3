@@ -16,6 +16,7 @@ const COMPONENT_FILES = [
   'src/components/SignaturePad.tsx',
   'src/components/SendDialog.tsx',
   'src/components/SettingsDialog.tsx',
+  'src/components/ContactsDialog.tsx',
   'src/App.tsx',
 ];
 
@@ -31,7 +32,7 @@ describe('NAC3 attributes (F9)', () => {
     /* Aggregate every data-nac-id across the component set and verify
      * each area belongs to the F9-documented namespace list. */
     const allowedAreas = new Set([
-      'toolbar', 'topbar', 'doc', 'signature', 'email', 'voice', 'inbox', 'settings',
+      'toolbar', 'topbar', 'doc', 'signature', 'email', 'voice', 'inbox', 'settings', 'contacts',
     ]);
     for (const rel of COMPONENT_FILES) {
       const src = await fs.readFile(path.resolve(rel), 'utf-8');

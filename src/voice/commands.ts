@@ -53,7 +53,10 @@ export type VoiceCommandType =
   | 'INICIAR_DICTADO'
   | 'FIN_DICTADO'
   | 'ENVIAR'
+  | 'RESPONDER'
   | 'LEER_BANDEJA'
+  | 'PONER_TITULO'
+  | 'ABRIR_CONTACTOS'
   | 'ABRIR_CONFIGURACION'
   | 'DETENER_VOZ'
   | 'ENCENDER_MICROFONO'
@@ -79,7 +82,8 @@ export type VoiceCommandType =
  * exhaustiveness check below fails the build if a new type is left out. */
 export const ALL_VOICE_COMMAND_TYPES = [
   'NUEVO_DOCUMENTO', 'ABRIR_DOCUMENTO', 'GUARDAR_FIRMA', 'FIRMAR',
-  'INICIAR_DICTADO', 'FIN_DICTADO', 'ENVIAR', 'LEER_BANDEJA',
+  'INICIAR_DICTADO', 'FIN_DICTADO', 'ENVIAR', 'RESPONDER', 'LEER_BANDEJA',
+  'PONER_TITULO', 'ABRIR_CONTACTOS',
   'ABRIR_CONFIGURACION', 'DETENER_VOZ', 'ENCENDER_MICROFONO', 'APAGAR_MICROFONO',
   'CONFIRMAR_ENVIO', 'CANCELAR', 'GUARDAR_FIRMA_PAD', 'BORRAR_FIRMA',
   'GENERAR_FIRMA', 'DETECTAR_SERVIDORES', 'PROBAR_CONEXION', 'GUARDAR_CONFIG',
@@ -162,6 +166,39 @@ export function extractEmail(s: string): string | undefined {
   return undefined;
 }
 
+/**
+ * Stronger email extraction for a DICTATED address, tolerant of the
+ * pauses a real speech engine inserts ("maximiliano linares arroba gmail
+ * punto com" -> "maximilianolinares@gmail.com"). The old extractEmail
+ * matched a regex on the spaced text and kept only the chunk glued to the
+ * "@", so "<name> 23 arroba gmail punto com" came out as "23@gmail.com"
+ * (PND-020). Here we substitute the spoken symbols, strip ALL whitespace,
+ * and accept the result only if the whole thing is a single valid address.
+ * Returns undefined when the utterance is not a dictated email (e.g. a
+ * bare contact name), so the caller can route it to the address book.
+ */
+export function extractSpokenEmail(s: string): string | undefined {
+  const lowered = stripAccents(s).toLowerCase();
+  const sub = lowered
+    .replace(/\barroba\b/g, '@')
+    .replace(/\bat\b/g, '@')
+    .replace(/\bpunto\b/g, '.')
+    .replace(/\bdot\b/g, '.')
+    .replace(/\bguion\s+bajo\b/g, '_')
+    .replace(/\bguion\b/g, '-');
+  const compact = sub.replace(/\s+/g, '');
+  if (/^[a-z0-9._+-]+@[a-z0-9.-]+\.[a-z]{2,}$/.test(compact)) return compact;
+  /* Fall back to the loose single-token extractor (literal address typed
+   * mid-sentence, already glued together). */
+  return extractEmail(s);
+}
+
+/** True when the text carries an email signal worth parsing as an address
+ *  rather than a contact name. */
+export function looksLikeEmail(s: string): boolean {
+  return /@|\barroba\b|\bat\b/i.test(stripAccents(s).toLowerCase());
+}
+
 interface Matcher {
   type: VoiceCommandType;
   patterns: RegExp[];
@@ -177,11 +214,44 @@ const MATCHERS: Matcher[] = [
    * extracted from the *raw* utterance (extractEmail keeps "arroba"
    * and "punto" pre-substitution), so dropping the preposition here
    * is safe. */
+  /* RESPONDER must come BEFORE ENVIAR so "responder a ana" is not mis-read;
+   * neither "responder" nor "contestar" contains the ENVIAR triggers, but
+   * keeping the recipient verbs grouped makes the intent obvious. */
+  {
+    type: 'RESPONDER',
+    patterns: [
+      /\bresponder\b/,
+      /\brespondele\b/,
+      /\bresponde\b/,
+      /\bcontestar\b/,
+      /\bcontesta\b/,
+    ],
+  },
   {
     type: 'ENVIAR',
     patterns: [
       /\benviar\b/,
       /\bmandar\b/,
+    ],
+  },
+  /* PONER_TITULO: dictate the document title. "titulo" alone is enough in
+   * the global (document) context -- there is no other global command that
+   * uses the word, and inside modals this matcher never runs (the send
+   * dialog routes "campo titulo" to the subject field first). */
+  {
+    type: 'PONER_TITULO',
+    patterns: [
+      /\b(?:poner|pon|pone|ponle|escribir|cambiar|titular)\s+(?:el\s+)?titulo\b/,
+      /\btitulo\b/,
+    ],
+  },
+  /* ABRIR_CONTACTOS: open the address book. */
+  {
+    type: 'ABRIR_CONTACTOS',
+    patterns: [
+      /\bcontactos\b/,
+      /\bagenda\b/,
+      /\blista\s+de\s+contactos\b/,
     ],
   },
   {
@@ -570,8 +640,24 @@ export function parseCommand(raw: string, context: VoiceContext = 'global', opts
       if (re.test(normalized)) {
         const cmd: VoiceCommand = { type: m.type, raw, normalized };
         if (m.type === 'ENVIAR') {
-          const email = extractEmail(raw);
+          /* Strip the verb (+ optional "a"/"al") so only the recipient
+           * remains. A dictated address wins; otherwise the remainder is a
+           * contact NAME the App resolves against the address book. Stripping
+           * first is what stops "enviar a" gluing onto the local part. */
+          const remainder = raw.replace(/^.*?\b(?:enviar|mandar)\b\s*(?:a\s+|al\s+)?/i, '').trim();
+          const email = looksLikeEmail(remainder) ? extractSpokenEmail(remainder) : undefined;
           if (email) cmd.payload = email;
+          else if (remainder.length > 0) cmd.payload = remainder;
+        } else if (m.type === 'RESPONDER') {
+          /* Optional "responder a <nombre>"; bare "responder" -> last read. */
+          const remainder = raw.replace(/^.*?\b(?:responder|respondele|responde|contestar|contesta)\b\s*(?:a\s+|al\s+)?/i, '').trim();
+          const email = looksLikeEmail(remainder) ? extractSpokenEmail(remainder) : undefined;
+          if (email) cmd.payload = email;
+          else if (remainder.length > 0) cmd.payload = remainder;
+        } else if (m.type === 'PONER_TITULO') {
+          /* Title text from the RAW utterance to keep its casing. */
+          const mt = raw.match(/t[ií]tulo\s+(.+)$/i);
+          if (mt && mt[1] && mt[1].trim().length > 0) cmd.payload = mt[1].trim();
         } else if (m.type === 'ABRIR_DOCUMENTO') {
           /* Extract optional document name after the trigger. */
           const after = normalized.replace(/^.*?(?:abrir|cargar)\s+(?:documento|archivo)\s*/, '').trim();
@@ -605,8 +691,11 @@ export const COMMAND_CATALOG: ReadonlyArray<CommandCatalogEntry> = [
   { type: 'FIRMAR',             sample: 'firmar',                 action: 'Insertar la firma guardada.' },
   { type: 'INICIAR_DICTADO',    sample: 'iniciar dictado',        action: 'Comenzar transcripcion.' },
   { type: 'FIN_DICTADO',        sample: 'fin dictado',            action: 'Detener transcripcion.' },
-  { type: 'ENVIAR',             sample: 'enviar a ana arroba ejemplo punto com', action: 'Abrir el dialogo de envio.' },
+  { type: 'ENVIAR',             sample: 'enviar a Maximiliano',    action: 'Enviar a un contacto de la agenda (por nombre) o a una direccion dictada.' },
+  { type: 'RESPONDER',          sample: 'responder',              action: 'Responder al ultimo correo leido; o "responder a <nombre>" a un contacto.' },
   { type: 'LEER_BANDEJA',       sample: 'leer bandeja',           action: 'Listar los envelopes recientes.' },
+  { type: 'PONER_TITULO',       sample: 'poner titulo Carta al banco', action: 'Poner o cambiar el titulo del documento.' },
+  { type: 'ABRIR_CONTACTOS',    sample: 'abrir contactos',        action: 'Abrir la agenda de contactos.' },
   { type: 'ABRIR_CONFIGURACION', sample: 'abrir configuracion',   action: 'Abrir la configuracion de la cuenta de correo.' },
   { type: 'DETENER_VOZ',        sample: 'detener voz',            action: 'Apagar el microfono.' },
   /* Contextual: send dialog open. */

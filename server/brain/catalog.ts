@@ -21,9 +21,9 @@ export interface BrainCommandSpec {
   description: string;
   /** Example utterances a person might say to trigger it. */
   examples: string[];
-  /** 'email' or 'name' when the command carries a payload extracted from
-   *  the utterance; absent otherwise. */
-  payload?: 'email' | 'name' | 'field';
+  /** 'email'/'name'/'contact' for a recipient, 'field' for a modal field,
+   *  'title' for a dictated document title; absent otherwise. */
+  payload?: 'email' | 'name' | 'field' | 'contact' | 'title';
 }
 
 /** Global commands -- reachable with no modal open. This is the main
@@ -35,8 +35,11 @@ export const GLOBAL_COMMANDS: ReadonlyArray<BrainCommandSpec> = [
   { type: 'FIRMAR',              description: 'Insertar la firma ya guardada en el documento.', examples: ['firmar', 'firma el documento', 'pone mi firma aca', 'agrega la firma al final'] },
   { type: 'INICIAR_DICTADO',     description: 'Empezar a transcribir lo que la persona dicta al cuerpo del documento.', examples: ['iniciar dictado', 'voy a dictar', 'empeza a escribir lo que digo', 'tomame nota'] },
   { type: 'FIN_DICTADO',         description: 'Dejar de transcribir el dictado.', examples: ['fin dictado', 'listo, pare de escribir', 'termine de dictar'] },
-  { type: 'ENVIAR',              description: 'Abrir el dialogo para enviar el documento por correo; opcionalmente a un email dicho.', examples: ['enviar', 'mandaselo a ana arroba ejemplo punto com', 'quiero mandar este correo', 'envialo a mi hijo'], payload: 'email' },
+  { type: 'ENVIAR',              description: 'Abrir el dialogo para enviar el documento por correo. El destinatario puede ser el NOMBRE de un contacto de la agenda (preferido) o una direccion de correo dictada.', examples: ['enviar a Maximiliano', 'mandaselo a ana arroba ejemplo punto com', 'envialo a mi hijo', 'enviar a Tamara'], payload: 'contact' },
+  { type: 'RESPONDER',           description: 'Responder un correo. Sin nombre, responde al ultimo correo leido de la bandeja; con nombre, responde a ese contacto de la agenda.', examples: ['responder', 'contestar', 'responder a Ana', 'respondele a mi hijo'], payload: 'contact' },
   { type: 'LEER_BANDEJA',        description: 'Listar y leer los correos recibidos en la bandeja.', examples: ['leer bandeja', 'que correos tengo', 'fijate si llego algo', 'lee mis mensajes'] },
+  { type: 'PONER_TITULO',        description: 'Poner o cambiar el titulo del documento que se esta escribiendo.', examples: ['poner titulo Carta al banco', 'el titulo es Informe anual', 'titular esto como Reclamo', 'ponle de titulo Solicitud'], payload: 'title' },
+  { type: 'ABRIR_CONTACTOS',     description: 'Abrir la agenda de contactos (lista de personas a las que se les puede escribir).', examples: ['abrir contactos', 'mis contactos', 'la agenda', 'mostrame los contactos'] },
   { type: 'ABRIR_CONFIGURACION', description: 'Abrir la configuracion de la cuenta de correo.', examples: ['abrir configuracion', 'ajustes', 'quiero configurar mi correo', 'donde pongo mi clave'] },
   { type: 'ENCENDER_MICROFONO',  description: 'Encender el microfono.', examples: ['encender microfono', 'prende el microfono', 'activa la voz'] },
   { type: 'APAGAR_MICROFONO',    description: 'Apagar el microfono.', examples: ['apagar microfono', 'apaga el microfono'] },

@@ -15,12 +15,15 @@ import { SendDialog } from './components/SendDialog.js';
 import { SettingsDialog } from './components/SettingsDialog.js';
 import { BrainSettings } from './components/BrainSettings.js';
 import { VoiceSettings } from './components/VoiceSettings.js';
+import { ContactsDialog } from './components/ContactsDialog.js';
 import { useVoice } from './voice/useVoice.js';
 import {
   FIELD_SPECS_BY_CONTEXT,
   parseCommand,
   spokenCheckboxValue,
   spokenFieldValue,
+  extractSpokenEmail,
+  looksLikeEmail,
   type DialogFieldSpec,
   type VoiceCommand,
   type VoiceContext,
@@ -29,6 +32,7 @@ import { resolveCommand, resolveLiterallyFirst } from './voice/resolveCommand.js
 import { diagLog } from './voice/diagnostics.js';
 import { announce, ensureRegions } from './lib/ariaLive.js';
 import { api } from './lib/api.js';
+import { matchContacts, type Contact } from './lib/contactMatch.js';
 
 interface InboxEnvelope { uid: number; from: string; subject: string; date: string }
 
@@ -44,8 +48,19 @@ export function App(): React.ReactElement {
   const [showSettings, setShowSettings]       = React.useState(false);
   const [showBrain, setShowBrain]             = React.useState(false);
   const [showVoice, setShowVoice]             = React.useState(false);
+  const [showContacts, setShowContacts]       = React.useState(false);
   const [sendPrefillTo, setSendPrefillTo]     = React.useState('');
+  const [sendPrefillSubject, setSendPrefillSubject] = React.useState('');
+  const [contacts, setContacts]   = React.useState<Contact[]>([]);
   const [envelopes, setEnvelopes] = React.useState<InboxEnvelope[]>([]);
+  /* Who the last read inbox message was from -- so "responder" (no name)
+   * knows who to reply to. Refs so the voice callback reads the latest. */
+  const lastInboxSenderRef  = React.useRef<string | undefined>(undefined);
+  const lastInboxSubjectRef = React.useRef<string | undefined>(undefined);
+  /* Mirror contacts into a ref so the voice callback resolves names against
+   * the freshest list without re-subscribing. */
+  const contactsRef = React.useRef<Contact[]>([]);
+  contactsRef.current = contacts;
   const [toasts, setToasts]       = React.useState<Toast[]>([]);
   const [dictation, setDictation] = React.useState(false);
   /* Mirror dictation into a ref so the voice resolver always reads the
@@ -59,6 +74,58 @@ export function App(): React.ReactElement {
   React.useEffect(() => {
     api.signatureGet().then((s) => setSignatureExists(s.exists)).catch(() => { /* ignore */ });
   }, []);
+  React.useEffect(() => { void refreshContacts(); }, []);
+
+  async function refreshContacts() {
+    try {
+      const res = await api.contactsList();
+      setContacts(res.contacts);
+    } catch { /* address book is best-effort; the app works without it */ }
+  }
+
+  async function onAddContact(input: { name: string; email: string; aliases: string[] }) {
+    try {
+      await api.contactAdd(input);
+      await refreshContacts();
+      pushToast('success', 'Contacto guardado: ' + (input.name || input.email));
+    } catch (err) {
+      pushToast('error', err instanceof Error ? err.message : 'No se pudo guardar el contacto.');
+    }
+  }
+
+  async function onDeleteContact(id: string) {
+    try {
+      await api.contactDelete(id);
+      await refreshContacts();
+      pushToast('info', 'Contacto borrado.');
+    } catch (err) {
+      pushToast('error', err instanceof Error ? err.message : 'No se pudo borrar el contacto.');
+    }
+  }
+
+  /* Resolve a spoken recipient (a dictated address or a contact name) to a
+   * usable email. Returns one of: a confident email, an ambiguous set to
+   * disambiguate by voice, or nothing -- so the App never silently sends to
+   * the wrong person (PND-022). */
+  type RecipientResolution =
+    | { kind: 'email'; email: string; name?: string }
+    | { kind: 'ambiguous'; candidates: Contact[]; query: string }
+    | { kind: 'unknown'; query: string }
+    | { kind: 'none' };
+
+  function resolveRecipient(payload?: string): RecipientResolution {
+    const p = (payload ?? '').trim();
+    if (p.length === 0) return { kind: 'none' };
+    if (/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(p)) return { kind: 'email', email: p.toLowerCase() };
+    if (looksLikeEmail(p)) {
+      const e = extractSpokenEmail(p);
+      if (e) return { kind: 'email', email: e };
+    }
+    const res = matchContacts(p, contactsRef.current);
+    if (res.best && !res.ambiguous) return { kind: 'email', email: res.best.email, name: res.best.name || res.best.email };
+    if (res.ambiguous) return { kind: 'ambiguous', candidates: res.candidates, query: p };
+    return { kind: 'unknown', query: p };
+  }
 
   function pushToast(kind: Toast['kind'], text: string) {
     const id = Date.now() + Math.random();
@@ -148,11 +215,20 @@ export function App(): React.ReactElement {
     }
   }
 
-  async function onSendEmail(prefillTo?: string) {
+  async function onSendEmail(prefillTo?: string, prefillSubject?: string) {
     await ensureDocument();
     await persistCurrent();
     setSendPrefillTo(prefillTo ?? '');
+    setSendPrefillSubject(prefillSubject ?? '');
     setShowSendDialog(true);
+  }
+
+  /** Pull the bare address out of an inbox "Name <addr>" header. */
+  function emailFromHeader(header: string): string | undefined {
+    const angled = header.match(/<([^>]+)>/);
+    const raw = angled ? angled[1] : header;
+    const m = (raw ?? '').match(/[^\s<>]+@[^\s<>]+\.[^\s<>]+/);
+    return m ? m[0].toLowerCase() : undefined;
   }
 
   async function performSend(payload: { to: string; subject: string; body_text: string; attach_document_id?: string }) {
@@ -169,6 +245,14 @@ export function App(): React.ReactElement {
     try {
       const res = await api.inboxList(20);
       setEnvelopes(res.envelopes);
+      /* Remember the newest sender so "responder" knows the target, and
+       * refresh the address book (the server auto-registered the senders). */
+      const top = res.envelopes[0];
+      if (top) {
+        lastInboxSenderRef.current  = emailFromHeader(top.from);
+        lastInboxSubjectRef.current = top.subject;
+      }
+      void refreshContacts();
       pushToast('info', res.envelopes.length + ' correos en bandeja.');
     } catch (err) {
       pushToast('error', err instanceof Error ? err.message : 'No se pudo leer la bandeja.');
@@ -304,10 +388,57 @@ export function App(): React.ReactElement {
       case 'FIN_DICTADO':
         dictationRef.current = false;
         setDictation(false); pushToast('info', 'Dictado finalizado.'); break;
-      case 'ENVIAR':
-        void onSendEmail(cmd.payload); break;
+      case 'ENVIAR': {
+        const r = resolveRecipient(cmd.payload);
+        if (r.kind === 'email') {
+          pushToast('success', r.name ? 'Voy a enviar a ' + r.name + ' (' + r.email + ').' : 'Voy a enviar a ' + r.email + '.');
+          void onSendEmail(r.email);
+        } else if (r.kind === 'ambiguous') {
+          pushToast('info', 'Tengo varios contactos parecidos: ' + r.candidates.map((c) => c.name || c.email).join(', ') + '. Deci el nombre completo.');
+        } else if (r.kind === 'unknown') {
+          pushToast('info', 'No encontre a "' + r.query + '" en tus contactos. Abri Contactos para darlo de alta, o dicta la direccion.');
+          void onSendEmail();
+        } else {
+          void onSendEmail();
+        }
+        break;
+      }
+      case 'RESPONDER': {
+        if (cmd.payload) {
+          const r = resolveRecipient(cmd.payload);
+          if (r.kind === 'email') {
+            pushToast('success', 'Respondiendo a ' + (r.name ?? r.email) + '.');
+            void onSendEmail(r.email);
+          } else if (r.kind === 'ambiguous') {
+            pushToast('info', 'Varios contactos parecidos: ' + r.candidates.map((c) => c.name || c.email).join(', ') + '. Deci el nombre completo.');
+          } else {
+            pushToast('info', 'No encontre a "' + (cmd.payload) + '" en tus contactos.');
+          }
+        } else {
+          const email = lastInboxSenderRef.current;
+          if (email) {
+            const subj = lastInboxSubjectRef.current;
+            const reSubject = subj ? (/^re:/i.test(subj) ? subj : 'Re: ' + subj) : undefined;
+            pushToast('success', 'Respondiendo a ' + email + '.');
+            void onSendEmail(email, reSubject);
+          } else {
+            pushToast('info', 'No tengo a quien responder. Primero deci "leer bandeja", o "responder a" y un nombre.');
+          }
+        }
+        break;
+      }
       case 'LEER_BANDEJA':
         void onReadInbox(); break;
+      case 'PONER_TITULO':
+        if (cmd.payload && cmd.payload.trim().length > 0) {
+          setTitle(cmd.payload.trim());
+          pushToast('success', 'Titulo: ' + cmd.payload.trim());
+        } else {
+          pushToast('info', 'Deci "poner titulo" y despues el titulo del documento.');
+        }
+        break;
+      case 'ABRIR_CONTACTOS':
+        setShowContacts(true); pushToast('info', 'Contactos abierto.'); break;
       case 'ABRIR_CONFIGURACION':
         setShowSettings(true); break;
       case 'ENCENDER_MICROFONO':
@@ -500,6 +631,18 @@ export function App(): React.ReactElement {
           </button>
           <button
             type="button"
+            className="yuemail-brain-btn"
+            aria-label="Contactos"
+            title="Agenda de contactos"
+            onClick={() => setShowContacts(true)}
+            data-nac-id="yuemail.contacts.btn-open"
+            data-nac-role="button"
+            data-nac-action="open_contacts"
+          >
+            Contactos
+          </button>
+          <button
+            type="button"
             className="yuemail-settings-gear"
             aria-label="Configuracion del correo"
             title="Configuracion del correo"
@@ -594,10 +737,19 @@ export function App(): React.ReactElement {
         />
       )}
 
+      {showContacts && (
+        <ContactsDialog
+          contacts={contacts}
+          onAdd={onAddContact}
+          onDelete={onDeleteContact}
+          onClose={() => setShowContacts(false)}
+        />
+      )}
+
       {showSendDialog && (
         <SendDialog
           prefillTo={sendPrefillTo}
-          prefillSubject={title}
+          prefillSubject={sendPrefillSubject || title}
           documentId={docId}
           onCancel={() => setShowSendDialog(false)}
           onSend={performSend}

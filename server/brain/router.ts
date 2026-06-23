@@ -23,6 +23,7 @@ import { vaultSlotForProvider } from './config.js';
 import { complete, providerNeedsKey } from './providers.js';
 import { COMMANDS_BY_CONTEXT, type BrainContext, type BrainCommandSpec } from './catalog.js';
 import { getKey } from '../vault.js';
+import { listContacts } from '../contacts.js';
 
 export interface BrainResolveOk {
   ok: true;
@@ -46,7 +47,11 @@ export interface ResolveOpts {
   apiKeyOverride?: string | null;
 }
 
-function buildSystemPrompt(context: BrainContext, commands: ReadonlyArray<BrainCommandSpec>): string {
+function buildSystemPrompt(
+  context: BrainContext,
+  commands: ReadonlyArray<BrainCommandSpec>,
+  contacts: ReadonlyArray<{ name: string; email: string }> = [],
+): string {
   const lines: string[] = [];
   lines.push('Sos el cerebro de Yuemail, un cliente de correo por voz para personas con discapacidad.');
   lines.push('Tu unica tarea: leer lo que la persona dijo y elegir EXACTAMENTE UNO de los comandos de la lista.');
@@ -58,13 +63,22 @@ function buildSystemPrompt(context: BrainContext, commands: ReadonlyArray<BrainC
     const pay = c.payload ? ' [payload: ' + c.payload + ']' : '';
     lines.push('- ' + c.type + pay + ': ' + c.description + ' Ej: ' + ex);
   }
+  if (context === 'global' && contacts.length > 0) {
+    lines.push('');
+    lines.push('Agenda de contactos de la persona (nombre <correo>):');
+    for (const c of contacts.slice(0, 50)) {
+      lines.push('- ' + (c.name || '(sin nombre)') + ' <' + c.email + '>');
+    }
+  }
   lines.push('');
   lines.push('Reglas:');
   lines.push('- Responde SOLO con un objeto JSON, sin texto extra, sin markdown.');
   lines.push('- Forma: {"type": "<ID>", "payload": "<texto o vacio>", "confidence": <0 a 1>}.');
   lines.push('- "type" debe ser uno de los ids de arriba, en mayusculas, identico.');
+  lines.push('- Para payload "contact" (ENVIAR / RESPONDER): si la persona nombra a alguien que figura en la agenda de arriba, devolve el NOMBRE tal cual aparece en la agenda. Si dicta una direccion de correo completa, devolve esa direccion. Si no reconoces a quien se refiere, devolve "".');
   lines.push('- Para payload "email": devolve el correo normalizado (ej. "ana@ejemplo.com").');
   lines.push('- Para payload "name": devolve el nombre del documento mencionado.');
+  lines.push('- Para payload "title": devolve el titulo dictado, tal cual, respetando mayusculas.');
   lines.push('- Para payload "field": devolve el nombre del campo mencionado (ej. "correo", "asunto").');
   lines.push('- Si no hay payload, usa "".');
   lines.push('');
@@ -138,7 +152,13 @@ export async function resolveUtterance(
   if (providerNeedsKey(cfg.provider) && !apiKey) return { ok: false, reason: 'no_key' };
 
   const commands = COMMANDS_BY_CONTEXT[context];
-  const system = buildSystemPrompt(context, commands);
+  /* The agenda is only useful for the global recipient commands; reading
+   * it is best-effort so a contacts failure never blocks resolution. */
+  let contacts: Array<{ name: string; email: string }> = [];
+  if (context === 'global') {
+    try { contacts = (await listContacts()).map((c) => ({ name: c.name, email: c.email })); } catch { contacts = []; }
+  }
+  const system = buildSystemPrompt(context, commands, contacts);
 
   try {
     const raw = await complete({

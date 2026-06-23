@@ -11,6 +11,7 @@
  *   /api/email/autoconfig (GET -- IMAP/SMTP discovery from the address)
  *   /api/email/verify  (POST -- live IMAP/SMTP connection test)
  *   /api/inbox/list    (GET  -- imapflow last N envelopes)
+ *   /api/contacts/*    (CRUD -- address book; senders auto-register here)
  *   /*                 (static SPA from dist/, when present)
  *
  * ASCII-only.
@@ -25,6 +26,7 @@ import { registerDocumentsRoutes } from './routes/documents.js';
 import { registerSignatureRoutes } from './routes/signature.js';
 import { registerEmailRoutes }     from './routes/email.js';
 import { registerInboxRoutes }     from './routes/inbox.js';
+import { registerContactsRoutes }  from './routes/contacts.js';
 import { registerSettingsRoutes }  from './routes/settings.js';
 import { registerBrainRoutes }     from './routes/brain.js';
 import { registerVoiceRoutes }     from './routes/voice.js';
@@ -71,6 +73,7 @@ export function buildApp(opts: BuildAppOpts = {}): Express {
   registerSignatureRoutes(app);
   registerEmailRoutes(app);
   registerInboxRoutes(app);
+  registerContactsRoutes(app);
   registerSettingsRoutes(app);
   registerBrainRoutes(app);
   registerVoiceRoutes(app);

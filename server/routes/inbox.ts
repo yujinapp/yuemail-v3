@@ -12,6 +12,7 @@
 import type { Express, Request, Response } from 'express';
 import { ImapFlow } from 'imapflow';
 import { getCategoryStatus, getKey } from '../vault.js';
+import { upsertSender } from '../contacts.js';
 
 export function registerInboxRoutes(app: Express): void {
   app.get('/api/inbox/list', async (req: Request, res: Response) => {
@@ -66,11 +67,17 @@ export function registerInboxRoutes(app: Express): void {
         }
         const start = Math.max(1, total - limit + 1);
         const range = start + ':' + total;
+        /* Auto-register each sender in the address book so the person can
+         * later reply / write by NAME instead of spelling the address out
+         * (PND-022). Best-effort: a contacts write must never break the
+         * inbox read, so failures are swallowed. */
+        const seenSenders = new Map<string, string>();
         for await (const msg of client.fetch(range, { uid: true, envelope: true })) {
           const env = msg.envelope;
           const fromList = (env?.from ?? []) as Array<{ name?: string; address?: string }>;
           const first = fromList[0] ?? {};
           const fromStr = (first.name ?? '') + (first.address ? ' <' + first.address + '>' : '');
+          if (first.address) seenSenders.set(first.address, first.name ?? '');
           envelopes.push({
             uid:     Number(msg.uid ?? 0),
             from:    fromStr.trim(),
@@ -79,6 +86,9 @@ export function registerInboxRoutes(app: Express): void {
           });
         }
         envelopes.sort((a, b) => b.uid - a.uid);
+        for (const [address, name] of seenSenders) {
+          try { await upsertSender({ name, email: address }); } catch { /* never break the inbox read */ }
+        }
         res.json({ ok: true, envelopes });
       } finally {
         lock.release();

@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Plan: Contactos + Responder + Titulo (PND-022)</title><style>body{font-family:Georgia,"Times New Roman",serif;max-width:760px;margin:40px auto;padding:0 20px;color:#1a1a1a;line-height:1.6}h1,h2,h3{font-weight:600;color:#2e3a5e}table{border-collapse:collapse}td,th{border:1px solid #b8ad95;padding:6px 10px}code,pre{font-family:Consolas,monospace;background:#f5f0e6}</style></head><body>
+<h1>Agenda de contactos por voz + responder + dictar titulo</h1>
+<p><strong>Pedido de Pablo</strong> sobre el reporte de Tamara. Verifiqué contra el código real: hoy <strong>no existe</strong> el comando "responder", <strong>no existe</strong> ninguna lista de contactos, y el armado del destinatario efectivamente se queda con el pedacito pegado a la arroba. Todo lo de abajo es nuevo o un arreglo.</p>
+
+<h2>La idea central: el nombre, no el deletreo</h2>
+<p>Una persona con dificultad de habla no debería tener que decir "eme a equis i... arroba gmail punto com". Debería decir <em>"enviar a Maximiliano"</em> y listo. Para eso construimos una <strong>agenda de contactos</strong> y hacemos que la app entienda nombres, no direcciones deletreadas.</p>
+
+<h2>Qué voy a construir</h2>
+<ol>
+<li><strong>Agenda de contactos persistente.</strong> Una lista guardada en la máquina (nombre + correo, con apodos opcionales) que sobrevive a cerrar la app.</li>
+<li><strong>Auto-registro de remitentes.</strong> Cada vez que se lee la bandeja, quien escribió queda guardado solo en la agenda. La lista se llena sola con el uso.</li>
+<li><strong>Entender el nombre dicho.</strong> Cuando la persona dice "enviar a Maximiliano", el asistente busca en la agenda, elige el contacto más parecido y usa SU correo. Si no hay nadie parecido, avisa en vez de inventar una dirección. Esto además mata el bug del destinatario mal armado.</li>
+<li><strong>Comando "responder".</strong> Después de leer la bandeja, decir "responder" abre el envío ya dirigido a quien escribió el último correo leído.</li>
+<li><strong>Dictar el título del documento.</strong> Un comando nuevo para ponerle título al documento por voz (hoy no se puede; era el punto que Tamara no encontraba).</li>
+<li><strong>Alta de contactos por texto.</strong> Una pantallita donde un asistente puede cargar la agenda escribiendo (nombre + correo), para que después la persona se maneje sola por voz. Con su comando de voz para abrirla.</li>
+<li><strong>Formateo robusto del correo dictado</strong> para cuando sí se dicta una dirección entera.</li>
+</ol>
+
+<h2>Cómo encaja con lo que ya hay (sin romper nada)</h2>
+<p>La app ya usa la técnica correcta: el asistente elige <em>un</em> comando de una lista cerrada. Le voy a <strong>sumar la agenda a esa lista</strong> para que sepa resolver nombres, y agrego los comandos nuevos (responder, título, abrir contactos) respetando la simetría que el proyecto ya verifica solo. Cero deuda técnica, con pruebas nuevas para cada pieza.</p>
+
+<h2>La prueba para Tamara (lo que pediste)</h2>
+<p>Como si fueras el asistente de la persona: <strong>(1)</strong> abrís la agenda y cargás por texto tres contactos (X, Y, Z). <strong>(2)</strong> Después, por voz, decís "enviar a Y" y comprobás que el correo se dirige al contacto correcto sin deletrear nada.</p>
+
+<h2>Dos decisiones tuyas (seguridad)</h2>
+<p>Te las consulto aparte porque mandar al contacto equivocado es lo más grave para estos usuarios: (a) cuánto confirmar cuando matcheo un nombre contra la agenda, y (b) a qué responde exactamente el comando "responder".</p>
+</body></html>

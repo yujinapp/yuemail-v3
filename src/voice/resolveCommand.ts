@@ -37,11 +37,22 @@ function brainToCommand(
   const normalized = raw.toLowerCase().trim();
   const cmd: VoiceCommand = { type, raw, normalized };
 
-  if (type === 'ENVIAR') {
-    /* Prefer the Brain's normalised email; verify it; else mine the raw. */
-    const candidate = brain.payload && /@/.test(brain.payload) ? brain.payload.toLowerCase() : undefined;
-    const email = candidate && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(candidate) ? candidate : extractEmail(raw);
-    if (email) cmd.payload = email;
+  if (type === 'ENVIAR' || type === 'RESPONDER') {
+    /* The Brain payload is either a contact NAME (resolved against the
+     * address book by the App) or a dictated email. Pass a name through
+     * verbatim; lowercase an address; when empty, mine the raw utterance. */
+    const p = brain.payload?.trim();
+    if (p && p.length > 0) {
+      cmd.payload = /@/.test(p) ? p.toLowerCase() : p;
+    } else {
+      const email = extractEmail(raw);
+      if (email) cmd.payload = email;
+    }
+    return cmd;
+  }
+
+  if (type === 'PONER_TITULO') {
+    if (brain.payload && brain.payload.trim().length > 0) cmd.payload = brain.payload.trim();
     return cmd;
   }
 

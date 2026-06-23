@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Pruebas Yuemail v0.6.4 para Tamara</title><style>body{font-family:Georgia,"Times New Roman",serif;max-width:820px;margin:40px auto;padding:0 20px;color:#1a1a1a;line-height:1.6}h1,h2,h3{font-weight:600;color:#2e3a5e}h2{border-bottom:2px solid #caa84a;padding-bottom:4px;margin-top:34px}table{border-collapse:collapse;width:100%;margin-top:10px}td,th{border:1px solid #b8ad95;padding:6px 10px;text-align:left;vertical-align:top}th{background:#f5f0e6}code{font-family:Consolas,monospace;background:#f5f0e6;padding:1px 4px;border-radius:3px}.crit{color:#9c2b2b;font-weight:600}.new{display:inline-block;background:#1f7a54;color:#fff;font-size:11px;padding:1px 6px;border-radius:3px;vertical-align:middle;margin-left:6px}.fix{display:inline-block;background:#b06a13;color:#fff;font-size:11px;padding:1px 6px;border-radius:3px;vertical-align:middle;margin-left:6px}ul{margin-top:4px}</style></head><body>
+<h1>Pruebas Yuemail v0.6.4 &mdash; para Tamara</h1>
+<p>Hola Tamara. Esta es una tanda <strong>corta</strong> (24 casos) que se concentra en lo nuevo y en lo que veniamos corrigiendo. No hace falta repetir las 95 pruebas anteriores: con estas alcanza para validar esta version.</p>
+
+<h3>Antes de empezar</h3>
+<ul>
+<li>Las frases <strong>entre comillas</strong> se <strong>dicen por voz</strong> con el microfono encendido, salvo que el paso diga &laquo;escribi&raquo;.</li>
+<li>La etiqueta <span class="new">NUEVO</span> marca funciones que no existian antes; <span class="fix">ARREGLO</span> marca algo que antes fallaba.</li>
+<li>Los casos marcados <span class="crit">CRITICO</span> son los mas importantes: si fallan, anotalos con detalle (que dijiste TEXTUAL y que hizo la app).</li>
+<li>Si tenes tiempo, corre <strong>una sola vez</strong> con el <strong>modo diagnostico</strong> encendido (panel de Voz, abajo) y al final aprieta &laquo;Exportar diagnostico&raquo; y mandanos el archivo.</li>
+</ul>
+
+<h2>A. Arranque (rapido)</h2>
+<table><tr><th>#</th><th>Que hacer</th><th>Que tiene que pasar</th></tr>
+<tr><td>A-01</td><td>En la terminal: <code>npm install -g @yujinapp/yuemail</code> y despues <code>yuemail version</code>.</td><td>Imprime <code>0.6.4</code>.</td></tr>
+<tr><td>A-02</td><td>Corre <code>yuemail</code> y espera que abra el navegador.</td><td>Carga la app (titulo Yuemail, barra de botones). Arriba a la derecha aparece el boton <strong>Contactos</strong>.</td></tr>
+<tr><td>A-03</td><td>Confirma que la Voz y el Asistente esten configurados (claves cargadas) y toca &laquo;Probar voz&raquo;.</td><td>Se escucha una voz clara de Google. Si no, anota el aviso textual.</td></tr>
+</table>
+
+<h2>B. Agenda de contactos <span class="new">NUEVO</span></h2>
+<p>La idea: la persona ya no deletrea direcciones; dice un nombre. Primero hacete pasar por <strong>el asistente</strong> que carga la agenda por teclado; despues por <strong>la persona</strong> que envia por voz.</p>
+<table><tr><th>#</th><th>Que hacer</th><th>Que tiene que pasar</th></tr>
+<tr><td>B-01</td><td>Toca el boton <strong>Contactos</strong>.</td><td>Se abre la agenda (lista vacia la primera vez + un formulario con Nombre, Correo, Apodos).</td></tr>
+<tr><td>B-02</td><td>Cierra la agenda; con el microfono on deci <strong>&laquo;contactos&raquo;</strong> (o &laquo;agenda&raquo;).</td><td>La agenda se abre por voz.</td></tr>
+<tr><td>B-03</td><td>Como asistente, <strong>escribi</strong> y &laquo;Agrega&raquo; tres contactos:<br>&bull; Maximiliano Linares &mdash; maxi@gmail.com &mdash; apodo: maxi<br>&bull; Ana Gomez &mdash; ana@ejemplo.com<br>&bull; Tamara &mdash; tu correo real</td><td>Cada uno aparece en la lista de arriba al Agregar.</td></tr>
+<tr><td>B-04</td><td>Edita un contacto (cambia un apodo) y borra uno de prueba.</td><td>Los cambios quedan; el borrado desaparece de la lista.</td></tr>
+<tr><td>B-05</td><td>Cierra la agenda, deci &laquo;leer bandeja&raquo;, y volve a abrir Contactos.</td><td>Los remitentes de la bandeja quedaron guardados solos como contactos nuevos.</td></tr>
+</table>
+
+<h2>C. Enviar por nombre <span class="new">NUEVO</span> <span class="fix">ARREGLO</span></h2>
+<table><tr><th>#</th><th>Que hacer</th><th>Que tiene que pasar</th></tr>
+<tr><td>C-01</td><td>Con micro on deci <strong>&laquo;enviar a Ana&raquo;</strong> (sin deletrear el correo).</td><td>La app dice en voz &laquo;voy a enviar a Ana Gomez (ana@ejemplo.com)&raquo; y abre el envio con ese destinatario ya puesto.</td></tr>
+<tr><td>C-02 <span class="crit">CRITICO</span></td><td>Deci <strong>&laquo;enviar a Maximiliano Linares&raquo;</strong> (nombre con apellido).</td><td>El destinatario queda <code>maxi@gmail.com</code> COMPLETO. <span class="crit">NO debe quedar algo cortado tipo &laquo;23@gmail.com&raquo;</span> (ese era el bug). Si arma una direccion incompleta, marca FALLA.</td></tr>
+<tr><td>C-03 <span class="crit">CRITICO</span></td><td>Carga DOS contactos con el mismo nombre de pila (ej. &laquo;Ana Gomez&raquo; y &laquo;Ana Lopez&raquo;) y deci solo &laquo;enviar a Ana&raquo;.</td><td>La app NO elige sola: avisa que hay parecidos y pide el nombre completo. (Mandar al equivocado seria peor que no hacer nada.)</td></tr>
+<tr><td>C-04</td><td>Deci una direccion dictada: &laquo;enviar a pedro arroba test punto org&raquo;.</td><td>Se abre el envio con <code>pedro@test.org</code> bien armado.</td></tr>
+<tr><td>C-05</td><td>Con el envio abierto deci &laquo;enviar&raquo; (o &laquo;confirmar&raquo;).</td><td>Aviso &laquo;Enviado&raquo; y el correo llega (con el adjunto si estaba marcado).</td></tr>
+</table>
+
+<h2>D. Responder <span class="new">NUEVO</span></h2>
+<table><tr><th>#</th><th>Que hacer</th><th>Que tiene que pasar</th></tr>
+<tr><td>D-01</td><td>Deci &laquo;leer bandeja&raquo; y despues <strong>&laquo;responder&raquo;</strong>.</td><td>Se abre un correo dirigido a quien te escribio ultimo, con el asunto en &laquo;Re: ...&raquo;.</td></tr>
+<tr><td>D-02</td><td>Deci <strong>&laquo;responder a Ana&raquo;</strong> (un nombre de la agenda).</td><td>Se abre el envio dirigido a ese contacto.</td></tr>
+</table>
+
+<h2>E. Titulo del documento <span class="new">NUEVO</span></h2>
+<p>Esto es lo que antes no se podia hacer por voz.</p>
+<table><tr><th>#</th><th>Que hacer</th><th>Que tiene que pasar</th></tr>
+<tr><td>E-01</td><td>Con un documento abierto deci <strong>&laquo;poner titulo Carta al banco&raquo;</strong>.</td><td>En el casillero de titulo (arriba del cuerpo) aparece &laquo;Carta al banco&raquo;.</td></tr>
+<tr><td>E-02</td><td>Deci &laquo;cambiar titulo Solicitud de turno&raquo;.</td><td>El titulo se reemplaza por el nuevo texto.</td></tr>
+</table>
+
+<h2>F. Dictado y la palabra &laquo;fin&raquo; <span class="fix">ARREGLO</span></h2>
+<table><tr><th>#</th><th>Que hacer</th><th>Que tiene que pasar</th></tr>
+<tr><td>F-01</td><td>Deci &laquo;iniciar dictado&raquo; y enseguida (sin esperar) dicta dos frases con una pausa entre ellas.</td><td>Las dos frases entran como parrafos. <strong>No se pierde la primera</strong> por arrancar rapido.</td></tr>
+<tr><td>F-02 <span class="crit">CRITICO</span></td><td>Para cerrar deci solo <strong>&laquo;fin&raquo;</strong>. Repeti la prueba probando &laquo;fin del dictado&raquo; y &laquo;detener dictado&raquo;.</td><td>El dictado se detiene y <span class="crit">la palabra &laquo;fin&raquo; NO queda escrita</span> en el documento. Lo mismo con las variantes.</td></tr>
+<tr><td>F-03</td><td>Con el dictado activo, dicta una frase que contenga &laquo;...el fin de semana...&raquo;.</td><td>La frase entera se escribe; el &laquo;fin&raquo; en medio NO corta el dictado (solo corta si lo decis solo).</td></tr>
+</table>
+
+<h2>G. Dictar dentro del envio &mdash; campos <span class="fix">ARREGLO</span></h2>
+<table><tr><th>#</th><th>Que hacer</th><th>Que tiene que pasar</th></tr>
+<tr><td>G-01 <span class="crit">CRITICO</span></td><td>Abri el envio, deci &laquo;campo cuerpo&raquo;, dicta dos frases y despues dicta una frase que contenga la palabra &laquo;enviar&raquo; (ej. &laquo;manana te vuelvo a enviar el resumen&raquo;).</td><td>Cada frase se agrega como parrafo del cuerpo. El correo <span class="crit">NO se manda</span> por decir &laquo;enviar&raquo; en medio del dictado.</td></tr>
+<tr><td>G-02</td><td>Deci <strong>&laquo;fin campo&raquo;</strong> (proba tambien &laquo;fin campos&raquo;) y despues &laquo;enviar&raquo;.</td><td>Tras &laquo;fin campo&raquo; el aviso confirma que el campo quedo libre; ahora &laquo;enviar&raquo; SI manda el correo.</td></tr>
+</table>
+
+<h2>H. Cierre y regresion</h2>
+<table><tr><th>#</th><th>Que hacer</th><th>Que tiene que pasar</th></tr>
+<tr><td>H-01 <span class="fix">ARREGLO</span></td><td>En el envio escribi <code>noesuncorreo</code> como destinatario e intenta enviar.</td><td>El aviso de error sale en <strong>castellano claro</strong> y dice que direccion corregir (no en ingles). No se manda nada.</td></tr>
+<tr><td>H-02</td><td>Viaje completo por voz: &laquo;nuevo documento&raquo; / &laquo;poner titulo ...&raquo; / &laquo;iniciar dictado&raquo; / dos frases / &laquo;fin&raquo; / &laquo;firmar&raquo; / &laquo;enviar a Ana&raquo; / &laquo;enviar&raquo;.</td><td>El correo llega con titulo, texto, firma y al contacto correcto. Cronometra cuanto te llevo (objetivo: pocos minutos).</td></tr>
+</table>
+
+<h2>Planilla de resultados</h2>
+<p>Datos: Tester ____ | Fecha ____ | <code>yuemail version</code> ____ | Proveedor de correo ____ | Proveedor/modelo de IA ____ | Voz de Google: si / no</p>
+<table><tr><th>Caso</th><th>Resultado (OK / FALLA / N/A)</th><th>Observaciones (que dijiste TEXTUAL y que hizo)</th></tr>
+<tr><td>A-01</td><td></td><td></td></tr><tr><td>A-02</td><td></td><td></td></tr><tr><td>A-03</td><td></td><td></td></tr>
+<tr><td>B-01</td><td></td><td></td></tr><tr><td>B-02</td><td></td><td></td></tr><tr><td>B-03</td><td></td><td></td></tr><tr><td>B-04</td><td></td><td></td></tr><tr><td>B-05</td><td></td><td></td></tr>
+<tr><td>C-01</td><td></td><td></td></tr><tr><td>C-02</td><td></td><td></td></tr><tr><td>C-03</td><td></td><td></td></tr><tr><td>C-04</td><td></td><td></td></tr><tr><td>C-05</td><td></td><td></td></tr>
+<tr><td>D-01</td><td></td><td></td></tr><tr><td>D-02</td><td></td><td></td></tr>
+<tr><td>E-01</td><td></td><td></td></tr><tr><td>E-02</td><td></td><td></td></tr>
+<tr><td>F-01</td><td></td><td></td></tr><tr><td>F-02</td><td></td><td></td></tr><tr><td>F-03</td><td></td><td></td></tr>
+<tr><td>G-01</td><td></td><td></td></tr><tr><td>G-02</td><td></td><td></td></tr>
+<tr><td>H-01</td><td></td><td></td></tr><tr><td>H-02</td><td></td><td></td></tr>
+</table>
+<p>Total: 24 casos. Enviar a <code>contact@yujin.app</code> con asunto &laquo;QA Yuemail v0.6.4 &mdash; Tamara&raquo;. Gracias!</p>
+</body></html>
