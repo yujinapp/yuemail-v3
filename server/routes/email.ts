@@ -1,5 +1,5 @@
 /**
- * /api/email/send route (F6 / acceptance #4).
+ * /api/email/send route (F6 / acceptance #4 + PND-024).
  *
  * POST body:
  *   {
@@ -18,6 +18,8 @@
  * On send success returns:
  *   { ok: true, message_id, accepted, rejected }
  *
+ * Also auto-registers recipients for future completion (PND-024).
+ *
  * ASCII-only.
  */
 import type { Express, Request, Response } from 'express';
@@ -25,6 +27,7 @@ import nodemailer from 'nodemailer';
 import { getCategoryStatus, getKey } from '../vault.js';
 import { getDocument } from '../documents.js';
 import { renderDocx } from '../docx-builder.js';
+import { upsertRecipientsFromSend } from '../contacts.js';
 
 function isValidEmail(s: string): boolean {
   return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(s);
@@ -129,6 +132,13 @@ export function registerEmailRoutes(app: Express): void {
         text:    bodyText.length > 0 ? bodyText : 'Adjunto el documento.',
         attachments,
       });
+      /* Auto-register recipients in the address book (PND-024).
+       * Best-effort: do not break the response if this fails. */
+      try {
+        await upsertRecipientsFromSend(validTo);
+      } catch {
+        /* never break the send response */
+      }
       res.json({
         ok:         true,
         message_id: info.messageId,

@@ -54,6 +54,7 @@ export type VoiceCommandType =
   | 'FIN_DICTADO'
   | 'ENVIAR'
   | 'RESPONDER'
+  | 'REENVIAR'
   | 'LEER_BANDEJA'
   | 'PONER_TITULO'
   | 'ABRIR_CONTACTOS'
@@ -82,7 +83,7 @@ export type VoiceCommandType =
  * exhaustiveness check below fails the build if a new type is left out. */
 export const ALL_VOICE_COMMAND_TYPES = [
   'NUEVO_DOCUMENTO', 'ABRIR_DOCUMENTO', 'GUARDAR_FIRMA', 'FIRMAR',
-  'INICIAR_DICTADO', 'FIN_DICTADO', 'ENVIAR', 'RESPONDER', 'LEER_BANDEJA',
+  'INICIAR_DICTADO', 'FIN_DICTADO', 'ENVIAR', 'RESPONDER', 'REENVIAR', 'LEER_BANDEJA',
   'PONER_TITULO', 'ABRIR_CONTACTOS',
   'ABRIR_CONFIGURACION', 'DETENER_VOZ', 'ENCENDER_MICROFONO', 'APAGAR_MICROFONO',
   'CONFIRMAR_ENVIO', 'CANCELAR', 'GUARDAR_FIRMA_PAD', 'BORRAR_FIRMA',
@@ -225,6 +226,13 @@ const MATCHERS: Matcher[] = [
       /\bresponde\b/,
       /\bcontestar\b/,
       /\bcontesta\b/,
+    ],
+  },
+  {
+    type: 'REENVIAR',
+    patterns: [
+      /\breenviar\b/,
+      /\bforward\b/,
     ],
   },
   {
@@ -693,6 +701,7 @@ export const COMMAND_CATALOG: ReadonlyArray<CommandCatalogEntry> = [
   { type: 'FIN_DICTADO',        sample: 'fin dictado',            action: 'Detener transcripcion.' },
   { type: 'ENVIAR',             sample: 'enviar a Maximiliano',    action: 'Enviar a un contacto de la agenda (por nombre) o a una direccion dictada.' },
   { type: 'RESPONDER',          sample: 'responder',              action: 'Responder al ultimo correo leido; o "responder a <nombre>" a un contacto.' },
+  { type: 'REENVIAR',           sample: 'reenviar',               action: 'Reenviar el ultimo correo leido a nuevos destinatarios.' },
   { type: 'LEER_BANDEJA',       sample: 'leer bandeja',           action: 'Listar los envelopes recientes.' },
   { type: 'PONER_TITULO',       sample: 'poner titulo Carta al banco', action: 'Poner o cambiar el titulo del documento.' },
   { type: 'ABRIR_CONTACTOS',    sample: 'abrir contactos',        action: 'Abrir la agenda de contactos.' },

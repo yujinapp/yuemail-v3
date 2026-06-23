@@ -54,9 +54,11 @@ export function App(): React.ReactElement {
   const [contacts, setContacts]   = React.useState<Contact[]>([]);
   const [envelopes, setEnvelopes] = React.useState<InboxEnvelope[]>([]);
   /* Who the last read inbox message was from -- so "responder" (no name)
-   * knows who to reply to. Refs so the voice callback reads the latest. */
+   * knows who to reply to. Also the UID so "reenviar" can fetch the full message.
+   * Refs so the voice callback reads the latest. */
   const lastInboxSenderRef  = React.useRef<string | undefined>(undefined);
   const lastInboxSubjectRef = React.useRef<string | undefined>(undefined);
+  const lastInboxUidRef     = React.useRef<number | undefined>(undefined);
   /* Mirror contacts into a ref so the voice callback resolves names against
    * the freshest list without re-subscribing. */
   const contactsRef = React.useRef<Contact[]>([]);
@@ -245,12 +247,14 @@ export function App(): React.ReactElement {
     try {
       const res = await api.inboxList(20);
       setEnvelopes(res.envelopes);
-      /* Remember the newest sender so "responder" knows the target, and
-       * refresh the address book (the server auto-registered the senders). */
+      /* Remember the newest sender so "responder" knows the target, the UID
+       * so "reenviar" can fetch the full message, and refresh the address
+       * book (the server auto-registered the senders). */
       const top = res.envelopes[0];
       if (top) {
         lastInboxSenderRef.current  = emailFromHeader(top.from);
         lastInboxSubjectRef.current = top.subject;
+        lastInboxUidRef.current     = top.uid;
       }
       void refreshContacts();
       pushToast('info', res.envelopes.length + ' correos en bandeja.');
@@ -425,6 +429,37 @@ export function App(): React.ReactElement {
             pushToast('info', 'No tengo a quien responder. Primero deci "leer bandeja", o "responder a" y un nombre.');
           }
         }
+        break;
+      }
+      case 'REENVIAR': {
+        const uid = lastInboxUidRef.current;
+        if (!uid) {
+          pushToast('info', 'No tengo un correo para reenviar. Primero deci "leer bandeja".');
+          break;
+        }
+        /* onVoiceCommand is sync; run the async fetch in a detached task so
+         * the switch stays synchronous like the rest of the cases. */
+        void (async () => {
+          try {
+            pushToast('info', 'Leyendo el correo para reenviar...');
+            const email = await api.emailFetch(uid);
+            const fwdSubject = lastInboxSubjectRef.current;
+            const subject = fwdSubject ? (/^fwd:/i.test(fwdSubject) ? fwdSubject : 'Fwd: ' + fwdSubject) : undefined;
+            const body = '---------- Mensaje reenviado ---------\n'
+              + 'De: ' + email.from + '\n'
+              + 'Fecha: ' + email.date + '\n'
+              + 'Asunto: ' + email.subject + '\n'
+              + (email.cc ? 'CC: ' + email.cc + '\n' : '')
+              + '\n' + email.body_text;
+            pushToast('success', 'Leyendo: ' + email.subject);
+            void onSendEmail(undefined, subject);
+            /* Inject the forwarded body into the editor blocks so the user
+             * sees the quoted message. The state is fresh after onSendEmail. */
+            setBlocks([{ type: 'paragraph', text: body }]);
+          } catch (err) {
+            pushToast('error', err instanceof Error ? err.message : 'No se pudo leer el correo para reenviar.');
+          }
+        })();
         break;
       }
       case 'LEER_BANDEJA':

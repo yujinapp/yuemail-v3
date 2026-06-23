@@ -130,8 +130,13 @@ export const api = {
       '/api/inbox/list?limit=' + limit,
     );
   },
+  emailFetch(uid: number) {
+    return send<{ ok: true; from: string; cc: string; bcc: string; subject: string; body_text: string; date: string }>(
+      '/api/inbox/fetch/' + uid,
+    );
+  },
 
-  /* --- Contacts (address book, v0.6.4 / PND-022) --- */
+  /* --- Contacts (address book, v0.6.4 / PND-022 + v0.7 / PND-024) --- */
   contactsList() {
     return send<{ ok: true; contacts: Contact[] }>('/api/contacts');
   },

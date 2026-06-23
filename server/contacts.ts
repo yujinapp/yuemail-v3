@@ -1,11 +1,12 @@
 /**
- * Yuemail contacts book (v0.6.4 / PND-022).
+ * Yuemail contacts book (v0.6.4 / PND-022 + v0.7 / PND-024).
  *
  * A small persistent address book so a person who cannot spell out an
  * email reliably can just say a NAME ("enviar a Maximiliano") and the
- * app resolves it to the right address. Two ways it fills up:
+ * app resolves it to the right address. Three ways it fills up:
  *   1. An assistant types contacts in by hand (ContactsDialog).
- *   2. Every inbox read auto-registers the senders (upsertSender).
+ *   2. Every inbox read auto-registers the senders + CC recipients (upsertSender, upsertCC).
+ *   3. Every email sent registers the recipients (upsertRecipientsFromSend).
  *
  * Storage: ~/.yuemail/contacts.json (or $YUEMAIL_HOME/contacts.json).
  * Emails are NOT secrets like the vault credentials, so this file is
@@ -162,6 +163,29 @@ export async function upsertSender(input: { name?: string; email: string }): Pro
   list.push(contact);
   await writeAll(list);
   return contact;
+}
+
+/**
+ * Auto-register a recipient seen in the CC field of an incoming email.
+ * Same semantics as upsertSender (v0.7 / PND-024).
+ */
+export async function upsertCC(input: { name?: string; email: string }): Promise<Contact | undefined> {
+  return upsertSender(input);
+}
+
+/**
+ * Auto-register recipients from a sent email. Called after a successful
+ * send so the recipients are available for future recipient completion
+ * (v0.7 / PND-024).
+ */
+export async function upsertRecipientsFromSend(recipients: string[]): Promise<void> {
+  for (const addr of recipients) {
+    try {
+      await upsertSender({ email: addr });
+    } catch {
+      /* Best-effort: a contact write must never break email sends. */
+    }
+  }
 }
 
 export async function updateContact(

@@ -100,4 +100,25 @@ describe('contacts book', () => {
     expect(r).toBeUndefined();
     expect(await c.listContacts()).toEqual([]);
   });
+
+  /* PND-024: CC + sent-recipient auto-registration also de-dup by email. */
+
+  it('upsertCC de-dups by email and does not duplicate an existing sender', async () => {
+    const c = await load();
+    await c.upsertSender({ name: 'Tamara', email: 'tamara@test.org' });
+    await c.upsertCC({ name: 'Tamara', email: 'TAMARA@test.org' }); /* same address, different case */
+    const list = await c.listContacts();
+    expect(list.length).toBe(1);
+    expect(list[0]?.email).toBe('tamara@test.org');
+  });
+
+  it('upsertRecipientsFromSend de-dups across recipients and existing contacts', async () => {
+    const c = await load();
+    await c.addContact({ name: 'Paula', email: 'paula@test.org' });
+    await c.upsertRecipientsFromSend(['Paula@test.org', 'nuevo@test.org', 'nuevo@test.org']);
+    const list = await c.listContacts();
+    /* paula (already there) + nuevo (once) = 2, no duplicates */
+    expect(list.length).toBe(2);
+    expect(list.map((x) => x.email).sort()).toEqual(['nuevo@test.org', 'paula@test.org']);
+  });
 });
