@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   parseCommand, extractEmail, COMMAND_CATALOG,
   FIELD_SPECS_BY_CONTEXT, spokenFieldValue, spokenCheckboxValue,
+  isAllowedWhileDictating,
 } from '../src/voice/commands.js';
 
 describe('parseCommand -- the 9 Spanish phrases (acceptance #5)', () => {
@@ -464,6 +465,57 @@ describe('COMMAND_CATALOG', () => {
     for (const c of COMMAND_CATALOG) {
       expect(c.sample.length).toBeGreaterThan(0);
       expect(c.action.length).toBeGreaterThan(0);
+    }
+  });
+});
+
+/* PND-029 -- the tester said "leer bandeja" / "ver bandeja" / "bandeja"
+ * and none read the inbox (the narrow matcher only knew the exact "leer
+ * bandeja"; the rest fell to UNKNOWN and, mid-dictation, were written into
+ * the document). These guard the widened recognition. */
+describe('parseCommand -- LEER_BANDEJA expanded forms (PND-029)', () => {
+  const PHRASES = [
+    'leer bandeja',
+    'leer la bandeja',
+    'ver bandeja',           /* "ver" is a filler -> "bandeja" -> matches */
+    'ver la bandeja',
+    'bandeja',
+    'bandeja de entrada',
+    'leeme la bandeja',
+    'mostrame la bandeja',
+    'abrir la bandeja',
+    'revisar la bandeja',
+    'mostrar correos',
+    'leer mis mensajes',
+    'que correos tengo',
+    'mis correos',
+  ];
+  for (const phrase of PHRASES) {
+    it('"' + phrase + '" -> LEER_BANDEJA', () => {
+      expect(parseCommand(phrase).type).toBe('LEER_BANDEJA');
+    });
+  }
+
+  it('still suppressed inside a modal (only mic-safety passes there)', () => {
+    expect(parseCommand('bandeja', 'send_dialog').type).toBe('UNKNOWN');
+    expect(parseCommand('leer bandeja', 'settings_dialog').type).toBe('UNKNOWN');
+  });
+});
+
+/* PND-029 -- Option B strict dictation contract. While dictation is on,
+ * only ending dictation + the mic-safety trio may act as commands; every
+ * other verb is dictated content, so the user must say "fin dictado" first.
+ * This is the producer side of the rule the App's onVoiceCommand consumes. */
+describe('isAllowedWhileDictating -- strict dictation allowlist (PND-029)', () => {
+  it('lets dictation end + the mic-safety trio through', () => {
+    for (const t of ['FIN_DICTADO', 'INICIAR_DICTADO', 'ENCENDER_MICROFONO', 'APAGAR_MICROFONO', 'DETENER_VOZ'] as const) {
+      expect(isAllowedWhileDictating(t), t).toBe(true);
+    }
+  });
+
+  it('captures every other verb as content (the tester-reported leak)', () => {
+    for (const t of ['LEER_BANDEJA', 'ENVIAR', 'RESPONDER', 'REENVIAR', 'NUEVO_DOCUMENTO', 'FIRMAR', 'PONER_TITULO', 'ABRIR_CONTACTOS', 'AGREGAR_CONTACTO', 'ABRIR_CONFIGURACION', 'UNKNOWN'] as const) {
+      expect(isAllowedWhileDictating(t), t).toBe(false);
     }
   });
 });

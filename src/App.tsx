@@ -20,6 +20,7 @@ import { useVoice } from './voice/useVoice.js';
 import {
   FIELD_SPECS_BY_CONTEXT,
   parseCommand,
+  isAllowedWhileDictating,
   spokenCheckboxValue,
   spokenFieldValue,
   extractSpokenEmail,
@@ -455,6 +456,34 @@ export function App(): React.ReactElement {
       }
     }
 
+    /* Option B -- STRICT dictation (PND-029). While dictation is active in
+     * the document, only ending dictation + the mic-safety trio act as
+     * commands; EVERYTHING else (a "leer bandeja" / "ver bandeja" / "bandeja"
+     * included) is captured as a paragraph instead of firing. That is exactly
+     * the tester's case: she said "leer bandeja" mid-dictation and it ran the
+     * inbox / got written inconsistently. Now it is always content until she
+     * says "fin dictado" first -- and the semaphore (visual + spoken) tells
+     * her she is dictating so she is never trapped. */
+    if (dictationRef.current
+        && voiceContextRef.current === 'global'
+        && !isAllowedWhileDictating(cmd.type)) {
+      const text = cmd.raw.trim();
+      if (text.length === 0) return;
+      /* Defense in depth (PND-016): never write a dictation toggle as text,
+       * even if a recogniser variant slipped past the upstream resolver. */
+      if (parseCommand(text, 'global').type === 'FIN_DICTADO') {
+        dictationRef.current = false;
+        setDictation(false);
+        pushToast('info', 'Dictado finalizado.');
+        voice.speak('Dictado finalizado.');
+        diagLog('act', { outcome: 'red_seguridad_fin_dictado', dictationOn: false, detail: text });
+        return;
+      }
+      diagLog('act', { outcome: 'dictado_estricto_parrafo', dictationOn: true, commandType: cmd.type, detail: text });
+      setBlocks((prev) => [...prev, { type: 'paragraph', text }]);
+      return;
+    }
+
     diagLog('act', {
       commandType: cmd.type, payload: cmd.payload, raw: cmd.raw, normalized: cmd.normalized,
       context: voiceContextRef.current, dictationOn: dictationRef.current,
@@ -473,10 +502,19 @@ export function App(): React.ReactElement {
         /* Flip the ref imperatively too, so the very next utterance is
          * already treated as content even before React re-renders. */
         dictationRef.current = true;
-        setDictation(true); pushToast('info', 'Dictado iniciado.'); break;
+        setDictation(true);
+        pushToast('info', 'Dictado iniciado.');
+        /* Semaphore -- spoken half (PND-029): the blind user HEARS that
+         * capture is on (a visual badge alone does not reach her), and is
+         * told the exact phrase that ends it. */
+        voice.speak('Dictado iniciado. Para terminar deci fin dictado.');
+        break;
       case 'FIN_DICTADO':
         dictationRef.current = false;
-        setDictation(false); pushToast('info', 'Dictado finalizado.'); break;
+        setDictation(false);
+        pushToast('info', 'Dictado finalizado.');
+        voice.speak('Dictado finalizado.');
+        break;
       case 'ENVIAR': {
         const r = resolveRecipient(cmd.payload);
         if (r.kind === 'email') {
@@ -740,6 +778,25 @@ export function App(): React.ReactElement {
 
   return (
     <>
+      {/* Dictation semaphore -- visual half (PND-029). A persistent, high
+          contrast badge shown ONLY while dictation is active, so a sighted
+          helper can see at a glance the app is capturing speech as document
+          text; it turns off the instant dictation ends. The blind user gets
+          the spoken cue (see the INICIAR/FIN_DICTADO cases). */}
+      {dictation && (
+        <div
+          className="yuemail-dictation-semaphore"
+          data-nac-id="yuemail.voice.dictation-semaphore"
+          data-nac-role="status"
+          data-nac-state="on"
+          role="status"
+          aria-live="off"
+          aria-label="Dictado activo. Para terminar deci fin dictado."
+        >
+          <span className="yuemail-dictation-light" aria-hidden="true" />
+          <span>Dictado activo: deci "fin dictado" para terminar.</span>
+        </div>
+      )}
       <header className="yuemail-topbar" data-nac-id="yuemail.topbar.root">
         <h1>Yuemail</h1>
         <div className="yuemail-topbar-actions">

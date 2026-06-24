@@ -344,12 +344,23 @@ const MATCHERS: Matcher[] = [
       /^(?:fin|terminar|finalizar|basta|parar|stop)$/,
     ],
   },
+  /* LEER_BANDEJA: read the inbox. Recognition was too narrow (only the
+   * exact "leer bandeja"), so a real recogniser transcript like "leer LA
+   * bandeja", "ver bandeja" or a bare "bandeja" fell through to UNKNOWN --
+   * and while dictating those got written into the document (PND-029, the
+   * tester's report). The bare /\bbandeja\b/ catch-all makes every natural
+   * way of asking for the inbox land here; the "correos / mensajes" forms
+   * cover the phrasings that never say the word "bandeja". ("ver bandeja"
+   * also reaches this via the filler-stripper eating "ver" -> "bandeja".) */
   {
     type: 'LEER_BANDEJA',
     patterns: [
-      /\bleer\s+bandeja\b/,
-      /\babrir\s+bandeja\b/,
+      /\bbandeja\b/,
+      /\bleer\s+(?:los\s+|mis\s+)?(?:correos|emails|mensajes)\b/,
+      /\bleeme\s+(?:los\s+|mis\s+)?(?:correos|emails|mensajes)\b/,
       /\bmostrar\s+(?:correos|emails|mensajes)\b/,
+      /\bmis\s+correos\b/,
+      /\bnuevos\s+correos\b/,
       /\bque\s+correos\s+tengo\b/,
     ],
   },
@@ -397,6 +408,25 @@ const MATCHERS: Matcher[] = [
 const MIC_SAFE_TYPES: ReadonlySet<VoiceCommandType> = new Set([
   'ENCENDER_MICROFONO', 'APAGAR_MICROFONO', 'DETENER_VOZ',
 ]);
+
+/* Option B -- STRICT dictation (PND-029). While dictation is active, ONLY
+ * these command types act as commands; every other utterance (a verb like
+ * "leer bandeja" included) is captured as document content. So the user
+ * must close dictation with "fin dictado" before issuing any command -- the
+ * two-step model the owner chose over making a few verbs always-on. The
+ * dictation semaphore (visual badge + spoken "Dictado iniciado/finalizado")
+ * tells the user capture is on so they never get trapped writing commands.
+ * The mic-safety trio stays in so the mic can always be silenced. */
+export const DICTATION_COMMAND_ALLOWLIST: ReadonlySet<VoiceCommandType> = new Set([
+  'FIN_DICTADO', 'INICIAR_DICTADO',
+  'ENCENDER_MICROFONO', 'APAGAR_MICROFONO', 'DETENER_VOZ',
+]);
+
+/** True when `type` may run as a command mid-dictation; false means the
+ *  utterance is dictated content, not a command (strict mode, PND-029). */
+export function isAllowedWhileDictating(type: VoiceCommandType): boolean {
+  return DICTATION_COMMAND_ALLOWLIST.has(type);
+}
 
 /* Per-modal command sets. Patterns are deliberately short: with a modal
  * open the vocabulary shrinks, so a lone "cancelar" or "guardar" is

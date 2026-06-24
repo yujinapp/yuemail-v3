@@ -132,6 +132,50 @@ html, body {
   box-shadow: 0 0 0 2px var(--gold-soft);
 }
 
+/* --- Dictation semaphore (PND-029) ---
+   Shown ONLY while dictation is active (App renders it conditionally), so a
+   sighted helper sees the app is capturing speech as document text. Pairs
+   with the spoken "Dictado iniciado/finalizado" cue for the blind user. */
+.yuemail-dictation-semaphore {
+  position: fixed;
+  top: var(--space-3);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  background: var(--accent-rose);
+  color: var(--color-paper-cool);
+  border: 1px solid var(--gold-line);
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-4);
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: var(--tracking-button);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
+}
+
+.yuemail-dictation-light {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #e54848;
+  box-shadow: 0 0 0 0 rgba(229, 72, 72, 0.7);
+  animation: yuemail-dictation-pulse 1.4s ease-out infinite;
+}
+
+@keyframes yuemail-dictation-pulse {
+  0%   { box-shadow: 0 0 0 0 rgba(229, 72, 72, 0.7); }
+  70%  { box-shadow: 0 0 0 10px rgba(229, 72, 72, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(229, 72, 72, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .yuemail-dictation-light { animation: none; }
+}
+
 /* --- Toolbar --- */
 
 .yuemail-toolbar {
