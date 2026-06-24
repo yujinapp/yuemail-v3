@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Nota para Tamara - v0.6.3</title><style>body{font-family:Georgia,"Times New Roman",serif;max-width:760px;margin:40px auto;padding:0 20px;color:#1a1a1a;line-height:1.6}h1,h2,h3{font-weight:600;color:#2e3a5e}table{border-collapse:collapse}td,th{border:1px solid #b8ad95;padding:6px 10px}code,pre{font-family:Consolas,monospace;background:#f5f0e6}</style></head><body>
+<h1>Hola Tamara! Tenes una version nueva para probar (0.6.3)</h1>
+<p>Gracias por el reporte anterior. Arreglamos varias cosas y, sobre todo, agregamos un <strong>modo diagnostico</strong> que graba lo que el sistema escucha y hace, para entender los puntos de voz que a veces fallan. Te pedimos correr el test <strong>una sola vez</strong> con ese modo prendido y mandarnos el archivo.</p>
+
+<h2>1) Actualiza a la version nueva</h2>
+<p>Abri la terminal y corre:</p>
+<pre>npm install -g @yujinapp/yuemail@latest</pre>
+<p>Para confirmar que quedo la version correcta:</p>
+<pre>yuemail --version</pre>
+<p>Tiene que decir <strong>0.6.3</strong>. Si dice otra cosa, avisanos antes de seguir.</p>
+
+<h2>2) Que ya arreglamos (podes verificarlo de paso)</h2>
+<ul>
+  <li><strong>El cuerpo del correo arranca vacio.</strong> Antes aparecia un texto puesto por defecto; ya no.</li>
+  <li><strong>Decir solo "fin"</strong> (sin agregar "dictado") ahora tambien detiene el dictado.</li>
+  <li><strong>"fin campos"</strong> en plural ahora tambien suelta el campo.</li>
+</ul>
+
+<h2>3) Prende el modo diagnostico (esto es lo clave)</h2>
+<ol>
+  <li>Abri el panel de <strong>Voz</strong>.</li>
+  <li>Bien abajo vas a ver una seccion nueva con un interruptor: <em>"Grabar lo que se escucha y lo que hace la app"</em>. <strong>Prendelo.</strong></li>
+  <li>Corre el <strong>Test 8 (Dictar texto)</strong> y tambien el flujo de envio de correo, <strong>una sola vez</strong>, hablando normal como siempre.</li>
+  <li>Cuando termines, apreta el boton <strong>"Exportar diagnostico"</strong>. Te baja un archivo.</li>
+  <li>Mandanos ese archivo.</li>
+</ol>
+<p><strong>Importante:</strong> el modo diagnostico no manda nada solo. Lo unico que sale de tu compu es el archivo que vos nos mandas. Y queda prendido aunque cierres y vuelvas a abrir, asi que cuando termines podes apagarlo.</p>
+
+<h2>4) Que vamos a poder ver con ese archivo</h2>
+<p>Por cada cosa que dijiste, vamos a ver exactamente <strong>que escucho el sistema</strong>, en que pantalla estabas y que decidio hacer. Con eso cerramos los puntos que todavia fallan a veces (el "fin", el "fin campo" que no siempre agarra, y lo del titulo) con datos reales en la mano, sin adivinar.</p>
+
+<p>Cualquier duda, escribinos. Gracias!</p>
+</body></html>

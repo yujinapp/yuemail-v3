@@ -29,6 +29,11 @@ import {
   type VoiceContext,
 } from './voice/commands.js';
 import { resolveCommand, resolveLiterallyFirst } from './voice/resolveCommand.js';
+import {
+  startContactWizard,
+  advanceContactWizard,
+  type ContactWizardState,
+} from './voice/contactWizard.js';
 import { diagLog } from './voice/diagnostics.js';
 import { announce, ensureRegions } from './lib/ariaLive.js';
 import { api } from './lib/api.js';
@@ -71,6 +76,17 @@ export function App(): React.ReactElement {
    * literal "fin dictado" to stop). */
   const dictationRef = React.useRef(false);
   dictationRef.current = dictation;
+
+  /* Guided "add a contact" voice flow (PND-028). When active, raw speech is
+   * captured by the wizard (name, then email) instead of being routed as a
+   * command -- so it must be mirrored into a ref the voice callback reads.
+   * `wizardThenSendRef` remembers that the flow was started from "enviar a
+   * <desconocido>", so once the contact is saved we open the send dialog to
+   * the brand-new address (turning the old dead end into a live path). */
+  const [contactWizard, setContactWizard] = React.useState<ContactWizardState | null>(null);
+  const contactWizardRef = React.useRef<ContactWizardState | null>(null);
+  contactWizardRef.current = contactWizard;
+  const wizardThenSendRef = React.useRef<boolean>(false);
 
   React.useEffect(() => { ensureRegions(); }, []);
   React.useEffect(() => {
@@ -369,7 +385,76 @@ export function App(): React.ReactElement {
     }
   }
 
+  /* --- guided "add a contact" voice flow (PND-028) --- */
+
+  /* Start the wizard. `name` prefills it (the send flow heard it, or the
+   * user said "agregar contacto Juan") so it jumps straight to the email
+   * step. `thenSend` is set when this came from "enviar a <desconocido>":
+   * after the save we open the send dialog to the new address. */
+  function startContactCapture(opts: { name?: string; thenSend?: boolean } = {}) {
+    const res = startContactWizard({ name: opts.name });
+    wizardThenSendRef.current = opts.thenSend === true;
+    contactWizardRef.current = res.state ?? null;
+    setContactWizard(res.state ?? null);
+    pushToast(res.kind, res.prompt);
+  }
+
+  /* Feed one captured utterance to the running wizard and act on the result.
+   * The contact is persisted (and any "then send" honoured) only after the
+   * save returns ok -- the success is announced then, never before. */
+  async function handleContactWizardUtterance(raw: string) {
+    const state = contactWizardRef.current;
+    if (!state) return;
+    const res = advanceContactWizard(state, raw);
+
+    if (res.outcome === 'cancelled') {
+      contactWizardRef.current = null;
+      setContactWizard(null);
+      wizardThenSendRef.current = false;
+      pushToast(res.kind, res.prompt);
+      return;
+    }
+
+    if (res.outcome === 'done' && res.committed) {
+      /* Capture finished: clear the wizard, then persist. */
+      contactWizardRef.current = null;
+      setContactWizard(null);
+      const thenSend = wizardThenSendRef.current;
+      wizardThenSendRef.current = false;
+      pushToast('info', res.prompt); /* "Guardando a X..." */
+      try {
+        await api.contactAdd({ name: res.committed.name, email: res.committed.email });
+        await refreshContacts();
+        pushToast('success', 'Listo. Agende a ' + res.committed.name + ' con ' + res.committed.email + '.');
+        if (thenSend) {
+          pushToast('info', 'Abro el envio a ' + res.committed.name + '.');
+          void onSendEmail(res.committed.email);
+        }
+      } catch (err) {
+        pushToast('error', err instanceof Error ? err.message : 'No se pudo guardar el contacto.');
+      }
+      return;
+    }
+
+    /* Still running: hold the next state and prompt for the next field. */
+    contactWizardRef.current = res.state ?? null;
+    setContactWizard(res.state ?? null);
+    pushToast(res.kind, res.prompt);
+  }
+
   function onVoiceCommand(cmd: VoiceCommand) {
+    /* While the add-contact wizard is running, raw speech IS the captured
+     * field (name / email / confirmation), NOT a command. The mic-safety
+     * trio still passes through so the user can always silence the mic; the
+     * wizard's own "cancelar" aborts the flow. */
+    if (contactWizardRef.current) {
+      if (cmd.type !== 'ENCENDER_MICROFONO' && cmd.type !== 'APAGAR_MICROFONO' && cmd.type !== 'DETENER_VOZ') {
+        diagLog('act', { outcome: 'contact_wizard_input:' + contactWizardRef.current.step, detail: cmd.raw });
+        void handleContactWizardUtterance(cmd.raw);
+        return;
+      }
+    }
+
     diagLog('act', {
       commandType: cmd.type, payload: cmd.payload, raw: cmd.raw, normalized: cmd.normalized,
       context: voiceContextRef.current, dictationOn: dictationRef.current,
@@ -400,8 +485,10 @@ export function App(): React.ReactElement {
         } else if (r.kind === 'ambiguous') {
           pushToast('info', 'Tengo varios contactos parecidos: ' + r.candidates.map((c) => c.name || c.email).join(', ') + '. Deci el nombre completo.');
         } else if (r.kind === 'unknown') {
-          pushToast('info', 'No encontre a "' + r.query + '" en tus contactos. Abri Contactos para darlo de alta, o dicta la direccion.');
-          void onSendEmail();
+          /* Dead end no more (PND-028): start the guided alta with the name
+           * already heard, and once saved open the send to that contact. */
+          pushToast('info', 'No tengo a "' + r.query + '" en tus contactos. Lo agendamos en un momento.');
+          startContactCapture({ name: r.query, thenSend: true });
         } else {
           void onSendEmail();
         }
@@ -474,6 +561,8 @@ export function App(): React.ReactElement {
         break;
       case 'ABRIR_CONTACTOS':
         setShowContacts(true); pushToast('info', 'Contactos abierto.'); break;
+      case 'AGREGAR_CONTACTO':
+        startContactCapture({ name: cmd.payload }); break;
       case 'ABRIR_CONFIGURACION':
         setShowSettings(true); break;
       case 'ENCENDER_MICROFONO':
@@ -607,6 +696,20 @@ export function App(): React.ReactElement {
     resolveCommand: (raw, context, o) => {
       const dictationOn = dictationRef.current;
       const armedKey = armedFieldRef.current?.key;
+      /* While the add-contact wizard runs, name/email capture must stay
+       * offline + instant (like dictation): do NOT let the Brain reinterpret
+       * a spoken name or address as a command. Only the always-on mic-safety
+       * trio is allowed through; everything else becomes UNKNOWN and the
+       * voice handler feeds the raw words to the wizard. */
+      if (contactWizardRef.current) {
+        const literal = parseCommand(raw, 'global');
+        const micSafe = literal.type === 'ENCENDER_MICROFONO'
+          || literal.type === 'APAGAR_MICROFONO'
+          || literal.type === 'DETENER_VOZ';
+        const cmd = micSafe ? literal : { type: 'UNKNOWN' as const, raw, normalized: raw };
+        diagLog('resolve', { lane: 'contact-wizard', context, commandType: cmd.type, raw });
+        return Promise.resolve(cmd);
+      }
       const instant = resolveLiterallyFirst(raw, context, o, dictationOn);
       if (instant) {
         diagLog('resolve', {
@@ -721,6 +824,33 @@ export function App(): React.ReactElement {
           onBlocksChange={setBlocks}
         />
         <aside className="yuemail-side">
+          {contactWizard && (
+            <section className="yuemail-card" data-nac-id="yuemail.contacts.wizard" role="status" aria-live="polite">
+              <h2>Agendando contacto</h2>
+              <p style={{ margin: '4px 0' }}>
+                {contactWizard.step === 'name'
+                  ? 'Deci el nombre del contacto.'
+                  : contactWizard.step === 'email'
+                    ? 'Nombre: ' + contactWizard.name + '. Deci el correo (arroba, punto).'
+                    : 'Confirmar: ' + contactWizard.name + ' / ' + contactWizard.email
+                      + '. Deci "confirmar" o "corregir".'}
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  contactWizardRef.current = null;
+                  setContactWizard(null);
+                  wizardThenSendRef.current = false;
+                  pushToast('info', 'Listo, no agende a nadie.');
+                }}
+                data-nac-id="yuemail.contacts.wizard-cancel"
+                data-nac-role="button"
+                data-nac-action="cancel_contact_wizard"
+              >
+                Cancelar
+              </button>
+            </section>
+          )}
           <section className="yuemail-card" data-nac-id="yuemail.email.card">
             <h2>Enviar correo</h2>
             <button type="button" onClick={() => void onSendEmail()} data-nac-id="yuemail.email.btn-open" data-nac-action="open_send_dialog">

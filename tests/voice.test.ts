@@ -426,8 +426,8 @@ describe('spokenCheckboxValue', () => {
 });
 
 describe('COMMAND_CATALOG', () => {
-  it('lists exactly 14 global user-facing phrases (13 + reenviar/forward, PND-024)', () => {
-    expect(COMMAND_CATALOG.filter((c) => !c.context).length).toBe(14);
+  it('lists exactly 15 global user-facing phrases (14 + agregar contacto, PND-028)', () => {
+    expect(COMMAND_CATALOG.filter((c) => !c.context).length).toBe(15);
   });
 
   it('covers the three modal contexts with contextual entries', () => {

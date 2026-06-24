@@ -58,6 +58,7 @@ export type VoiceCommandType =
   | 'LEER_BANDEJA'
   | 'PONER_TITULO'
   | 'ABRIR_CONTACTOS'
+  | 'AGREGAR_CONTACTO'
   | 'ABRIR_CONFIGURACION'
   | 'DETENER_VOZ'
   | 'ENCENDER_MICROFONO'
@@ -84,7 +85,7 @@ export type VoiceCommandType =
 export const ALL_VOICE_COMMAND_TYPES = [
   'NUEVO_DOCUMENTO', 'ABRIR_DOCUMENTO', 'GUARDAR_FIRMA', 'FIRMAR',
   'INICIAR_DICTADO', 'FIN_DICTADO', 'ENVIAR', 'RESPONDER', 'REENVIAR', 'LEER_BANDEJA',
-  'PONER_TITULO', 'ABRIR_CONTACTOS',
+  'PONER_TITULO', 'ABRIR_CONTACTOS', 'AGREGAR_CONTACTO',
   'ABRIR_CONFIGURACION', 'DETENER_VOZ', 'ENCENDER_MICROFONO', 'APAGAR_MICROFONO',
   'CONFIRMAR_ENVIO', 'CANCELAR', 'GUARDAR_FIRMA_PAD', 'BORRAR_FIRMA',
   'GENERAR_FIRMA', 'DETECTAR_SERVIDORES', 'PROBAR_CONEXION', 'GUARDAR_CONFIG',
@@ -251,6 +252,24 @@ const MATCHERS: Matcher[] = [
     patterns: [
       /\b(?:poner|pon|pone|ponle|escribir|cambiar|titular)\s+(?:el\s+)?titulo\b/,
       /\btitulo\b/,
+    ],
+  },
+  /* AGREGAR_CONTACTO: start the guided "add a new contact" voice flow
+   * (PND-028). MUST come before ABRIR_CONTACTOS so "agregar contacto" opens
+   * the wizard instead of the address book. Patterns require an explicit
+   * add/save verb next to "contacto" (singular) -- a bare "contactos" /
+   * "agenda" still opens the book. "agendar a <nombre>" jumps in with the
+   * name already heard. */
+  {
+    type: 'AGREGAR_CONTACTO',
+    patterns: [
+      /\b(?:agregar|agrega|agregame|anotar|anota|anotame|guardar|guarda|crear|crea|nuevo|nueva|sumar|suma)\s+(?:(?:un|una|el|la|nuevo|nueva|este|esta|ese|esa|mi|su|otro|otra)\s+){0,2}contacto\b/,
+      /* "agendar" (to schedule/add) is distinct from "agenda" (the book,
+       * -> ABRIR_CONTACTOS); the word boundary keeps them apart. Matching the
+       * lone verb survives the filler-stripper eating the "a" of "agendar a
+       * Maria"; the name is recovered from the raw utterance below. */
+      /\bagendar\b/,
+      /\bdar\s+de\s+alta\b/,
     ],
   },
   /* ABRIR_CONTACTOS: open the address book. */
@@ -670,6 +689,15 @@ export function parseCommand(raw: string, context: VoiceContext = 'global', opts
           /* Extract optional document name after the trigger. */
           const after = normalized.replace(/^.*?(?:abrir|cargar)\s+(?:documento|archivo)\s*/, '').trim();
           if (after.length > 0) cmd.payload = after;
+        } else if (m.type === 'AGREGAR_CONTACTO') {
+          /* Optional name said in one go ("agregar contacto Juan Perez",
+           * "agendar a Maria"). Taken from the RAW utterance to keep its
+           * casing; the wizard skips straight to the email step when set.
+           * Bare "agregar contacto" leaves payload empty -> ask the name. */
+          const after = raw
+            .replace(/^.*?\b(?:agendar\s+a|contacto|de\s+alta)\b\s*(?:a\s+|al\s+)?/i, '')
+            .trim();
+          if (after.length > 0 && !/^contacto/i.test(after)) cmd.payload = after;
         }
         return cmd;
       }
@@ -705,6 +733,7 @@ export const COMMAND_CATALOG: ReadonlyArray<CommandCatalogEntry> = [
   { type: 'LEER_BANDEJA',       sample: 'leer bandeja',           action: 'Listar los envelopes recientes.' },
   { type: 'PONER_TITULO',       sample: 'poner titulo Carta al banco', action: 'Poner o cambiar el titulo del documento.' },
   { type: 'ABRIR_CONTACTOS',    sample: 'abrir contactos',        action: 'Abrir la agenda de contactos.' },
+  { type: 'AGREGAR_CONTACTO',   sample: 'agregar contacto',       action: 'Agendar un contacto nuevo guiado por voz: primero el nombre, despues el correo.' },
   { type: 'ABRIR_CONFIGURACION', sample: 'abrir configuracion',   action: 'Abrir la configuracion de la cuenta de correo.' },
   { type: 'DETENER_VOZ',        sample: 'detener voz',            action: 'Apagar el microfono.' },
   /* Contextual: send dialog open. */

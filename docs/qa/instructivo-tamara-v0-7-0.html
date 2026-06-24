@@ -1,0 +1,336 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Yuemail 0.7.0 - Guia para Tamara (instalar, probar y enviarnos los resultados)</title>
+<style>
+  :root{
+    --tinta:#1f2430; --azul:#2e3a5e; --oro:#9c7a3c; --papel:#fbf8f1;
+    --linea:#cdbfa2; --suave:#6b6457; --ok:#1f7a4d; --falla:#a23b2e;
+  }
+  *{box-sizing:border-box}
+  body{
+    font-family:Georgia,"Times New Roman",serif; color:var(--tinta);
+    background:var(--papel); line-height:1.65; margin:0; padding:0 0 80px;
+  }
+  .wrap{max-width:820px; margin:0 auto; padding:0 22px}
+  header.hero{
+    background:#2e3a5e; color:#f6f1e3; padding:30px 22px 26px; text-align:center;
+    border-bottom:4px solid var(--oro);
+  }
+  header.hero h1{margin:0 0 6px; font-size:26px; letter-spacing:.3px}
+  header.hero p{margin:0; opacity:.85; font-size:15px}
+  h2{
+    color:var(--azul); border-bottom:2px solid var(--linea);
+    padding-bottom:5px; margin-top:38px; font-size:21px;
+  }
+  h3{color:var(--azul); font-size:17px; margin-top:24px}
+  .step-badge{
+    display:inline-block; background:var(--oro); color:#fff; font-family:Consolas,monospace;
+    font-size:12px; font-weight:700; border-radius:4px; padding:2px 8px; margin-right:8px;
+    vertical-align:middle;
+  }
+  code,kbd{font-family:Consolas,"Courier New",monospace; background:#efe9da; padding:1px 5px; border-radius:3px; font-size:.92em}
+  pre{background:#26211a; color:#f3ecd9; padding:12px 14px; border-radius:6px; overflow:auto; font-size:13px}
+  pre code{background:transparent; color:inherit; padding:0}
+  .nota{background:#f3eedd; border-left:4px solid var(--oro); padding:12px 16px; border-radius:0 6px 6px 0; margin:16px 0}
+  .ojo{background:#fbeee9; border-left:4px solid var(--falla); padding:12px 16px; border-radius:0 6px 6px 0; margin:16px 0}
+  ol,ul{padding-left:22px}
+  li{margin:5px 0}
+  table.plan{border-collapse:collapse; width:100%; margin:14px 0; font-size:14px}
+  table.plan th,table.plan td{border:1px solid var(--linea); padding:7px 9px; vertical-align:top; text-align:left}
+  table.plan th{background:#ece3cf; color:var(--azul)}
+  table.plan td.id{font-family:Consolas,monospace; font-weight:700; white-space:nowrap; width:74px}
+  table.plan select{font:inherit; padding:4px; width:100%; border:1px solid var(--linea); border-radius:4px; background:#fff}
+  table.plan textarea{font:inherit; width:100%; min-height:42px; border:1px solid var(--linea); border-radius:4px; padding:5px; resize:vertical}
+  .meta-grid{display:grid; grid-template-columns:1fr 1fr; gap:12px 18px; margin:14px 0}
+  .meta-grid label{display:flex; flex-direction:column; font-size:13px; color:var(--suave); gap:4px}
+  .meta-grid input,.meta-grid select{font:inherit; padding:7px; border:1px solid var(--linea); border-radius:4px; background:#fff}
+  .toolbar{
+    position:sticky; bottom:0; left:0; right:0; background:#2e3a5e; color:#fff;
+    display:flex; gap:10px; flex-wrap:wrap; justify-content:center; align-items:center;
+    padding:12px; border-top:3px solid var(--oro); z-index:50;
+  }
+  .toolbar button{
+    font:inherit; font-size:14px; cursor:pointer; border:0; border-radius:6px; padding:9px 16px; font-weight:600;
+  }
+  .btn-primary{background:var(--oro); color:#fff}
+  .btn-ghost{background:transparent; color:#fff; border:1px solid rgba(255,255,255,.6) !important}
+  .toolbar .saved{font-size:12px; opacity:.85; font-style:italic}
+  .pasos{counter-reset:p}
+  .resaltado{background:#fff7e0; padding:1px 4px; border-radius:3px}
+  @media print{ .toolbar{display:none} body{background:#fff} }
+  @media(max-width:620px){ .meta-grid{grid-template-columns:1fr} }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <h1>Yuemail 0.7.0 - Guia para Tamara</h1>
+  <p>Instalar &middot; Probar en modo diagnostico &middot; Anotar &middot; Enviarnos los resultados</p>
+</header>
+
+<div class="wrap">
+
+<div class="nota">
+  <strong>Como funciona este archivo.</strong> Es una sola pagina que podes <strong>completar aca mismo</strong>:
+  los casilleros de la planilla son editables. Lo que escribis se va <strong>guardando solo</strong> en tu
+  navegador (podes cerrar y seguir despues). Cuando termines, abajo de todo hay un boton
+  <strong>"Descargar planilla completada"</strong>: te baja un archivo con todo lo que anotaste, listo para adjuntar.
+</div>
+
+<h2>Lo que vamos a hacer (4 pasos)</h2>
+<ol>
+  <li><strong>Instalar</strong> Yuemail 0.7.0 en tu computadora.</li>
+  <li><strong>Configurar</strong> la voz, el asistente y tu correo de prueba.</li>
+  <li><strong>Encender el modo diagnostico</strong> y correr las pruebas una vez, anotando cada resultado en la planilla.</li>
+  <li><strong>Enviarnos</strong> dos cosas: el <strong>archivo de diagnostico</strong> que baja la app y la <strong>planilla completada</strong> de este documento.</li>
+</ol>
+
+<h2><span class="step-badge">PASO 1</span>Que necesitas antes de empezar</h2>
+<ul>
+  <li>Una computadora con <strong>Windows 10/11</strong>, macOS o Linux.</li>
+  <li><strong>Node.js 18 o mas nuevo.</strong> Para verificar, abri una terminal (en Windows: PowerShell) y escribi <code>node --version</code>. Si da error o un numero menor a 18, instalalo desde <code>https://nodejs.org</code> (boton "LTS").</li>
+  <li><strong>Google Chrome o Microsoft Edge</strong> y un <strong>microfono</strong> que ande (el de la notebook sirve). Cuando el navegador lo pida, hay que tocar <strong>Permitir</strong>.</li>
+  <li><strong>Clave de Google para la Voz</strong> (escuchar y hablar). Una sola clave sirve, pero en la consola de Google hay que habilitar <em>Cloud Speech-to-Text</em> y <em>Cloud Text-to-Speech</em> y <strong>quitarle la restriccion de "sitios web"</strong>.</li>
+  <li><strong>Clave de un proveedor de IA para el Asistente</strong> (recomendamos Google Gemini, tiene capa gratuita: <code>https://aistudio.google.com/apikey</code>).</li>
+  <li>Una <strong>cuenta de correo de prueba</strong> (mejor una de Gmail nueva, con "contrasena de aplicacion") y una <strong>segunda casilla</strong> donde mirar que los envios llegan.</li>
+</ul>
+<div class="ojo">
+  <strong>Tus claves y tu contrasena son tuyas.</strong> No las copies en la planilla ni en las capturas. Si una captura las muestra, tachalas antes de enviar.
+</div>
+
+<h2><span class="step-badge">PASO 2</span>Instalar Yuemail 0.7.0</h2>
+<p>En la terminal, escribi:</p>
+<pre><code>npm install -g @yujinapp/yuemail</code></pre>
+<p>Para verificar que quedo bien instalado:</p>
+<pre><code>yuemail version</code></pre>
+<p>Tiene que responder <code>0.7.0</code> (o superior). Si la terminal dice que no conoce el comando <code>yuemail</code>, cerrala, abri una nueva y proba otra vez.</p>
+<p>Para arrancar la aplicacion:</p>
+<pre><code>yuemail</code></pre>
+<p>Se abre solo el navegador en <code>http://127.0.0.1:5180</code>. Si no se abre, entra a mano a esa direccion. Para apagar la app: en la terminal apreta <kbd>Ctrl</kbd>+<kbd>C</kbd>.</p>
+<div class="nota">Si ya tenias una version anterior, actualizala con <code>npm update -g @yujinapp/yuemail</code> antes de arrancar.</div>
+
+<h2><span class="step-badge">PASO 3</span>Configurar (en este orden)</h2>
+<h3>3.1 - La Voz (escuchar y hablar)</h3>
+<ol>
+  <li>Con la app abierta, toca el boton <strong>"Voz"</strong> (arriba a la derecha).</li>
+  <li>Pega tu <strong>clave de Google</strong> en el campo "Clave de Google".</li>
+  <li>Toca <strong>"Probar voz"</strong>: tenes que <strong>escuchar</strong> a Yuemail decir una frase. Si la escuchas, la clave anda.</li>
+  <li>Toca <strong>Guardar</strong> (aviso "Voz configurada").</li>
+</ol>
+<h3>3.2 - El Asistente (la IA que entiende los pedidos)</h3>
+<ol>
+  <li>Toca el boton <strong>"Asistente"</strong> (al lado de "Voz").</li>
+  <li>Pega tu <strong>clave de IA</strong> y toca <strong>Guardar</strong> (aviso "Asistente de voz configurado").</li>
+</ol>
+<h3>3.3 - El correo</h3>
+<ol>
+  <li>Toca el <strong>engranaje</strong>.</li>
+  <li>Escribi tu correo de prueba y la contrasena de aplicacion; Yuemail detecta solo los servidores.</li>
+  <li>(Opcional) "Probar conexion" para verificar en vivo, y toca <strong>Guardar</strong>.</li>
+</ol>
+
+<h2><span class="step-badge">PASO 4</span>Encender el modo diagnostico</h2>
+<p>Esto graba <strong>exactamente</strong> lo que escucho y lo que hizo la app. Es lo que nos deja entender cualquier falla de voz sin que tengas que explicarla.</p>
+<ol>
+  <li>Toca el boton <strong>"Voz"</strong>.</li>
+  <li>Abajo vas a ver el recuadro <strong>"Modo diagnostico (para reportar fallas de voz)"</strong>.</li>
+  <li>Marca la casilla <strong>"Grabar lo que se escucha y lo que hace la app"</strong>. Vas a ver al lado un contador de eventos que sube mientras hablas.</li>
+  <li>Dejalo encendido <strong>durante toda la corrida</strong> de pruebas. Al final lo exportamos (Paso 6).</li>
+</ol>
+<div class="nota">El diagnostico <strong>no se envia solo</strong>: queda en tu computadora y vos nos lo mandas. No graba tu contrasena ni tus claves, solo lo que decis al microfono y lo que la app hace.</div>
+
+<h2><span class="step-badge">PASO 5</span>Correr las pruebas y anotar</h2>
+<p>Corre los casos <strong>en orden</strong> (algunos dependen del anterior). Para cada uno, elegi el resultado en la planilla y escribi una observacion si hace falta:</p>
+<ul>
+  <li><strong>PASA</strong>: ocurrio exactamente lo esperado.</li>
+  <li><strong>FALLA</strong>: ocurrio otra cosa. Anota <em>que</em> paso, palabra por palabra si hay un mensaje en pantalla.</li>
+  <li><strong>BLOQUEADO</strong>: no se pudo probar (por ejemplo, depende de un caso anterior que fallo).</li>
+  <li><strong>N/A</strong>: no aplica a tu equipo (por ejemplo, el microfono no funciona).</li>
+</ul>
+<div class="nota">Si algo falla, <strong>proba una vez mas</strong> antes de marcarlo FALLA (a veces el oido entiende mal una palabra; igual vale anotarlo como observacion). Anota TEXTUAL lo que dijiste cuando uses pedidos libres.</div>
+
+<h3>5.1 - Que arranque y dicte (lo basico)</h3>
+<table class="plan" data-section="Basico">
+  <thead><tr><th>Caso</th><th>Que hacer y que tiene que pasar</th><th style="width:120px">Resultado</th><th style="width:200px">Observaciones</th></tr></thead>
+  <tbody>
+    <tr><td class="id">INS-01</td><td>Tras <code>yuemail</code>, el navegador abre en <code>127.0.0.1:5180</code> y se ve la pantalla principal.</td><td data-cell="res"></td><td data-cell="obs"></td></tr>
+    <tr><td class="id">VOZ-01</td><td>Enciende el microfono. Deci <strong>"iniciar dictado"</strong>, despues una frase cualquiera (ej. <em>"esto es una prueba"</em>), despues <strong>"fin"</strong>. La frase tiene que quedar <strong>escrita</strong> en el documento.</td><td data-cell="res"></td><td data-cell="obs"></td></tr>
+    <tr><td class="id">VOZ-02</td><td>Deci <strong>"poner titulo"</strong> y un titulo (ej. <em>"poner titulo Carta de prueba"</em>). Tiene que aparecer en el casillero de titulo.</td><td data-cell="res"></td><td data-cell="obs"></td></tr>
+    <tr><td class="id">VOZ-03</td><td>Deci <strong>"firmar"</strong> (o "guardar firma") y firma. La firma tiene que quedar registrada en el documento.</td><td data-cell="res"></td><td data-cell="obs"></td></tr>
+  </tbody>
+</table>
+
+<h3>5.2 - La agenda de contactos se llena sola (lo nuevo)</h3>
+<p>Antes de empezar, abri <strong>Contactos</strong> (arriba a la derecha) para ver como esta la lista. Despues corre estos casos y volve a abrir Contactos para verificar.</p>
+<table class="plan" data-section="Contactos">
+  <thead><tr><th>Caso</th><th>Que hacer y que tiene que pasar</th><th style="width:120px">Resultado</th><th style="width:200px">Observaciones</th></tr></thead>
+  <tbody>
+    <tr><td class="id">CON-01</td><td>Deci <strong>"leer bandeja"</strong>. Despues abri <strong>Contactos</strong>: <strong>quien te escribio</strong> tiene que aparecer guardado automaticamente, sin que lo cargaras a mano.</td><td data-cell="res"></td><td data-cell="obs"></td></tr>
+    <tr><td class="id">CON-02</td><td>Si en la bandeja hay un correo donde <strong>te copiaron (CC)</strong>, esa persona copiada tambien tiene que quedar guardada en Contactos.</td><td data-cell="res"></td><td data-cell="obs"></td></tr>
+    <tr><td class="id">CON-03</td><td>Envia un correo a una direccion nueva (que no estaba en la agenda). Despues abri Contactos: <strong>el destinatario</strong> tiene que quedar guardado.</td><td data-cell="res"></td><td data-cell="obs"></td></tr>
+    <tr><td class="id">CON-04</td><td>Deci <strong>"enviar a"</strong> y un <strong>nombre</strong> de la agenda (no deletrees el correo). La app dice en voz <em>"voy a enviar a &lt;nombre&gt; (&lt;correo&gt;)"</em> y abre el envio con ese destinatario puesto.</td><td data-cell="res"></td><td data-cell="obs"></td></tr>
+    <tr><td class="id">CON-05</td><td><strong>A proposito:</strong> carga dos personas con el mismo nombre de pila (ej. "Ana Gomez" y "Ana Lopez") y deci solo <strong>"enviar a Ana"</strong>. La app NO tiene que elegir sola: te dice los parecidos y te pide el nombre completo.</td><td data-cell="res"></td><td data-cell="obs"></td></tr>
+    <tr><td class="id">CON-06</td><td><strong>Sin duplicados:</strong> leele la bandeja o envia <strong>dos veces</strong> a la misma persona. En Contactos tiene que quedar <strong>una sola ficha</strong> de esa persona (no dos repetidas).</td><td data-cell="res"></td><td data-cell="obs"></td></tr>
+  </tbody>
+</table>
+
+<h3>5.3 - Reenviar un correo (lo nuevo)</h3>
+<table class="plan" data-section="Reenvio">
+  <thead><tr><th>Caso</th><th>Que hacer y que tiene que pasar</th><th style="width:120px">Resultado</th><th style="width:200px">Observaciones</th></tr></thead>
+  <tbody>
+    <tr><td class="id">FWD-01</td><td>Deci <strong>"leer bandeja"</strong> y despues <strong>"reenviar"</strong>. La app tiene que abrir un envio nuevo con el <strong>correo original citado adentro</strong> (de quien venia, asunto y texto). Agrega un destinatario (por nombre o dictando el correo) y deci <strong>"enviar"</strong>.</td><td data-cell="res"></td><td data-cell="obs"></td></tr>
+    <tr><td class="id">FWD-02</td><td>Mira la <strong>segunda casilla</strong>: el reenvio tiene que <strong>llegar</strong>, con el contenido del correo original incluido.</td><td data-cell="res"></td><td data-cell="obs"></td></tr>
+  </tbody>
+</table>
+
+<h2><span class="step-badge">PASO 6</span>Exportar el diagnostico</h2>
+<p>Cuando termines TODAS las pruebas (con el modo diagnostico encendido desde el Paso 4):</p>
+<ol>
+  <li>Toca el boton <strong>"Voz"</strong>.</li>
+  <li>En el recuadro del modo diagnostico, toca <strong>"Exportar diagnostico"</strong>.</li>
+  <li>Se baja un archivo que empieza con <code>yuemail-voz-diagnostico-</code> y termina en <code>.txt</code> (y otro <code>.json</code>). Fijate en tu carpeta de <strong>Descargas</strong>.</li>
+</ol>
+<div class="nota">Ese archivo es lo que nos deja ver, evento por evento, que escucho la app y que hizo. Es la pieza mas valiosa: por favor adjuntalo aunque te haya ido todo bien.</div>
+
+<h2><span class="step-badge">PASO 7</span>Datos de la corrida</h2>
+<p>Completa estos datos (tambien se guardan y se incluyen al descargar la planilla):</p>
+<div class="meta-grid">
+  <label>Quien probo (tu nombre)<input type="text" data-meta="tester"></label>
+  <label>Fecha de la prueba<input type="date" data-meta="fecha"></label>
+  <label>Sistema operativo<input type="text" data-meta="so" placeholder="Windows 11 / macOS / Linux"></label>
+  <label>Navegador y version<input type="text" data-meta="navegador" placeholder="Chrome 124 / Edge ..."></label>
+  <label>Proveedor de correo usado<input type="text" data-meta="correo" placeholder="Gmail ..."></label>
+  <label>Proveedor y modelo de IA (Asistente)<input type="text" data-meta="ia" placeholder="Google Gemini Flash ..."></label>
+  <label>La Voz de Google quedo...<select data-meta="voz"><option value=""></option><option>Encendida (Google)</option><option>Apagada (use el navegador)</option></select></label>
+  <label>El microfono anduvo bien?<select data-meta="mic"><option value=""></option><option>Si</option><option>Mas o menos</option><option>No</option></select></label>
+</div>
+<h3>Comentario general (lo que quieras contarnos)</h3>
+<textarea data-meta="comentario" style="width:100%; min-height:90px; font:inherit; padding:8px; border:1px solid var(--linea); border-radius:4px"></textarea>
+
+<h2><span class="step-badge">PASO 8</span>Enviarnos todo</h2>
+<p>Manda un correo a <strong>contact@yujin.app</strong> con asunto <code>QA Yuemail 0.7.0 - Tamara</code> y adjunta <strong>dos archivos</strong>:</p>
+<ol>
+  <li>El archivo de <strong>diagnostico</strong> que bajaste en el Paso 6 (<code>yuemail-voz-diagnostico-...txt</code>).</li>
+  <li>La <strong>planilla completada</strong> de este documento: tocala el boton <strong>"Descargar planilla completada"</strong> de aca abajo y adjunta el archivo que se baja.</li>
+</ol>
+<p>Si te toparas con algo grave que rompe todo (no instala, no arranca), no esperes a terminar: avisanos de una al mismo correo.</p>
+<p style="opacity:.7; font-size:14px; margin-top:26px"><em>Gracias, Tamara. Cada cosa que anotes nos sirve. Probamos esta version con 340 pruebas automaticas en verde; la confirmacion con tu voz real y tu microfono es la que solo podes hacer vos.</em></p>
+
+</div><!-- /wrap -->
+
+<div class="toolbar" role="region" aria-label="Acciones de la planilla">
+  <button type="button" class="btn-primary" id="btn-download">Descargar planilla completada</button>
+  <button type="button" class="btn-ghost" id="btn-print">Imprimir / Guardar PDF</button>
+  <button type="button" class="btn-ghost" id="btn-clear">Borrar mis respuestas</button>
+  <span class="saved" id="saved-hint">Lo que escribis se guarda solo</span>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var KEY = "yuemail-qa-tamara-070";
+  var RES_OPTS = ["", "PASA", "FALLA", "BLOQUEADO", "N/A"];
+
+  // Build the editable controls inside each result/obs cell.
+  document.querySelectorAll("table.plan tbody tr").forEach(function(tr){
+    var id = (tr.querySelector("td.id") || {}).textContent || "";
+    id = id.trim();
+    var resCell = tr.querySelector('td[data-cell="res"]');
+    var obsCell = tr.querySelector('td[data-cell="obs"]');
+    if (resCell){
+      var sel = document.createElement("select");
+      sel.setAttribute("data-key", id + ":res");
+      RES_OPTS.forEach(function(o){
+        var opt = document.createElement("option");
+        opt.value = o; opt.textContent = o || "(elegir)";
+        sel.appendChild(opt);
+      });
+      resCell.appendChild(sel);
+    }
+    if (obsCell){
+      var ta = document.createElement("textarea");
+      ta.setAttribute("data-key", id + ":obs");
+      ta.setAttribute("placeholder", "Que viste...");
+      obsCell.appendChild(ta);
+    }
+  });
+
+  function allFields(){
+    return Array.prototype.slice.call(
+      document.querySelectorAll("[data-key],[data-meta]")
+    );
+  }
+  function keyOf(el){ return el.getAttribute("data-key") || ("meta:" + el.getAttribute("data-meta")); }
+
+  // Restore saved state.
+  var saved = {};
+  try { saved = JSON.parse(localStorage.getItem(KEY) || "{}") || {}; } catch(e){ saved = {}; }
+  allFields().forEach(function(el){
+    var k = keyOf(el);
+    if (saved.hasOwnProperty(k)) el.value = saved[k];
+  });
+
+  var hint = document.getElementById("saved-hint");
+  var t = null;
+  function save(){
+    var data = {};
+    allFields().forEach(function(el){ data[keyOf(el)] = el.value; });
+    try { localStorage.setItem(KEY, JSON.stringify(data)); } catch(e){}
+    if (hint){
+      hint.textContent = "Guardado " + new Date().toLocaleTimeString();
+      clearTimeout(t);
+      t = setTimeout(function(){ hint.textContent = "Lo que escribis se guarda solo"; }, 2500);
+    }
+  }
+  document.addEventListener("input", function(e){
+    if (e.target && (e.target.hasAttribute("data-key") || e.target.hasAttribute("data-meta"))) save();
+  });
+
+  // Bake current values into attributes so the downloaded copy preserves them.
+  function bakeValues(root){
+    root.querySelectorAll("select").forEach(function(sel){
+      Array.prototype.forEach.call(sel.options, function(o){
+        if (o.value === sel.value) o.setAttribute("selected","selected");
+        else o.removeAttribute("selected");
+      });
+    });
+    root.querySelectorAll("textarea").forEach(function(ta){ ta.textContent = ta.value; });
+    root.querySelectorAll('input[type="text"],input[type="date"]').forEach(function(inp){
+      inp.setAttribute("value", inp.value);
+    });
+  }
+
+  document.getElementById("btn-download").addEventListener("click", function(){
+    save();
+    var clone = document.documentElement.cloneNode(true);
+    bakeValues(clone);
+    // Remove the toolbar and the script from the downloaded snapshot.
+    var tb = clone.querySelector(".toolbar"); if (tb) tb.parentNode.removeChild(tb);
+    clone.querySelectorAll("script").forEach(function(s){ s.parentNode.removeChild(s); });
+    var tester = (document.querySelector('[data-meta="tester"]') || {}).value || "tamara";
+    tester = tester.toString().trim().toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"") || "tamara";
+    var html = "<!doctype html>\n<html lang=\"es\">" + clone.innerHTML + "</html>";
+    var blob = new Blob([html], {type:"text/html;charset=utf-8"});
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "planilla-yuemail-0.7.0-" + tester + ".html";
+    document.body.appendChild(a); a.click();
+    setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+  });
+
+  document.getElementById("btn-print").addEventListener("click", function(){ save(); window.print(); });
+
+  document.getElementById("btn-clear").addEventListener("click", function(){
+    if (!window.confirm("Esto borra todo lo que anotaste en esta pagina. Seguro?")) return;
+    try { localStorage.removeItem(KEY); } catch(e){}
+    allFields().forEach(function(el){ el.value = ""; });
+    save();
+  });
+})();
+</script>
+
+</body>
+</html>

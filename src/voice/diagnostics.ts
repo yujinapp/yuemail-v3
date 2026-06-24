@@ -29,7 +29,8 @@ export type ResolveLane =
   | 'literal-first'   // instant network-free matcher (dictation toggles / content)
   | 'armed-field'     // a modal field was armed: utterance is its value
   | 'brain'           // the cloud Brain classified it
-  | 'fallback';       // Brain missed/failed: fixed-phrase matcher
+  | 'fallback'        // Brain missed/failed: fixed-phrase matcher
+  | 'contact-wizard'; // the add-contact wizard is capturing: raw is a field value (PND-028)
 
 export interface TraceEntry {
   seq:           number;

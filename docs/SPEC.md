@@ -60,6 +60,8 @@ filler-word-tolerant):
 | `iniciar dictado`                     | Begin transcription          |
 | `fin dictado`                         | Stop transcription           |
 | `enviar a <email>`                    | Open send dialog + prefill   |
+| `enviar a <nombre>`                   | Resolve a contact by name    |
+| `agregar contacto [nombre]`           | Start guided add-contact flow|
 | `leer bandeja`                        | List recent inbox envelopes  |
 | `detener voz`                         | Mute microphone              |
 
@@ -75,6 +77,22 @@ send dialog -> `confirmar` / `enviar` (send), `cancelar` / `cerrar`
 `generar` (bake typed name), `cancelar` / `cerrar` (close). Dictation
 is suppressed while a modal is open. Regression-guarded by the
 voice/NAC3 symmetry suite in tests/nac3-attrs.test.ts.
+
+**Adenda 2026-06-24 (PND-028) -- guided add-contact flow:** a person
+on voice must never hit a dead end when a recipient is not in the
+address book. Saying `agregar contacto` starts a guided wizard that
+asks FIRST for the name, THEN for the email ("provider"), and reads the
+address back ("ana arroba gmail punto com") for confirmation before
+saving -- the spoken read-back guards the costliest error (a wrong
+address). The name may be said in one go (`agregar contacto Juan`,
+`agendar a Maria`) to skip to the email step. Additionally, when
+`enviar a <nombre>` finds no contact, the same wizard starts with the
+name pre-filled and, once saved, opens the send dialog to the brand-new
+address. While the wizard captures, speech is routed offline (like
+dictation) so the Brain never re-reads a name/email as a command; only
+the mic-safety trio and the wizard's own `cancelar` interrupt it. Pure
+state machine in src/voice/contactWizard.ts, regression-guarded by
+tests/contact-wizard.test.ts.
 
 ### F3 -- Document editor
 

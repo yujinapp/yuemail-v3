@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Prueba Tamara v0.6.4 - Contactos + envio por nombre</title><style>body{font-family:Georgia,"Times New Roman",serif;max-width:760px;margin:40px auto;padding:0 20px;color:#1a1a1a;line-height:1.6}h1,h2,h3{font-weight:600;color:#2e3a5e}table{border-collapse:collapse}td,th{border:1px solid #b8ad95;padding:6px 10px}code,pre{font-family:Consolas,monospace;background:#f5f0e6}</style></head><body>
+<h1>Prueba para Tamara - Agenda de contactos y envío por voz</h1>
+<p>Esta versión agrega una <strong>agenda de contactos</strong>. La idea es que la persona ya no tenga que deletrear una dirección: alcanza con decir <em>"enviar a"</em> y el nombre. Esta prueba valida justo eso, en dos roles.</p>
+
+<h2>Parte 1 - Como ASISTENTE (cargando la agenda por teclado)</h2>
+<p>Hacé de cuenta que sos quien ayuda a la persona a dejar lista la agenda.</p>
+<ol>
+<li>Arriba a la derecha, tocá el botón <strong>Contactos</strong>.</li>
+<li>Cargá <strong>tres contactos</strong> escribiendo Nombre + Correo (los apodos son opcionales). Por ejemplo:
+<ul>
+<li>Maximiliano Linares - maxi@gmail.com - apodo: maxi</li>
+<li>Ana Gomez - ana@ejemplo.com</li>
+<li>Tamara - tamara@tucorreo.com</li>
+</ul>
+Tocá <strong>Agregar</strong> después de cada uno; van apareciendo en la lista de arriba.</li>
+<li>Cerrá la ventana de Contactos.</li>
+</ol>
+
+<h2>Parte 2 - Como la PERSONA (enviando por voz)</h2>
+<ol>
+<li>Encendé el micrófono.</li>
+<li>Decí: <strong>"enviar a Ana"</strong> (o el nombre que cargaste). No deletrees el correo.</li>
+<li>Qué tiene que pasar: la app dice en voz <em>"voy a enviar a Ana Gomez (ana@ejemplo.com)"</em> y abre el envío con ese destinatario ya puesto. Confirmás con <strong>"enviar"</strong>.</li>
+</ol>
+<p><strong>Variante a propósito (ambigüedad):</strong> si cargás dos personas con el mismo nombre de pila (ej. "Ana Gomez" y "Ana Lopez") y decís solo <em>"enviar a Ana"</em>, la app NO elige sola: te dice los parecidos y te pide el nombre completo. Eso es a propósito, para no mandar al contacto equivocado.</p>
+
+<h2>Lo nuevo que también podés probar</h2>
+<ul>
+<li><strong>Responder:</strong> decí "leer bandeja" y después "responder": abre un correo dirigido a quien te escribó último. También funciona "responder a" y un nombre de la agenda.</li>
+<li><strong>Título del documento (lo que no encontrabas):</strong> decí <em>"poner titulo"</em> y el título, por ejemplo "poner titulo Carta al banco". Lo escribe en el casillero de título.</li>
+<li><strong>La agenda se llena sola:</strong> cada vez que leés la bandeja, los remitentes quedan guardados como contactos automáticamente.</li>
+</ul>
+
+<h2>Con el modo diagnóstico prendido</h2>
+<p>Si querés que lo analice con datos, hacé esta prueba <strong>una sola vez</strong> con el modo diagnóstico encendido (en el panel de Voz) y exportá el archivo al final. Con eso confirmo si el reconocimiento de nombres anda bien con tu voz real.</p>
+
+<p style="opacity:0.7"><em>Nota: lo probé a fondo con pruebas automáticas (339 en verde) y compila limpio. La confirmación con micrófono real es la que hacés vos.</em></p>
+</body></html>

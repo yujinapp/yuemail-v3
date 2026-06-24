@@ -30,6 +30,7 @@ import { registerContactsRoutes }  from './routes/contacts.js';
 import { registerSettingsRoutes }  from './routes/settings.js';
 import { registerBrainRoutes }     from './routes/brain.js';
 import { registerVoiceRoutes }     from './routes/voice.js';
+import { runStartupImport }        from './contactsImport.js';
 
 export const HOST = '127.0.0.1';
 export const PORT = 5180;
@@ -101,6 +102,11 @@ export async function startServer(opts: BuildAppOpts = {}): Promise<{ close: () 
   return await new Promise((resolve, reject) => {
     const server = app.listen(PORT, HOST, () => {
       const url = 'http://' + HOST + ':' + PORT;
+      /* One-time inbox contact backfill (PND-027). Fire-and-forget AFTER the
+       * server is listening so it never delays startup nor blocks a request;
+       * it locks itself after the first successful pass and swallows its own
+       * errors, so nothing here can break the boot. */
+      void runStartupImport().catch(() => { /* best-effort; never crash boot */ });
       resolve({
         url,
         close: () => new Promise<void>((r) => { server.close(() => r()); }),
