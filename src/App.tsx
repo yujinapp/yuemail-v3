@@ -25,6 +25,7 @@ import {
   spokenFieldValue,
   extractSpokenEmail,
   looksLikeEmail,
+  isDictationStopUtterance,
   type DialogFieldSpec,
   type VoiceCommand,
   type VoiceContext,
@@ -469,9 +470,11 @@ export function App(): React.ReactElement {
         && !isAllowedWhileDictating(cmd.type)) {
       const text = cmd.raw.trim();
       if (text.length === 0) return;
-      /* Defense in depth (PND-016): never write a dictation toggle as text,
-       * even if a recogniser variant slipped past the upstream resolver. */
-      if (parseCommand(text, 'global').type === 'FIN_DICTADO') {
+      /* Defense in depth (PND-016/PND-030): never write a dictation stop as
+       * text, even if a recogniser variant slipped past the upstream resolver.
+       * Covers the explicit "fin dictado" forms AND the bare toggle word
+       * "dictado" (which, while dictating, means stop). */
+      if (isDictationStopUtterance(text)) {
         dictationRef.current = false;
         setDictation(false);
         pushToast('info', 'Dictado finalizado.');
@@ -507,7 +510,7 @@ export function App(): React.ReactElement {
         /* Semaphore -- spoken half (PND-029): the blind user HEARS that
          * capture is on (a visual badge alone does not reach her), and is
          * told the exact phrase that ends it. */
-        voice.speak('Dictado iniciado. Para terminar deci fin dictado.');
+        voice.speak('Dictado iniciado. Para terminar deci dictado de nuevo, o fin dictado.');
         break;
       case 'FIN_DICTADO':
         dictationRef.current = false;
@@ -703,7 +706,8 @@ export function App(): React.ReactElement {
            * (e.g. a variant the upstream router missed), act on the toggle
            * instead of pasting "fin dictado" into the document. */
           const reparsed = parseCommand(text, 'global').type;
-          if (reparsed === 'FIN_DICTADO') { dictationRef.current = false; setDictation(false); pushToast('info', 'Dictado finalizado.'); diagLog('act', { outcome: 'red_seguridad_fin_dictado', dictationOn: false, detail: text }); break; }
+          /* Bare toggle word "dictado" counts as a stop here too (PND-030). */
+          if (reparsed === 'FIN_DICTADO' || isDictationStopUtterance(text)) { dictationRef.current = false; setDictation(false); pushToast('info', 'Dictado finalizado.'); diagLog('act', { outcome: 'red_seguridad_fin_dictado', dictationOn: false, detail: text }); break; }
           if (reparsed === 'INICIAR_DICTADO') { diagLog('act', { outcome: 'red_seguridad_iniciar_ignorado', dictationOn: true, detail: text }); break; }
           diagLog('act', { outcome: 'escribio_parrafo', dictationOn: true, detail: text });
           setBlocks((prev) => [...prev, { type: 'paragraph', text }]);
@@ -791,10 +795,10 @@ export function App(): React.ReactElement {
           data-nac-state="on"
           role="status"
           aria-live="off"
-          aria-label="Dictado activo. Para terminar deci fin dictado."
+          aria-label="Dictado activo. Para terminar deci dictado de nuevo, o fin dictado."
         >
           <span className="yuemail-dictation-light" aria-hidden="true" />
-          <span>Dictado activo: deci "fin dictado" para terminar.</span>
+          <span>Dictado activo: deci "dictado" o "fin dictado" para terminar.</span>
         </div>
       )}
       <header className="yuemail-topbar" data-nac-id="yuemail.topbar.root">

@@ -17,6 +17,7 @@ import {
   parseCommand,
   extractEmail,
   resolveDialogField,
+  isDictationToggleWord,
   FIELD_SPECS_BY_CONTEXT,
   type VoiceCommand,
   type VoiceCommandType,
@@ -106,6 +107,15 @@ export function resolveLiterallyFirst(
 ): VoiceCommand | undefined {
   if (context !== 'global') return undefined;
   const literal = parseCommand(raw, context, opts);
+  /* Single-word "dictado" TOGGLE (PND-030, owner's "seamos practicos"): one
+   * short word flips capture instead of the longer iniciar/fin pair (which
+   * still work). The same word means both directions, so it MUST be resolved
+   * from the CURRENT state -- off -> start, on -> stop -- right here, where
+   * dictationOn is known. Like the toggles, it short-circuits the Brain so
+   * the flip is instant. */
+  if (isDictationToggleWord(literal.normalized)) {
+    return { ...literal, type: dictationOn ? 'FIN_DICTADO' : 'INICIAR_DICTADO' };
+  }
   if (literal.type === 'INICIAR_DICTADO' || literal.type === 'FIN_DICTADO') return literal;
   if (dictationOn) return literal;
   return undefined;

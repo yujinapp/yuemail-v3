@@ -428,6 +428,21 @@ export function isAllowedWhileDictating(type: VoiceCommandType): boolean {
   return DICTATION_COMMAND_ALLOWLIST.has(type);
 }
 
+/* Single-word dictation TOGGLE (PND-030, owner's "seamos practicos"): a lone
+ * "dictado" / "dictar" flips capture -- off -> start, on -> stop -- so the
+ * user has ONE short word instead of remembering the "iniciar" vs "fin" pair
+ * (both still work). Whole-utterance only, like the bare stop words, so the
+ * word "dictado" inside a dictated sentence is never a toggle. The same word
+ * means both directions, so the actual INICIAR/FIN decision is made by the
+ * caller from the current dictation state (see resolveLiterallyFirst). */
+const DICTATION_TOGGLE_RE = /^(?:dictado|dictar)$/;
+
+/** True when the (already normalized + filler-stripped) utterance is the bare
+ *  dictation toggle word. Pass VoiceCommand.normalized. */
+export function isDictationToggleWord(normalized: string): boolean {
+  return DICTATION_TOGGLE_RE.test(normalized);
+}
+
 /* Per-modal command sets. Patterns are deliberately short: with a modal
  * open the vocabulary shrinks, so a lone "cancelar" or "guardar" is
  * unambiguous. */
@@ -737,6 +752,15 @@ export function parseCommand(raw: string, context: VoiceContext = 'global', opts
   return { type: 'UNKNOWN', raw, normalized };
 }
 
+/** True when an utterance heard WHILE dictating is a stop signal: an explicit
+ *  FIN_DICTADO phrase OR the bare toggle word "dictado". Used by the App's
+ *  defense-in-depth guards (PND-016/PND-030) so a stop is never written into
+ *  the document, even if it reaches the content path. */
+export function isDictationStopUtterance(raw: string): boolean {
+  const c = parseCommand(raw, 'global');
+  return c.type === 'FIN_DICTADO' || isDictationToggleWord(c.normalized);
+}
+
 export interface CommandCatalogEntry {
   type:    VoiceCommandType;
   sample:  string;
@@ -755,8 +779,8 @@ export const COMMAND_CATALOG: ReadonlyArray<CommandCatalogEntry> = [
   { type: 'ABRIR_DOCUMENTO',    sample: 'abrir documento informe', action: 'Cargar el documento mas reciente o por nombre.' },
   { type: 'GUARDAR_FIRMA',      sample: 'guardar firma',          action: 'Abrir el pad de firma.' },
   { type: 'FIRMAR',             sample: 'firmar',                 action: 'Insertar la firma guardada.' },
-  { type: 'INICIAR_DICTADO',    sample: 'iniciar dictado',        action: 'Comenzar transcripcion.' },
-  { type: 'FIN_DICTADO',        sample: 'fin dictado',            action: 'Detener transcripcion.' },
+  { type: 'INICIAR_DICTADO',    sample: 'dictado',                action: 'Comenzar transcripcion. La palabra suelta "dictado" enciende; tambien "iniciar dictado".' },
+  { type: 'FIN_DICTADO',        sample: 'dictado',                action: 'Detener transcripcion. Estando dictando, "dictado" de nuevo apaga; tambien "fin dictado".' },
   { type: 'ENVIAR',             sample: 'enviar a Maximiliano',    action: 'Enviar a un contacto de la agenda (por nombre) o a una direccion dictada.' },
   { type: 'RESPONDER',          sample: 'responder',              action: 'Responder al ultimo correo leido; o "responder a <nombre>" a un contacto.' },
   { type: 'REENVIAR',           sample: 'reenviar',               action: 'Reenviar el ultimo correo leido a nuevos destinatarios.' },

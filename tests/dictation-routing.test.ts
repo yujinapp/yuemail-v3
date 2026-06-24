@@ -1,6 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import { resolveLiterallyFirst } from '../src/voice/resolveCommand.js';
-import { parseCommand } from '../src/voice/commands.js';
+import {
+  parseCommand,
+  isDictationToggleWord,
+  isDictationStopUtterance,
+} from '../src/voice/commands.js';
 
 /**
  * Regression guard for PND-015 (tester case #8: "dictar texto en el documento").
@@ -114,5 +118,50 @@ describe('dictation toggle variants the recogniser really emits (PND-016)', () =
      * the widening over-matching ordinary speech. */
     expect(parseCommand('esto es un dictado de prueba para el informe', 'global').type).toBe('UNKNOWN');
     expect(parseCommand('hoy escribo un dictado largo', 'global').type).toBe('UNKNOWN');
+  });
+});
+
+/**
+ * Single-word "dictado" TOGGLE (PND-030, owner's "seamos practicos"). One short
+ * word flips capture: with dictation OFF it starts, with dictation ON it stops.
+ * The same word means both directions, so the resolution is state-driven in
+ * resolveLiterallyFirst. The longer "iniciar dictado" / "fin dictado" pair
+ * still works (covered above); these pin the new short form.
+ */
+describe('single-word "dictado" toggle (PND-030)', () => {
+  const TOGGLE_WORDS = ['dictado', 'dictar', 'Dictado', '  dictado  ', 'por favor dictado'];
+
+  for (const phrase of TOGGLE_WORDS) {
+    it(`"${phrase}" starts dictation when OFF`, () => {
+      expect(resolveLiterallyFirst(phrase, 'global', {}, false)?.type).toBe('INICIAR_DICTADO');
+    });
+    it(`"${phrase}" stops dictation when ON`, () => {
+      expect(resolveLiterallyFirst(phrase, 'global', {}, true)?.type).toBe('FIN_DICTADO');
+    });
+  }
+
+  it('the toggle short-circuits the Brain in both directions (never undefined)', () => {
+    expect(resolveLiterallyFirst('dictado', 'global', {}, false)).toBeDefined();
+    expect(resolveLiterallyFirst('dictado', 'global', {}, true)).toBeDefined();
+  });
+
+  it('isDictationToggleWord matches only the bare word, not a sentence', () => {
+    expect(isDictationToggleWord('dictado')).toBe(true);
+    expect(isDictationToggleWord('dictar')).toBe(true);
+    expect(isDictationToggleWord('iniciar dictado')).toBe(false);
+    expect(isDictationToggleWord('un dictado largo')).toBe(false);
+  });
+
+  it('isDictationStopUtterance treats the bare word AND the fin variants as stop', () => {
+    expect(isDictationStopUtterance('dictado')).toBe(true);
+    expect(isDictationStopUtterance('fin dictado')).toBe(true);
+    expect(isDictationStopUtterance('detener el dictado')).toBe(true);
+    /* A real sentence mentioning the word is NOT a stop -> stays content. */
+    expect(isDictationStopUtterance('esto es un dictado de prueba')).toBe(false);
+  });
+
+  it('a sentence that merely contains "dictado" is NOT a toggle while dictating', () => {
+    /* It must stay content (UNKNOWN), so strict-mode writes it as a paragraph. */
+    expect(resolveLiterallyFirst('te mando el dictado de la maestra', 'global', {}, true)?.type).toBe('UNKNOWN');
   });
 });
