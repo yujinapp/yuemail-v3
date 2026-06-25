@@ -1,6 +1,9 @@
 node_modules/
 dist/
 server-dist/
+# nac3-kikoe is its own repo + npm package (@yujinapp/nac3-kikoe); it lives
+# here as a sibling working copy but must never be committed into yuemail.
+nac3-kikoe/
 .yuemail/
 .yujin-forge/
 .forge/

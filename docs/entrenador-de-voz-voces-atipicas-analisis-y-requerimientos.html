@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Entrenador de voz (voces atípicas) — Análisis y Requerimientos</title><style>body{font-family:Georgia,"Times New Roman",serif;max-width:760px;margin:40px auto;padding:0 20px;color:#1a1a1a;line-height:1.6}h1,h2,h3{font-weight:600;color:#2e3a5e}table{border-collapse:collapse}td,th{border:1px solid #b8ad95;padding:6px 10px}code,pre{font-family:Consolas,monospace;background:#f5f0e6}</style></head><body>
+<h1>Entrenador de voz para voces atípicas</h1>
+<p><strong>Documento de análisis y requerimientos</strong> &middot; Yuemail v0.10.0 &middot; 24/06/2026 &middot; Seguimiento: PND-011, PND-031</p>
+
+<h2>1. Para qué es esto</h2>
+<p>Yuemail ya escucha y habla con la voz de Google. Funciona muy bien con una voz clara y estándar. Pero hay personas cuya forma de hablar se aparta de ese estándar &mdash; por una discapacidad del habla, una parálisis, una secuela de ACV, sordera, edad avanzada o un acento muy marcado. A esas voces las llamamos <strong>voces atípicas</strong>. Para ellas, el reconocimiento estándar falla más seguido: confunde palabras, no entiende nombres de contactos, o entiende otra cosa.</p>
+<p>El <strong>entrenador de voz</strong> es la función que busca cerrar esa brecha: que Yuemail aprenda a entender mejor a <em>cada</em> persona en particular, no a un hablante promedio. Este documento explica qué se puede construir realmente, qué no, cómo debería funcionar y qué hace falta para arrancar.</p>
+
+<h2>2. De dónde partimos (lo que ya existe)</h2>
+<p>Esto no se empieza de cero. Ya está entregado y publicado (desde v0.6.0):</p>
+<ul>
+<li><strong>Escuchar y hablar con Google.</strong> Yuemail manda el audio a la nube de Google, recibe el texto, y al revés sintetiza voz neuronal para leer en voz alta. Si Google no está disponible, cae solo al reconocimiento del navegador, así la persona nunca queda sin voz.</li>
+<li><strong>Ya usamos el mejor modelo de Google para este público.</strong> Para español está activado el modelo "largo mejorado" (<code>latest_long</code> + <code>useEnhanced</code>), que tolera mejor el acento y el habla más lenta o menos articulada. Es decir: la base ya está afinada hacia voces difíciles, sin entrenador.</li>
+<li><strong>El comando lo decide una IA (Brain), con red de seguridad.</strong> Lo que la persona dice se interpreta para elegir la acción ("leer bandeja", "enviar a Ana"). Si la IA falla o duda, un comparador de frases fijas la respalda. <strong>Acá es donde engancharía la corrección aprendida</strong> del entrenador.</li>
+</ul>
+<p><strong>Conclusión:</strong> el entrenador no es una pieza suelta; es una <em>capa de afinado</em> sobre algo que ya anda.</p>
+
+<h2>3. La verdad incómoda: qué se puede y qué no</h2>
+<p>Esta es la parte más importante del documento, porque define el alcance honesto. Hay que distinguir tres cosas que la gente suele meter en la misma bolsa de "entrenar la voz":</p>
+<table border="1" cellpadding="6" cellspacing="0">
+<thead><tr><th>Enfoque</th><th>Qué hace</th><th>¿Se puede con lo que tenemos?</th></tr></thead>
+<tbody>
+<tr><td><strong>A. Adaptación de vocabulario</strong> (speech adaptation)</td><td>Le decimos a Google qué palabras esperar &mdash; los nombres de tus contactos, los comandos de Yuemail, tu vocabulario habitual &mdash; y les sube la prioridad para que no las confunda.</td><td><strong>SÍ.</strong> Con la clave actual de Google, sin trámites nuevos. Entregable ya.</td></tr>
+<tr><td><strong>B. Corrección local aprendida</strong></td><td>Yuemail recuerda los errores que esta persona corrige una y otra vez ("cuando digo X, en realidad quiero Y") y los arregla solo, dentro de Yuemail, sin depender de Google.</td><td><strong>SÍ.</strong> Es código nuestro, datos locales. Entregable ya.</td></tr>
+<tr><td><strong>C. Reentrenamiento acústico real</strong> (Project Euphonia / Speech Accessibility)</td><td>Google reentrena el modelo de oído <em>para la voz puntual</em> de la persona, a partir de grabaciones suyas. Es lo que de verdad mueve la aguja en discapacidades del habla severas.</td><td><strong>NO directamente.</strong> Es un programa <em>gated</em> (con inscripción y aprobación) de Google. Requiere un trámite aparte tuyo. No se activa con una clave de API.</td></tr>
+</tbody>
+</table>
+<p>En criollo: <strong>lo que Yuemail puede construir hoy es A + B</strong> &mdash; y juntas ya mejoran mucho la experiencia. <strong>C es la pieza pesada, y no depende de programar: depende de un trámite tuyo con Google.</strong> Vender A+B como "reentrenamos tu voz" sería mentir; por eso lo separamos.</p>
+
+<h2>4. La solución propuesta (en capas)</h2>
+
+<h3>Capa A &mdash; Adaptación de vocabulario (lo que más rinde por el esfuerzo)</h3>
+<p>Antes de mandar el audio a Google, Yuemail le adjunta una lista de "palabras que probablemente diga esta persona", con un refuerzo de prioridad. Esa lista se arma sola con:</p>
+<ul>
+<li><strong>Tus contactos:</strong> los nombres de la agenda (hoy el mayor punto de confusión al decir "enviar a Fulano").</li>
+<li><strong>Los comandos de Yuemail:</strong> "leer bandeja", "dictado", "responder", "enviar", etc., y sus variantes.</li>
+<li><strong>Tu vocabulario frecuente:</strong> palabras que aparecen seguido en lo que dictás.</li>
+</ul>
+<p>Esto no "entrena tu voz", pero hace que Google deje de confundir un nombre propio con una palabra común. Es barato, no necesita grabar nada, y se nota enseguida.</p>
+
+<h3>Capa B &mdash; Corrección local aprendida (el "entrenador" propiamente dicho)</h3>
+<p>Esta es la que la persona percibe como "me está aprendiendo". Funciona así:</p>
+<ul>
+<li>Cuando Yuemail entiende mal y la persona <strong>corrige</strong> (repite, dice "no, era…", o reescribe), Yuemail <strong>guarda ese par</strong>: "lo que se oyó" &rarr; "lo que en realidad era".</li>
+<li>La próxima vez que oiga algo muy parecido a "lo que se oyó", lo <strong>corrige solo</strong> antes de actuar.</li>
+<li>Todo esto vive <strong>dentro de Yuemail, en esta máquina</strong>. No se manda a ningún lado.</li>
+</ul>
+<p>Es un diccionario personal de confusiones que crece con el uso. Cuanto más usa la persona la app, mejor la entiende &mdash; que es exactamente el lema: <em>el sistema aprende de vos, no vos del sistema</em>.</p>
+
+<h3>Capa C &mdash; Reentrenamiento acústico (futuro, depende de Google)</h3>
+<p>Para discapacidades del habla severas, A+B ayudan pero no alcanzan: ahí hace falta que el modelo de oído se reentrene con la voz de la persona. Eso es <strong>Project Euphonia / Speech Accessibility</strong> de Google. Yuemail puede <strong>preparar el terreno</strong> (grabar las frases de muestra que el programa pide, organizarlas), pero la inscripción y la aprobación son un trámite tuyo. Queda como fase posterior, claramente separada.</p>
+
+<h2>5. Cómo se usaría (experiencia, todo por voz)</h2>
+<p>El entrenador tiene que ser usable por alguien que no ve y que justamente tiene dificultad para hablar claro. Entonces:</p>
+<ul>
+<li><strong>No hay una "sesión de entrenamiento" obligatoria.</strong> La Capa B aprende sola, del uso normal, de las correcciones que la persona ya hace igual. Cero fricción.</li>
+<li><strong>Opcional: un modo guiado de calibración.</strong> Para quien quiera acelerarlo, un asistente por voz que le pide leer unas frases conocidas ("decí: enviar a María") y con eso siembra de entrada el diccionario de correcciones y las muestras para la Capa C. Siempre con confirmación hablada y opción de cancelar, igual que el alta de contactos.</li>
+<li><strong>Todo se anuncia en voz.</strong> "Aprendí esta corrección", "listo, ya te entiendo mejor cuando decís…". Nada que dependa de mirar la pantalla.</li>
+<li><strong>Un interruptor en Configuración</strong> para activar/desactivar el aprendizaje y para borrar lo aprendido (por privacidad o si cambia de usuario).</li>
+</ul>
+
+<h2>6. Requerimientos funcionales</h2>
+<table border="1" cellpadding="6" cellspacing="0">
+<thead><tr><th>#</th><th>Requerimiento</th><th>Capa</th><th>Prioridad</th></tr></thead>
+<tbody>
+<tr><td>RF-1</td><td>Adjuntar a cada pedido de reconocimiento la lista de contactos como vocabulario reforzado.</td><td>A</td><td>Alta</td></tr>
+<tr><td>RF-2</td><td>Adjuntar los comandos de Yuemail y sus variantes como vocabulario reforzado.</td><td>A</td><td>Alta</td></tr>
+<tr><td>RF-3</td><td>Registrar cada corrección del usuario como par "oído &rarr; correcto" en un diccionario personal local.</td><td>B</td><td>Alta</td></tr>
+<tr><td>RF-4</td><td>Aplicar automáticamente las correcciones aprendidas a lo que se oye, antes de ejecutar el comando.</td><td>B</td><td>Alta</td></tr>
+<tr><td>RF-5</td><td>Anunciar por voz cuándo se aprende una corrección y cuándo se aplica.</td><td>B</td><td>Media</td></tr>
+<tr><td>RF-6</td><td>Modo guiado opcional de calibración por voz (leer frases de muestra).</td><td>B/C</td><td>Media</td></tr>
+<tr><td>RF-7</td><td>Interruptor en Configuración para activar/desactivar el aprendizaje y borrar lo aprendido.</td><td>B</td><td>Alta</td></tr>
+<tr><td>RF-8</td><td>Grabar y organizar las frases de muestra que pide Project Euphonia, para cuando el trámite esté aprobado.</td><td>C</td><td>Baja (futuro)</td></tr>
+</tbody>
+</table>
+
+<h2>7. Requerimientos no funcionales</h2>
+<ul>
+<li><strong>Accesibilidad total:</strong> 100% operable por voz, incluido el modo de calibración; cada paso se anuncia en voz, con confirmación antes de guardar.</li>
+<li><strong>Privacidad:</strong> el diccionario de correcciones y las grabaciones de muestra viven cifrados en esta máquina (mismo cofre que las credenciales de correo), fuera del repositorio y fuera de la nube. Borrables a pedido.</li>
+<li><strong>Sin bloqueo:</strong> el aprendizaje nunca traba ni demora el envío o la lectura; trabaja en segundo plano.</li>
+<li><strong>Degradación elegante:</strong> si la adaptación de vocabulario falla, el reconocimiento sigue funcionando como hoy (nunca peor que el estado actual).</li>
+<li><strong>Honestidad de la métrica:</strong> medimos aciertos con voces reales atípicas, no con voz sintética limpia; reportamos el número real, no el optimista.</li>
+</ul>
+
+<h2>8. Datos, privacidad y seguridad</h2>
+<ul>
+<li><strong>Qué se guarda:</strong> pares de corrección (texto oído &rarr; texto correcto) y, sólo si la persona usa la calibración o la Capa C, grabaciones de muestra.</li>
+<li><strong>Dónde:</strong> en el cofre local cifrado, igual que la clave de correo. Nunca en Git, nunca expuesto.</li>
+<li><strong>Quién lo ve:</strong> nadie fuera de esta instalación. La adaptación de vocabulario (Capa A) sí viaja a Google junto con el audio, como ya viaja hoy el audio para transcribir &mdash; no es información nueva expuesta.</li>
+<li><strong>Derecho al olvido:</strong> un comando/botón borra todo lo aprendido.</li>
+</ul>
+
+<h2>9. Dependencias y bloqueos</h2>
+<table border="1" cellpadding="6" cellspacing="0">
+<thead><tr><th>Bloqueo</th><th>Quién lo destraba</th><th>Afecta a</th></tr></thead>
+<tbody>
+<tr><td>Decisión de alcance: confirmar que construimos A+B ahora (no esperamos a C).</td><td>Pablo</td><td>Todo el arranque</td></tr>
+<tr><td>Inscripción a Project Euphonia / Speech Accessibility de Google (programa gated).</td><td>Pablo (trámite con Google)</td><td>Sólo la Capa C</td></tr>
+<tr><td>Disponer de al menos una voz atípica real para medir (la métrica honesta).</td><td>Pablo / tester</td><td>Validación</td></tr>
+</tbody>
+</table>
+<p>La clave de voz de Google <strong>ya funciona</strong> server-side (verificado), así que A y B no están bloqueadas por credenciales. El único bloqueo abierto de PND-011 es <strong>tu decisión</strong> de arrancar ("por ahora no entrenemos") y, aparte, el trámite de Euphonia para C.</p>
+
+<h2>10. Criterios de aceptación</h2>
+<ul>
+<li>Con la agenda cargada, decir el nombre de un contacto que hoy se confunde se enruta al contacto correcto en una proporción claramente mayor que antes (medido sobre una voz real, no sintética).</li>
+<li>Tras corregir N veces la misma confusión, Yuemail la corrige solo sin intervención.</li>
+<li>La persona puede activar, desactivar y borrar lo aprendido enteramente por voz.</li>
+<li>El reconocimiento nunca queda peor que el actual cuando la adaptación está desactivada o falla.</li>
+<li>Ninguna grabación ni corrección termina en Git ni sale de la máquina sin consentimiento.</li>
+</ul>
+
+<h2>11. Plan de fases sugerido</h2>
+<ol>
+<li><strong>Fase 1 &mdash; Adaptación de vocabulario (Capa A).</strong> Rápida, alto impacto, sin grabar nada. Resuelve la confusión de nombres de contactos.</li>
+<li><strong>Fase 2 &mdash; Corrección local aprendida (Capa B).</strong> El "entrenador" que aprende del uso. Más el interruptor y el borrado en Configuración.</li>
+<li><strong>Fase 3 &mdash; Calibración guiada opcional (Capa B+).</strong> Asistente por voz para sembrar correcciones de entrada.</li>
+<li><strong>Fase 4 &mdash; Project Euphonia (Capa C).</strong> Sólo cuando el trámite con Google esté aprobado. Yuemail prepara las muestras.</li>
+</ol>
+<p>Cada fase es entregable y útil por sí sola; no hay que esperar a la última para que la persona note la mejora.</p>
+
+<h2>12. Riesgos y cómo se mitigan</h2>
+<table border="1" cellpadding="6" cellspacing="0">
+<thead><tr><th>Riesgo</th><th>Mitigación</th></tr></thead>
+<tbody>
+<tr><td>Sobre-prometer: la gente espera "C" (reentrenar la voz) y recibe "A+B".</td><td>Este documento separa las capas; la comunicación al usuario aclara qué hace cada una.</td></tr>
+<tr><td>Una corrección aprendida "se pega" mal y arruina casos buenos.</td><td>Aplicar sólo con alta similitud; permitir deshacer y borrar; nunca pisar lo que la IA ya acierta.</td></tr>
+<tr><td>Medir con voz sintética y creer que anda mejor de lo real.</td><td>Validar con una voz atípica real antes de declarar éxito.</td></tr>
+<tr><td>Datos sensibles de voz expuestos.</td><td>Cifrado local, fuera de Git, borrable; nada nuevo viaja a la nube salvo el vocabulario que ya acompaña al audio.</td></tr>
+</tbody>
+</table>
+
+<h2>13. Decisiones que necesito de vos</h2>
+<ol>
+<li><strong>¿Arrancamos con A+B ahora?</strong> (Hoy PND-011 está pausado por tu "por ahora no entrenemos".)</li>
+<li><strong>¿Vas a iniciar el trámite de Project Euphonia con Google</strong>, o dejamos la Capa C fuera de alcance por ahora?</li>
+<li><strong>¿Tenés una voz atípica real disponible</strong> (Tamara u otra persona) para medir honestamente?</li>
+</ol>
+<p>Con esas tres respuestas puedo convertir este análisis en un plan de construcción con pruebas, fase por fase.</p>
+</body></html>

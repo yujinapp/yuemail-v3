@@ -40,9 +40,12 @@ export interface TraceEntry {
   interim?:      boolean;           // true = live partial, false = finalised
   browserText?:  string;            // what the browser SpeechRecognition heard
   googleText?:   string;            // what Google Speech-to-Text returned
-  usedSource?:   'google' | 'browser' | 'none';
+  usedSource?:   'google' | 'browser' | 'none' | 'local';
   serverReady?:  boolean;           // was camino-1 (Google) live for this utterance
   transcribeOk?: boolean;           // did the Google call succeed
+  /* local lane (kikoe trainer, v0.11.0) */
+  localCommand?:   string;          // the canonical phrase the local lane matched
+  localConfident?: boolean;         // the local hit cleared the confidence bar
   /* resolve / act */
   lane?:         ResolveLane;
   commandType?:  string;

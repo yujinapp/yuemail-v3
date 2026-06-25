@@ -1,6 +1,6 @@
 {
   "name": "@yujinapp/yuemail",
-  "version": "0.10.0",
+  "version": "0.11.0",
   "description": "Voice-first single-user email client. Dictate, sign, send. AI voice assistant (Brain) plus Google STT/TTS hearing+speaking, BYOK encrypted vault; degrades to the browser + fixed-phrase commands offline.",
   "license": "MIT",
   "type": "module",
@@ -31,6 +31,7 @@
     "prepublishOnly": "npm run typecheck && npm run test && npm run build"
   },
   "dependencies": {
+    "@yujinapp/nac3-kikoe": "^0.2.0",
     "docx": "^8.5.0",
     "express": "^4.19.2",
     "imapflow": "^1.0.162",

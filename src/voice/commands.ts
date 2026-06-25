@@ -60,6 +60,7 @@ export type VoiceCommandType =
   | 'ABRIR_CONTACTOS'
   | 'AGREGAR_CONTACTO'
   | 'ABRIR_CONFIGURACION'
+  | 'ABRIR_ENTRENADOR'
   | 'DETENER_VOZ'
   | 'ENCENDER_MICROFONO'
   | 'APAGAR_MICROFONO'
@@ -86,7 +87,7 @@ export const ALL_VOICE_COMMAND_TYPES = [
   'NUEVO_DOCUMENTO', 'ABRIR_DOCUMENTO', 'GUARDAR_FIRMA', 'FIRMAR',
   'INICIAR_DICTADO', 'FIN_DICTADO', 'ENVIAR', 'RESPONDER', 'REENVIAR', 'LEER_BANDEJA',
   'PONER_TITULO', 'ABRIR_CONTACTOS', 'AGREGAR_CONTACTO',
-  'ABRIR_CONFIGURACION', 'DETENER_VOZ', 'ENCENDER_MICROFONO', 'APAGAR_MICROFONO',
+  'ABRIR_CONFIGURACION', 'ABRIR_ENTRENADOR', 'DETENER_VOZ', 'ENCENDER_MICROFONO', 'APAGAR_MICROFONO',
   'CONFIRMAR_ENVIO', 'CANCELAR', 'GUARDAR_FIRMA_PAD', 'BORRAR_FIRMA',
   'GENERAR_FIRMA', 'DETECTAR_SERVIDORES', 'PROBAR_CONEXION', 'GUARDAR_CONFIG',
   'ENFOCAR_CAMPO', 'BORRAR_CAMPO', 'FIN_CAMPO', 'UNKNOWN',
@@ -362,6 +363,18 @@ const MATCHERS: Matcher[] = [
       /\bmis\s+correos\b/,
       /\bnuevos\s+correos\b/,
       /\bque\s+correos\s+tengo\b/,
+    ],
+  },
+  /* ABRIR_ENTRENADOR: open the voice trainer (kikoe add-on). MUST come before
+   * ABRIR_CONFIGURACION so a phrase mentioning "entrenar" never falls through;
+   * none of these words overlap the other global verbs. */
+  {
+    type: 'ABRIR_ENTRENADOR',
+    patterns: [
+      /\bentrenador\b/,
+      /\bentrenar\s+(?:la\s+|mi\s+)?voz\b/,
+      /\bentrenar\s+(?:los\s+)?comandos?\b/,
+      /\bentrenamiento\s+de\s+voz\b/,
     ],
   },
   {
@@ -789,6 +802,7 @@ export const COMMAND_CATALOG: ReadonlyArray<CommandCatalogEntry> = [
   { type: 'ABRIR_CONTACTOS',    sample: 'abrir contactos',        action: 'Abrir la agenda de contactos.' },
   { type: 'AGREGAR_CONTACTO',   sample: 'agregar contacto',       action: 'Agendar un contacto nuevo guiado por voz: primero el nombre, despues el correo.' },
   { type: 'ABRIR_CONFIGURACION', sample: 'abrir configuracion',   action: 'Abrir la configuracion de la cuenta de correo.' },
+  { type: 'ABRIR_ENTRENADOR',   sample: 'abrir entrenador',       action: 'Abrir el entrenador de voz: entrena comandos con tu propia voz y ve sus metricas.' },
   { type: 'DETENER_VOZ',        sample: 'detener voz',            action: 'Apagar el microfono.' },
   /* Contextual: send dialog open. */
   { type: 'CONFIRMAR_ENVIO', sample: 'confirmar envio', action: 'Confirmar y enviar el correo.',      context: 'send_dialog',  nac_action: 'send_email' },

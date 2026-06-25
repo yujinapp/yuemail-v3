@@ -28,6 +28,12 @@ describe('parseCommand -- the 9 Spanish phrases (acceptance #5)', () => {
     expect(parseCommand('guardar firma').type).toBe('GUARDAR_FIRMA');
   });
 
+  it('ABRIR_ENTRENADOR: several natural phrasings (PND-032)', () => {
+    for (const phrase of ['abrir entrenador', 'entrenador', 'entrenar mi voz', 'entrenar los comandos', 'entrenamiento de voz']) {
+      expect(parseCommand(phrase).type, phrase).toBe('ABRIR_ENTRENADOR');
+    }
+  });
+
   it('FIRMAR (bare)', () => {
     expect(parseCommand('firmar').type).toBe('FIRMAR');
   });
@@ -427,8 +433,8 @@ describe('spokenCheckboxValue', () => {
 });
 
 describe('COMMAND_CATALOG', () => {
-  it('lists exactly 15 global user-facing phrases (14 + agregar contacto, PND-028)', () => {
-    expect(COMMAND_CATALOG.filter((c) => !c.context).length).toBe(15);
+  it('lists exactly 16 global user-facing phrases (15 + abrir entrenador, PND-032)', () => {
+    expect(COMMAND_CATALOG.filter((c) => !c.context).length).toBe(16);
   });
 
   it('covers the three modal contexts with contextual entries', () => {

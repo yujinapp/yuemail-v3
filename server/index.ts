@@ -30,6 +30,7 @@ import { registerContactsRoutes }  from './routes/contacts.js';
 import { registerSettingsRoutes }  from './routes/settings.js';
 import { registerBrainRoutes }     from './routes/brain.js';
 import { registerVoiceRoutes }     from './routes/voice.js';
+import { registerKikoeRoutes }     from './routes/kikoe.js';
 import { runStartupImport }        from './contactsImport.js';
 
 export const HOST = '127.0.0.1';
@@ -78,6 +79,7 @@ export function buildApp(opts: BuildAppOpts = {}): Express {
   registerSettingsRoutes(app);
   registerBrainRoutes(app);
   registerVoiceRoutes(app);
+  registerKikoeRoutes(app);
 
   /* Static SPA -- present in production builds, absent in dev. */
   const staticRoot = opts.staticRoot ?? path.resolve(__dirname, '..', 'dist');

@@ -70,6 +70,36 @@ export interface UseVoiceOpts {
    * (the pre-Brain behaviour). It never throws.
    */
   resolveCommand?: (raw: string, context: VoiceContext, opts: { armed: boolean }) => Promise<VoiceCommand>;
+  /**
+   * Local lane (v0.11.0 -- the kikoe voice trainer add-on). When the person
+   * has enrolled their own command samples, each captured utterance is first
+   * matched LOCALLY against those samples. A confident local hit becomes the
+   * transcript directly (offline, instant) and can skip the cloud entirely;
+   * otherwise the cloud path runs as usual. Entirely OPTIONAL and gated: when
+   * absent or enabled() is false, hearing behaves exactly as before -- the
+   * person who never trains is unaffected.
+   */
+  localLane?: LocalLane;
+}
+
+/** Local recognition lane contract (the host wires kikoe behind it). */
+export interface LocalLaneResult {
+  command:    string | null;
+  accepted:   boolean;
+  preferLocal: boolean;
+  runCloud:   boolean;
+  confident:  boolean;
+}
+export interface LocalLane {
+  /** True only when there is something enrolled to match against. */
+  enabled:   () => boolean;
+  /** Recognise one captured utterance locally; null = defer to the cloud. */
+  recognize: (blob: Blob) => Promise<LocalLaneResult | null>;
+  /** Record a local-vs-cloud measurement (the effectiveness metric). */
+  observe?:  (info: { localCommand: string | null; cloudText: string }) => void;
+  /** A confident local hit was actually taken as the transcript (the host uses
+   *  this for the confidence metric: accepted unless the person then cancels). */
+  onUsed?:   (command: string) => void;
 }
 
 export interface VoiceHandle {
@@ -109,22 +139,50 @@ export function useVoice(opts: UseVoiceOpts = {}): VoiceHandle {
     /* Diagnostic tracer (PND-019): record what each ear heard so a real test
      * run reveals the exact transcript Google returned vs. the browser's. */
     let googleText: string | undefined;
-    let usedSource: 'google' | 'browser' | 'none' = browserText ? 'browser' : 'none';
+    let usedSource: 'google' | 'browser' | 'none' | 'local' = browserText ? 'browser' : 'none';
     let transcribeOk = false;
-    /* Camino 1: replace the browser transcript with Google's, when we have
-     * the audio and the server path is live. Any failure keeps browserText. */
+
+    /* Capture the utterance audio ONCE; both the local lane (kikoe) and the
+     * Google lane consume the same recording window. */
+    let utt: ReturnType<UtteranceRecorder['takeUtterance']> | undefined;
+    const rec = recorderRef.current;
+    if (rec && rec.running) { try { utt = rec.takeUtterance(); } catch { utt = undefined; } }
+
+    /* Local lane (kikoe v0.11.0): match the person's own enrolled samples
+     * first. A confident hit becomes the transcript directly. When nothing is
+     * enrolled, lane.enabled() is false and this whole block is skipped, so
+     * hearing is byte-for-byte the pre-trainer behaviour. */
+    let local: LocalLaneResult | null = null;
+    const lane = current.localLane;
+    if (lane?.enabled() && utt) {
+      try { local = await lane.recognize(utt.blob); } catch { local = null; }
+    }
+    const useLocalNow = !!(local && local.preferLocal && local.accepted && local.command);
+    const runCloud = !useLocalNow || !!(local && local.runCloud);
+
+    /* Cloud lane (Google): runs unless the local lane confidently took over,
+     * or the router asked to also measure (shadow). Any failure keeps the
+     * browser/local text -- the person is never left without a transcript. */
     try {
-      const rec = recorderRef.current;
-      if (serverReadyRef.current && rec && rec.running) {
-        const utt = rec.takeUtterance();
-        if (utt) {
-          const r = await serverTranscribe(utt.blob, utt.format, LANG);
-          transcribeOk = r.ok;
-          if (r.ok) googleText = r.text;
-          if (r.ok && r.text.trim().length > 0) { text = r.text; usedSource = 'google'; }
-        }
+      if (serverReadyRef.current && utt && runCloud) {
+        const r = await serverTranscribe(utt.blob, utt.format, LANG);
+        transcribeOk = r.ok;
+        if (r.ok) googleText = r.text;
+        if (r.ok && r.text.trim().length > 0 && !useLocalNow) { text = r.text; usedSource = 'google'; }
       }
     } catch { /* keep browser text */ }
+
+    if (useLocalNow && local && local.command) {
+      text = local.command;
+      usedSource = 'local';
+      try { lane?.onUsed?.(local.command); } catch { /* best-effort */ }
+    }
+
+    /* Effectiveness measurement: when a local candidate AND a cloud transcript
+     * both exist, let the lane record whether they agreed. */
+    if (local && local.command && googleText !== undefined) {
+      try { lane?.observe?.({ localCommand: local.command, cloudText: googleText }); } catch { /* best-effort */ }
+    }
 
     const traceContext = current.getContext?.() ?? 'global';
     diagLog('hear', {
@@ -132,6 +190,8 @@ export function useVoice(opts: UseVoiceOpts = {}): VoiceHandle {
       browserText,
       googleText,
       usedSource,
+      localCommand: local?.command ?? undefined,
+      localConfident: local?.confident,
       serverReady: serverReadyRef.current,
       transcribeOk,
       context: traceContext,

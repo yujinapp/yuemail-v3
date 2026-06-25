@@ -8,6 +8,7 @@
  */
 
 import type { Contact } from './contactMatch.js';
+import type { CommandMetric, CommandTemplate, Fingerprint, RouterMode } from '@yujinapp/nac3-kikoe';
 
 const BASE = '';
 
@@ -179,6 +180,53 @@ export const api = {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ utterance, context }),
+    });
+  },
+
+  /* --- Kikoe (voice trainer, add-on @yujinapp/nac3-kikoe) --- */
+  kikoeState() {
+    return send<{ ok: true; mode: RouterMode; metrics: CommandMetric[]; templates: CommandTemplate[] }>('/api/kikoe/state');
+  },
+  kikoeSetMode(mode: RouterMode) {
+    return send<{ ok: true; mode: RouterMode }>('/api/kikoe/config', {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ mode }),
+    });
+  },
+  kikoeEnroll(command: string, fingerprints: Fingerprint[], replace = false) {
+    return send<{ ok: true; samples: number }>('/api/kikoe/enroll', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ command, fingerprints, replace }),
+    });
+  },
+  kikoeTrain(command?: string) {
+    return send<{ ok: true; trained: string[] }>('/api/kikoe/train', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(command ? { command } : {}),
+    });
+  },
+  kikoeForget(command: string) {
+    return send<{ ok: true }>('/api/kikoe/forget', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ command }),
+    });
+  },
+  kikoeObserveOutcome(command: string, accepted: boolean) {
+    return send<{ ok: true }>('/api/kikoe/observe-outcome', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ command, accepted }),
+    });
+  },
+  kikoeObserveCloud(command: string, agreed: boolean) {
+    return send<{ ok: true }>('/api/kikoe/observe-cloud', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ command, agreed }),
     });
   },
 };

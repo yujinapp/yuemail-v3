@@ -487,3 +487,92 @@ html, body {
   background: var(--accent-jade);
   border-left-color: var(--gold-line);
 }
+
+/* --- Voice trainer (kikoe add-on) --- */
+
+.yuemail-trainer-card {
+  min-width: 640px;
+  max-width: 860px;
+}
+
+.yuemail-trainer-perilla {
+  margin-bottom: var(--space-4);
+}
+
+.yuemail-trainer-perilla input[type="radio"] {
+  accent-color: var(--accent-jade);
+}
+
+/* Live recording banner -- mirrors the dictation semaphore (red + pulse) so
+   the "I am listening" state is unmistakable, with a spoken prompt alongside. */
+.yuemail-trainer-capture {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  background: var(--accent-rose);
+  color: var(--color-paper-cool);
+  border: 1px solid var(--gold-line);
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-4);
+  margin-bottom: var(--space-3);
+  font-size: var(--font-size-sm);
+}
+
+.yuemail-trainer-capture button {
+  margin-left: auto;
+}
+
+.yuemail-trainer-rec-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #e54848;
+  box-shadow: 0 0 0 0 rgba(229, 72, 72, 0.7);
+  animation: yuemail-dictation-pulse 1.4s ease-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .yuemail-trainer-rec-dot { animation: none; }
+}
+
+.yuemail-trainer-table {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.yuemail-trainer-row {
+  display: grid;
+  grid-template-columns: 2.4fr 1fr 1.1fr 1.1fr 2.2fr;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--color-border-subtle);
+  font-size: var(--font-size-sm);
+}
+
+.yuemail-trainer-row:last-child {
+  border-bottom: none;
+}
+
+.yuemail-trainer-head {
+  background: var(--gold-faint);
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-xs);
+  letter-spacing: var(--tracking-button);
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.yuemail-trainer-actions {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.yuemail-trainer-actions button {
+  font-size: var(--font-size-xs);
+  padding: var(--space-1) var(--space-3);
+}

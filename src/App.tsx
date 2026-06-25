@@ -15,8 +15,10 @@ import { SendDialog } from './components/SendDialog.js';
 import { SettingsDialog } from './components/SettingsDialog.js';
 import { BrainSettings } from './components/BrainSettings.js';
 import { VoiceSettings } from './components/VoiceSettings.js';
+import { VoiceTrainer } from './components/VoiceTrainer.js';
 import { ContactsDialog } from './components/ContactsDialog.js';
-import { useVoice } from './voice/useVoice.js';
+import { useVoice, type LocalLane } from './voice/useVoice.js';
+import { KikoeClient, cloudPhraseOf } from './voice/kikoe.js';
 import {
   FIELD_SPECS_BY_CONTEXT,
   parseCommand,
@@ -55,6 +57,7 @@ export function App(): React.ReactElement {
   const [showSettings, setShowSettings]       = React.useState(false);
   const [showBrain, setShowBrain]             = React.useState(false);
   const [showVoice, setShowVoice]             = React.useState(false);
+  const [showTrainer, setShowTrainer]         = React.useState(false);
   const [showContacts, setShowContacts]       = React.useState(false);
   const [sendPrefillTo, setSendPrefillTo]     = React.useState('');
   const [sendPrefillSubject, setSendPrefillSubject] = React.useState('');
@@ -89,6 +92,16 @@ export function App(): React.ReactElement {
   const contactWizardRef = React.useRef<ContactWizardState | null>(null);
   contactWizardRef.current = contactWizard;
   const wizardThenSendRef = React.useRef<boolean>(false);
+
+  /* Voice trainer (kikoe add-on). One client per app; it loads the device's
+   * enrolled templates + metrics + mode. When nothing is enrolled the local
+   * lane is disabled and voice behaves exactly as before. `pendingLocalRef`
+   * holds the last locally-recognised command awaiting a confidence verdict:
+   * accepted when a later local hit supersedes it, rejected if the person
+   * cancels right after. */
+  const kikoeRef = React.useRef<KikoeClient>(new KikoeClient());
+  const pendingLocalRef = React.useRef<string | null>(null);
+  React.useEffect(() => { void kikoeRef.current.refresh(); }, []);
 
   React.useEffect(() => { ensureRegions(); }, []);
   React.useEffect(() => {
@@ -445,6 +458,18 @@ export function App(): React.ReactElement {
   }
 
   function onVoiceCommand(cmd: VoiceCommand) {
+    /* Confidence verdict (kikoe): if a local recognition is pending judgment
+     * and the person's NEXT command is a cancel/stop, mark it wrong; any other
+     * command lets the pending hit stand (recorded as accepted when superseded
+     * by the next local hit -- see localLane.onUsed). Source of truth here is
+     * the PERSON, exactly as the metric design requires. */
+    if (pendingLocalRef.current) {
+      if (cmd.type === 'CANCELAR' || cmd.type === 'DETENER_VOZ' || cmd.type === 'APAGAR_MICROFONO') {
+        void kikoeRef.current.observeOutcome(pendingLocalRef.current, false);
+        pendingLocalRef.current = null;
+      }
+    }
+
     /* While the add-contact wizard is running, raw speech IS the captured
      * field (name / email / confirmation), NOT a command. The mic-safety
      * trio still passes through so the user can always silence the mic; the
@@ -606,6 +631,12 @@ export function App(): React.ReactElement {
         startContactCapture({ name: cmd.payload }); break;
       case 'ABRIR_CONFIGURACION':
         setShowSettings(true); break;
+      case 'ABRIR_ENTRENADOR':
+        /* Free the mic for the trainer's own guided recording. */
+        voice.stop();
+        setShowTrainer(true);
+        pushToast('info', 'Entrenador de voz abierto.');
+        break;
       case 'ENCENDER_MICROFONO':
         voice.start(); pushToast('info', 'Microfono encendido.'); break;
       case 'APAGAR_MICROFONO':
@@ -725,11 +756,34 @@ export function App(): React.ReactElement {
      * Kept wired for any future live-interim display. */
   }
 
+  /* Local lane (kikoe trainer): a confident match against the person's own
+   * enrolled samples becomes the transcript directly, offline and instant.
+   * Disabled until something is enrolled, so a person who never trains is
+   * unaffected. `observe` feeds the effectiveness metric (did local agree with
+   * the cloud second opinion?); `onUsed` feeds the confidence metric. */
+  const localLane: LocalLane = React.useMemo(() => ({
+    enabled: () => kikoeRef.current.enabled(),
+    recognize: (blob: Blob) => kikoeRef.current.recognize(blob),
+    observe: ({ localCommand, cloudText }) => {
+      if (!localCommand) return;
+      const cloudPhrase = cloudPhraseOf(cloudText);
+      void kikoeRef.current.observeCloud(localCommand, cloudPhrase === localCommand);
+    },
+    onUsed: (command: string) => {
+      /* A new local hit supersedes the previous one: the prior was let to
+       * stand (accepted). Then this one becomes the pending verdict. */
+      const prev = pendingLocalRef.current;
+      if (prev) void kikoeRef.current.observeOutcome(prev, true);
+      pendingLocalRef.current = command;
+    },
+  }), []);
+
   const voice = useVoice({
     onCommand:    onVoiceCommand,
     onTranscript: onVoiceTranscript,
     getContext:   () => voiceContextRef.current,
     getArmed:     () => armedFieldRef.current !== undefined,
+    localLane,
     /* Camino 1: the Brain classifies each utterance first; resolveCommand
      * falls back to the fixed-phrase matcher on any miss. But the dictation
      * toggles and all content spoken while dictating are routed by the fast
@@ -827,6 +881,18 @@ export function App(): React.ReactElement {
             data-nac-action="open_voice"
           >
             Voz
+          </button>
+          <button
+            type="button"
+            className="yuemail-brain-btn"
+            aria-label="Entrenador de voz"
+            title="Entrenador de voz (reconocimiento local para voces atipicas)"
+            onClick={() => { voice.stop(); setShowTrainer(true); }}
+            data-nac-id="yuemail.voice.btn-trainer"
+            data-nac-role="button"
+            data-nac-action="open_voice_trainer"
+          >
+            Entrenador
           </button>
           <button
             type="button"
@@ -959,6 +1025,15 @@ export function App(): React.ReactElement {
       {showVoice && (
         <VoiceSettings
           onClose={() => setShowVoice(false)}
+          onToast={pushToast}
+        />
+      )}
+
+      {showTrainer && (
+        <VoiceTrainer
+          kikoe={kikoeRef.current}
+          speak={voice.speak}
+          onClose={() => setShowTrainer(false)}
           onToast={pushToast}
         />
       )}

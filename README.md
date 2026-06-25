@@ -54,6 +54,7 @@ filler-word-tolerant):
 | `enviar a <email>`                     | Open the send dialog               |
 | `leer bandeja`                         | List the latest envelopes          |
 | `abrir configuracion` / `ajustes`      | Open the account settings          |
+| `abrir entrenador` / `entrenar voz`    | Open the voice trainer             |
 | `detener voz`                          | Mute the microphone                |
 
 Plus the always-on mic toggle: `encender microfono` / `apagar microfono`.
@@ -99,6 +100,33 @@ addresses ("ana arroba ejemplo punto com y pedro arroba test punto
 org", or spoken `coma`). Passwords are never echoed back, only their
 captured length.
 
+## Voice trainer (atypical speech)
+
+For speech the standard recognizer struggles with, Yuemail bundles the
+decoupled add-on [`@yujinapp/nac3-kikoe`](https://github.com/pkuschnirof/nac3-kikoe):
+a **local, speaker-dependent** command recognizer. Open it with `abrir
+entrenador`. There you record a few samples of each command in your own
+voice; the app turns each recording into a numeric fingerprint and stores
+**only those numbers -- never the audio**. From then on it recognizes a
+command by comparing your live voice against your own samples (offline,
+instant), so it does not need anyone else to understand you.
+
+Each command shows two figures that mature with use:
+
+- **confidence** -- how often you let the local recognition stand (vs.
+  correcting/cancelling it). Source of truth: you.
+- **effectiveness** -- how often the local result agreed with the cloud
+  (Google) second opinion. A low number for severe atypical speech means
+  the cloud is the unreliable one, which *validates* the local lane.
+
+A three-way "perilla" picks when the costly cloud runs: **Solo cuando
+dudo**, **Modo aprendizaje** (the default -- shadow-measures against the
+cloud for a while, then tapers), or **Siempre comparar**. The setting is
+per device. Train one command or all of them; `Probar` tests a command and
+`Borrar` forgets it. If you never train, voice behaves exactly as without
+the trainer -- the cloud path is the shared floor; the trainer is an
+optional stage in front of it, only for who trains.
+
 ## Account setup (the gear)
 
 Click the gear in the topbar (or say `abrir configuracion`), type
@@ -134,9 +162,10 @@ them later with `yuemail vault set`.
 
 ```
 bin/yuemail.mjs      # CLI entry
-server/              # Express + IMAP/SMTP + .docx
+server/              # Express + IMAP/SMTP + .docx + /api/kikoe trainer store
 src/                 # React frontend (Vite)
-src/voice/           # Spanish command parser + Web Speech hook
+src/voice/           # Spanish command parser + Web Speech hook + kikoe client
+src/components/VoiceTrainer.tsx  # Voice trainer UI (add-on @yujinapp/nac3-kikoe)
 src/styles/tokens.css  # Yujin Design System tokens
 tests/               # Vitest suites
 docs/SPEC.md         # The specification this build implements
