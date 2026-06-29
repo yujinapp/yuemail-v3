@@ -87,9 +87,14 @@ Cliente:
   modelo configurado (gated `BRAIN_LIVE=1`). Es el instrumento para
   empujar la eficiencia hacia el 100% una vez que hay clave.
 
-Estado: 239/239 tests verdes + typecheck limpio en el momento de la
-adenda. La eficiencia de interpretacion en vivo se mide con el bench y
-depende de la clave del owner (ver seccion 5).
+Estado: 239/239 tests verdes + typecheck limpio **en el momento de la
+adenda (v0.5.0)**. La eficiencia de interpretacion en vivo se mide con el
+bench y depende de la clave del owner (ver seccion 5).
+
+> **Nota 2026-06-28 (auditoria de docs):** "239/239" es una foto de la
+> v0.5.0. La version vigente es **0.11.0** y la suite pasa **407 tests**
+> (24 suites; 410 con los 3 benchmarks en vivo apagados por defecto).
+> Fuente unica de version: `package.json`.
 
 ## 5. Pendiente honesto
 

@@ -7,10 +7,18 @@
 - **Owner org**: yujinapp
 - **Distribution**: public npm package `@yujinapp/yuemail` + binary `yuemail`
 - **License**: MIT
-- **Status**: greenfield, no prior implementation in this directory
+- **Status**: shipped. **Current version: 0.11.0** (single source of
+  truth: `package.json`). This SPEC is the living contract; the
+  per-version adendas below record how scope grew past the original
+  greenfield RFP.
 - **v0.5.0 adenda**: la decision "sin IA" fue revertida por el owner
   (2026-06-22). Yuemail incorpora un Asistente de voz (Brain) como
   camino 1 por defecto; ver docs/ADENDA_v0.5.0_BRAIN.md (PND-010).
+- **v0.6.0 adenda**: voz de Google (STT/TTS) como camino 1 por defecto;
+  ver docs/ADENDA_v0.6.0_VOICE.md (PND-011).
+- **Scope correction (2026-06-28 doc audit)**: F7 reply/forward/body
+  fetch and the contacts subsystem are SHIPPED (see F7, F15 below); the
+  "deferred to v0.2+" list no longer claims them.
 
 ## Primary user
 
@@ -132,11 +140,20 @@ tests/contact-wizard.test.ts.
 - Toast on success / failure. Voiced confirmation + ARIA
   assertive announce on error.
 
-### F7 -- Email inbox read-only
+### F7 -- Email inbox (list + body fetch + reply + forward)
 
 - `imapflow` lists last N envelopes (UID, from, subject, date).
-- No body fetch, no reply, no forward in v0.x.
 - Refresh on demand (button + voice `leer bandeja`).
+- **Body fetch (SHIPPED, PND-024):** `GET /api/inbox/fetch/:uid`
+  returns the full message (from, cc, bcc, subject, body_text, date).
+- **Reply (SHIPPED, RESPONDER):** `responder` replies to the last read
+  message; `responder a <nombre>` resolves a contact by name.
+- **Forward (SHIPPED, REENVIAR):** `reenviar` fetches the last read
+  message body and opens the send dialog to new recipients.
+
+*Scope note: the original RFP said "No body fetch, no reply, no forward
+in v0.x." That line is superseded -- all three are implemented in
+App.tsx + server/routes/inbox.ts and covered by tests.*
 
 ### F8 -- BYOK encrypted vault (single-user)
 
@@ -146,11 +163,21 @@ tests/contact-wizard.test.ts.
   `~/.yuemail/vault.salt`.
 - Default passphrase: `'yuemail/' + os.hostname() + '/' + username`.
 - Overridable via env `YUEMAIL_VAULT_PASS`.
-- Keys stored: `imap.host`, `imap.port`, `imap.user`, `imap.pass`,
-  `imap.secure`, `smtp.host`, `smtp.port`, `smtp.user`,
-  `smtp.pass`, `smtp.secure`, `identity.from`, `identity.name`.
+- Keys stored: **22 slots** total (the allowlist is `VAULT_KEYS` in
+  `server/vault.ts`):
+  - **Mail + identity (12):** `imap.host`, `imap.port`, `imap.user`,
+    `imap.pass`, `imap.secure`, `smtp.host`, `smtp.port`, `smtp.user`,
+    `smtp.pass`, `smtp.secure`, `identity.from`, `identity.name`.
+  - **Brain providers (9, v0.5.0):** `brain.google_ai`,
+    `brain.anthropic`, `brain.openai`, `brain.deepseek`, `brain.xai`,
+    `brain.mistral`, `brain.qwen`, `brain.zai`, `brain.ollama`.
+  - **Google voice (1, v0.6.0):** `speech.google`.
 - Vault values never returned by API -- only key names + per-
   category configured-booleans.
+- **Derived-passphrase caveat:** the default passphrase
+  (`hostname + username`) is predictable; real at-rest secrecy against a
+  local reader requires `YUEMAIL_VAULT_PASS`. The UI surfaces the source
+  (`env` vs `derived`).
 
 ### F9 -- NAC3 compliance
 
@@ -238,9 +265,12 @@ tests/contact-wizard.test.ts.
 - `LICENSE` (MIT).
 - `README.md` (install + voice command catalogue + privacy).
 
-## Out of scope (deferred to v0.2+)
+## Out of scope (still deferred)
 
-- Email reply / forward / body fetch.
+*(Updated 2026-06-28: email reply / forward / body fetch were SHIPPED
+and moved INTO scope -- see F7. The contacts subsystem also shipped --
+see F15. They are no longer deferred.)*
+
 - Multi-account.
 - OAuth (Gmail wants app passwords for now).
 - Mobile.
@@ -286,24 +316,45 @@ Every modal input is now dictatable, not just settings:
   of all three modals in both directions, and mutation-checked tests
   pin the no-accidental-send guard.
 
+## F15 -- Contacts / address book (shipped; PND-022 / PND-024 / PND-028)
+
+A local address book so a voice user can send and reply by NAME, never
+hitting a dead end when spelling an address out is hard.
+
+- `server/contacts.ts`: JSON store under `~/.yuemail/`; surface includes
+  `listContacts`, `addContact`, `upsertSender`, `upsertCC`,
+  `upsertRecipientsFromSend`, `updateContact`, `deleteContact`.
+- **Voice:** `abrir contactos` / `agenda` opens the book;
+  `enviar a <nombre>` and `responder a <nombre>` resolve by name;
+  `agregar contacto [nombre]` runs the guided add flow (name first, then
+  email, spoken read-back before saving -- see F2 adenda 2026-06-24).
+- **Auto-registration:** `leer bandeja` upserts senders + CC recipients
+  into the book (best-effort; never breaks the inbox read).
+- Regression-guarded by tests/contacts*.test.ts, contact-match,
+  contact-wizard, contacts-import.
+
 ## Acceptance criteria
 
-*(version + counts normalized by the 2026-06-11 adenda, PND-006)*
+*(version + counts normalized by the 2026-06-11 adenda PND-006; test
+counts refreshed by the 2026-06-28 doc audit against the live suite.)*
 
-A successful build of v0.4.0 must:
+The shipped build (current **v0.11.0**) must:
 
 1. Install from npm via `npm i -g @yujinapp/yuemail`.
 2. Launch with `yuemail`, bind 127.0.0.1:5180, open the browser.
-3. Allow `yuemail vault setup` to configure 12 fields without error.
+3. Allow `yuemail vault setup` to configure the 12 mail fields without
+   error.
 4. Reject `/api/email/send` with a meaningful error when SMTP
    creds are missing.
-5. Recognise all 10 global voice phrases (the 9 listed in F2 plus
-   `abrir configuracion`, F14) and the contextual vocabulary of the
-   three modals, including field dictation.
+5. Recognise all the global voice phrases (incl. `abrir configuracion`,
+   F14; reply/forward, F7; contacts, F15) and the contextual vocabulary
+   of the three modals, including field dictation.
 6. Render the 4 named buttons in F1 in the toolbar.
 7. Produce a `.docx` whose first two bytes are `PK` (ZIP magic)
    when downloaded.
 8. Encrypt the vault on disk -- the raw JSON file must not
    contain any plaintext value of any stored secret.
-9. Pass at least 160 vitest tests (v0.4.0 ships 179 across 11 suites).
+9. Pass the vitest suite: **407 tests passing** (3 live-API benchmarks
+   gated off by default; 410 total) across 24 active suites, verified
+   green via `npm test` on 2026-06-28.
 10. Pass `prepublishOnly` gate (typecheck + tests + build).

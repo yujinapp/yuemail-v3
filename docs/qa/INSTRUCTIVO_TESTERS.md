@@ -1,5 +1,10 @@
 # Yuemail v0.6.0 -- Instructivo para el equipo de pruebas manuales
 
+> **Nota 2026-06-28 (auditoria de docs):** instructivo del ciclo de QA
+> v0.6.0. La version vigente del producto es **0.11.0** (fuente unica:
+> `package.json`). Al instalar con `npm i -g @yujinapp/yuemail` vas a
+> recibir la ultima publicada.
+
 Gracias por ayudarnos a probar Yuemail. Este documento explica como
 conseguir el producto, prepararlo, ejecutar los casos de prueba y
 devolvernos los resultados. No hace falta saber programar.

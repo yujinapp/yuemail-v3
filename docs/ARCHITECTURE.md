@@ -7,7 +7,11 @@ feature relabelled D9 to undo the F10 collision). Approved by owner
 F14 (RFP adenda PND-006); dialog field dictation generalised (D11).
 Refreshed at v0.5.0: Asistente de voz (Brain) anadido como camino 1
 (server/brain/*, BrainSettings.tsx); ver docs/ADENDA_v0.5.0_BRAIN.md
-(PND-010). RFP: docs/SPEC.md.
+(PND-010). RFP: docs/SPEC.md. Refreshed at v0.6.0: voz de Google STT/TTS
+(server/voice/*, VoiceSettings.tsx); ver docs/ADENDA_v0.6.0_VOICE.md
+(PND-011). **Refreshed 2026-06-28 (doc audit): current version 0.11.0;
+inbox now does body fetch + reply + forward; contacts subsystem added;
+test counts re-verified against the live suite.**
 
 ## System overview
 
@@ -32,7 +36,12 @@ Refreshed at v0.5.0: Asistente de voz (Brain) anadido como camino 1
    - /api/email/autoconfig  IMAP/SMTP discovery from the address
                         (known table / Mozilla ISPDB / convention)
    - /api/email/verify  live IMAP+SMTP connection test
-   - /api/inbox         imapflow envelope list (read-only)
+   - /api/inbox/list    imapflow envelope list + auto-register contacts
+   - /api/inbox/fetch/:uid  full message (body, cc, bcc) for reply/forward
+   - /api/brain         9-provider AI router config (camino 1)
+   - /api/voice         Google STT/TTS router config + stt/tts (camino 1)
+   - /api/contacts      address book CRUD (name-based send/reply)
+   - /api/kikoe         voice-trainer fingerprint store (add-on)
    - /api/vault         key names + configured booleans (never values)
    |
    v
@@ -109,17 +118,26 @@ Refreshed at v0.5.0: Asistente de voz (Brain) anadido como camino 1
 
 - Loopback binding only; never LAN (F12).
 - Vault: AES-256-GCM, scrypt-derived key, random per-machine salt,
-  env-overridable passphrase (F8). Encrypted-at-rest verified by
-  tests/vault.test.ts.
+  env-overridable passphrase (F8). 22 key slots (12 mail + 9 brain + 1
+  speech). Encrypted-at-rest verified by tests/vault.test.ts. NOTE: the
+  default passphrase (hostname + username) is predictable; real at-rest
+  secrecy against a local reader requires YUEMAIL_VAULT_PASS.
+- Outbound posture: local-FIRST, not zero-outbound when camino-1 features
+  are on. With the Brain enabled, request TEXT goes to the chosen AI
+  provider; with Google voice enabled, dictated AUDIO + spoken TEXT go to
+  Google. API keys stay server-side and never leave the machine. Fully
+  local = Brain off (or ollama) + Google voice off (browser Web Speech).
 
 ## Build + quality gates
 
 - TypeScript strict + noUncheckedIndexedAccess; tsc for server,
   Vite for SPA.
-- Vitest: 11 suites / 179 tests, verified green 2026-06-11 via
-  `npm test` (voice parser + contextual routing + dialog field
-  dictation in all three modals incl. dictation precedence, vault
-  round-trip + at-rest encryption, docx magic bytes, NAC3 attribute
-  + voice symmetry, autoconfig tiers, ARIA, toolbar labels, server
-  port binding, email reject, CLI help, design tokens).
+- Vitest: 24 active suites / **407 tests passing** (3 live-API
+  benchmark suites gated off by default -> 410 total), verified green
+  2026-06-28 via `npm test` (voice parser + contextual routing + dialog
+  field dictation incl. precedence, vault round-trip + at-rest
+  encryption, docx magic bytes, NAC3 + voice symmetry, autoconfig tiers,
+  ARIA, toolbar labels, server port, email reject, CLI help, design
+  tokens, the 9-provider Brain router + safety net, the Google voice
+  router + client transport, contacts match/wizard/import).
 - prepublishOnly: typecheck + tests + build (acceptance #10).

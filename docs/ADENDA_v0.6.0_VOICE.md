@@ -94,10 +94,16 @@ Cliente:
 - `tests/vault.test.ts` -- actualizado al slot de voz (12 mail + 9 brain
   + 1 voz = 22).
 
-Estado: 259/259 tests verdes + typecheck limpio + build OK en el momento
-de la adenda. Bench end-to-end en vivo: **35/35 = 100% de acierto de
-comando** (clean / freeform / email / asr_noise / negativos), corrido
-contra Google real con la clave del owner.
+Estado: 259/259 tests verdes + typecheck limpio + build OK **en el
+momento de la adenda (v0.6.0)**. Bench end-to-end en vivo: **35/35 =
+100% de acierto de comando** (clean / freeform / email / asr_noise /
+negativos), corrido contra Google real con la clave del owner.
+
+> **Nota 2026-06-28 (auditoria de docs):** la cifra "259/259" es una foto
+> de la v0.6.0. La version vigente es **0.11.0** y la suite pasa **407
+> tests** (24 suites activas; 3 benchmarks contra API en vivo quedan
+> apagados por defecto -> 410 totales). La fuente unica de version es
+> `package.json`.
 
 ## 5. Honestidad sobre el "100%"
 
@@ -110,13 +116,26 @@ resultado para que nadie lo lea como cifra de poblacion.
 
 ## 6. Pendiente honesto
 
-- **Entrenador de voz / adaptacion a voz atipica: POSPUESTO** por el
-  owner ("Por ahora no entrenemos"). Google, con una clave, NO reentrena
-  su oido sobre la voz de una persona; eso es un programa aparte
-  (Euphonia, con inscripcion). Lo que SI se puede construir mas adelante,
-  registrado en PND-011: un entrenador que (a) manda a Google la lista de
-  palabras esperadas (speech adaptation) para sesgar el reconocimiento
-  hacia el vocabulario de la persona, y (b) una capa local que aprende y
-  corrige sus confusiones tipicas ("band eja" -> "bandeja").
+> **Actualizacion 2026-06-28 (auditoria de docs): el entrenador de voz
+> YA SE CONSTRUYO.** Lo que esta seccion daba por "POSPUESTO" se
+> implemento despues: el entrenador local, dependiente del hablante, vive
+> en `src/components/VoiceTrainer.tsx` + `server/routes/kikoe.ts`, con el
+> add-on `@yujinapp/nac3-kikoe` (ver la seccion "Voice trainer" del
+> README). Se abre con `abrir entrenador`; graba muestras de cada
+> comando en la voz de la persona, guarda SOLO huellas numericas (nunca
+> el audio) y reconoce comparando contra esas muestras (offline). El
+> texto debajo queda como registro historico de la decision original.
+
+- **Entrenador de voz / adaptacion a voz atipica: ~~POSPUESTO~~ (ver el
+  recuadro de arriba -- se construyo).** En su momento el owner dijo "Por
+  ahora no entrenemos". Google, con una clave, NO reentrena su oido sobre
+  la voz de una persona; eso es un programa aparte (Euphonia, con
+  inscripcion). Lo que se penso construir, registrado en PND-011: un
+  entrenador que (a) manda a Google la lista de palabras esperadas
+  (speech adaptation) para sesgar el reconocimiento hacia el vocabulario
+  de la persona, y (b) una capa local que aprende y corrige sus
+  confusiones tipicas ("band eja" -> "bandeja"). El entrenador que se
+  envio implementa el camino (b) -- una capa local dependiente del
+  hablante.
 - La medicion con voz REAL atipica queda pendiente de una corrida con
   usuarios (no se puede sustituir con TTS).

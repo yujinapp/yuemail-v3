@@ -1,5 +1,13 @@
 # Yuemail v0.6.0 -- Casos de prueba para QA manual
 
+> **Nota 2026-06-28 (auditoria de docs):** este es el ciclo de QA de la
+> v0.6.0. La version vigente del producto es **0.11.0** (fuente unica:
+> `package.json`) y la suite automatizada pasa **407 tests** (24 suites;
+> 410 con los 3 benchmarks en vivo que van apagados por defecto). Los
+> casos de abajo siguen siendo validos; ademas, en 0.7.0+ se agregaron
+> responder/reenviar, la agenda de contactos y el entrenador de voz (ver
+> README + docs/SPEC.md F7/F15).
+
 Leer primero: `INSTRUCTIVO_TESTERS.md` (como instalar, como anotar,
 a donde enviar los resultados). La planilla de resultados esta al
 final de este documento.
