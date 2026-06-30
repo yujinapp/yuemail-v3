@@ -70,8 +70,34 @@ html, body {
   gap: var(--space-3);
 }
 
+/* --- Sumi-e icon glyphs (Yujin Design System) ---
+   Brush-stroke SVGs drawn on a 0..40 canvas. They inherit the host control's
+   text color through currentColor, so an icon tints itself to whatever button
+   it sits in (jade pill -> paper ink, ghost pill -> gold ink). Sized in `em`
+   so it scales with the button's font. Shapes tagged `ink-fill` read as solid
+   ink (bullseye center, synapse dots); everything else is an open brush line. */
+.yj-sumie {
+  width: 1.15em;
+  height: 1.15em;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vertical-align: middle;
+}
+
+.yj-sumie .ink-fill {
+  fill: currentColor;
+  stroke: none;
+}
+
 /* Assistant / Voice pills -- gold-outlined tertiary controls. */
 .yuemail-brain-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
   background: transparent;
   color: var(--color-text-secondary);
   border: 1px solid var(--color-border-default);
@@ -111,6 +137,9 @@ html, body {
 }
 
 .yuemail-mic-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
   background: var(--accent-rose);
   color: var(--color-paper-cool);
   border: 1px solid transparent;
@@ -193,6 +222,9 @@ html, body {
 .yuemail-toolbar button,
 .yuemail-card button,
 .yuemail-modal-card button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
   background: var(--accent-jade);
   color: var(--color-paper-cool);
   border: 1px solid var(--gold-line);

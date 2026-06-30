@@ -17,6 +17,7 @@ import { BrainSettings } from './components/BrainSettings.js';
 import { VoiceSettings } from './components/VoiceSettings.js';
 import { VoiceTrainer } from './components/VoiceTrainer.js';
 import { ContactsDialog } from './components/ContactsDialog.js';
+import { Icon } from './components/Icon.js';
 import { useVoice, type LocalLane } from './voice/useVoice.js';
 import { KikoeClient, cloudPhraseOf } from './voice/kikoe.js';
 import {
@@ -868,6 +869,7 @@ export function App(): React.ReactElement {
             data-nac-role="button"
             data-nac-action="open_brain"
           >
+            <Icon name="brain-cells" />
             Asistente
           </button>
           <button
@@ -880,6 +882,7 @@ export function App(): React.ReactElement {
             data-nac-role="button"
             data-nac-action="open_voice"
           >
+            <Icon name="speech-cloud" />
             Voz
           </button>
           <button
@@ -892,6 +895,7 @@ export function App(): React.ReactElement {
             data-nac-role="button"
             data-nac-action="open_voice_trainer"
           >
+            <Icon name="target-bullseye" />
             Entrenador
           </button>
           <button
@@ -904,6 +908,7 @@ export function App(): React.ReactElement {
             data-nac-role="button"
             data-nac-action="open_contacts"
           >
+            <Icon name="people-pair" />
             Contactos
           </button>
           <button
@@ -916,15 +921,7 @@ export function App(): React.ReactElement {
             data-nac-role="button"
             data-nac-action="open_settings"
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <circle cx="12" cy="12" r="3.2" stroke="currentColor" strokeWidth="1.8" />
-              <path
-                d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M18.7 5.3l-2.1 2.1M7.4 16.6l-2.1 2.1"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                strokeLinecap="round"
-              />
-            </svg>
+            <Icon name="gear-cog" />
           </button>
           <button
             type="button"
@@ -936,6 +933,7 @@ export function App(): React.ReactElement {
             data-nac-role="button"
             data-nac-action={voice.listening ? 'mic_off' : 'mic_on'}
           >
+            <Icon name="mic-voice" />
             {voice.supported ? (voice.listening ? 'Microfono encendido' : 'Encender microfono') : 'Voz no soportada'}
           </button>
         </div>
@@ -981,12 +979,14 @@ export function App(): React.ReactElement {
           <section className="yuemail-card" data-nac-id="yuemail.email.card">
             <h2>Enviar correo</h2>
             <button type="button" onClick={() => void onSendEmail()} data-nac-id="yuemail.email.btn-open" data-nac-action="open_send_dialog">
+              <Icon name="paper-plane" />
               Componer envio
             </button>
           </section>
           <section className="yuemail-card" data-nac-id="yuemail.inbox.card">
             <h2>Bandeja</h2>
             <button type="button" onClick={() => void onReadInbox()} data-nac-id="yuemail.inbox.btn-refresh" data-nac-action="refresh_inbox">
+              <Icon name="envelope-letter" />
               Leer bandeja
             </button>
             <ul style={{ marginTop: 12, paddingLeft: 16 }}>

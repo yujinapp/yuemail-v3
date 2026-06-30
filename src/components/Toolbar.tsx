@@ -8,6 +8,7 @@
  * ASCII-only.
  */
 import * as React from 'react';
+import { Icon, type IconName } from './Icon.js';
 
 export const TOOLBAR_BUTTON_LABELS = [
   'Nuevo documento',
@@ -22,11 +23,11 @@ export type ToolbarAction =
   | 'save_signature'
   | 'sign_document';
 
-const BUTTONS: ReadonlyArray<{ label: string; action: ToolbarAction; nacElement: string }> = [
-  { label: 'Nuevo documento', action: 'new_document',    nacElement: 'btn-new-document' },
-  { label: 'Abrir documento', action: 'open_document',   nacElement: 'btn-open-document' },
-  { label: 'Guardar firma',   action: 'save_signature',  nacElement: 'btn-save-signature' },
-  { label: 'Firmar',          action: 'sign_document',   nacElement: 'btn-sign' },
+const BUTTONS: ReadonlyArray<{ label: string; action: ToolbarAction; nacElement: string; icon: IconName }> = [
+  { label: 'Nuevo documento', action: 'new_document',    nacElement: 'btn-new-document',   icon: 'pencil-write' },
+  { label: 'Abrir documento', action: 'open_document',   nacElement: 'btn-open-document',  icon: 'folder-tab' },
+  { label: 'Guardar firma',   action: 'save_signature',  nacElement: 'btn-save-signature', icon: 'signature-loop' },
+  { label: 'Firmar',          action: 'sign_document',   nacElement: 'btn-sign',           icon: 'seal-stamp' },
 ];
 
 export interface ToolbarProps {
@@ -51,6 +52,7 @@ export function Toolbar({ onAction }: ToolbarProps): React.ReactElement {
           data-nac-role="button"
           data-nac-action={b.action}
         >
+          <Icon name={b.icon} />
           {b.label}
         </button>
       ))}
