@@ -1,29 +1,34 @@
-/* Yujin Design System tokens (F10) -- variant: art deco moderna.
+/* Yujin Design System tokens (F10) -- variant: sumi-e ink.
    Single source of truth for the visual identity. Components reference
    these CSS variables; no hardcoded hex / rem / px outside this file.
    Token NAMES are stable (consumers in app.css + components depend on
-   them); only the VALUES carry the art deco moderna look. */
+   them); only the VALUES carry the sumi-e look: warm sumi ink on washi
+   paper, a single shu-iro (vermilion seal) accent, restrained mineral
+   pigments, soft brush shadows. Realigns the code with docs/DESIGN.md D7
+   ("the whole Yujin DS surface -- sumi-e ink palette"). */
 
 :root {
-  /* Art deco ink palette -- deep aubergine charcoal instead of pure black. */
-  --color-ink-deep:        #261f2e;  /* deep plum ink (primary text)   */
-  --color-ink-mid:         #423a4e;
-  --color-ink-soft:        #6c6377;
-  --color-paper-warm:      #f6efe1;  /* warm ivory / cream             */
-  --color-paper-cool:      #fffdf7;  /* soft warm white                */
-  --color-paper-shadow:    #ece1cd;  /* deeper cream (hover)           */
+  /* Sumi ink palette -- warm charcoal diluted with water, never pure black. */
+  --color-ink-deep:        #1f1b16;  /* sumi black (primary text)      */
+  --color-ink-mid:         #4a443a;  /* diluted ink (secondary text)   */
+  --color-ink-soft:        #847c6d;  /* pale wash (muted text)         */
+  --color-paper-warm:      #f3eee1;  /* washi cream                    */
+  --color-paper-cool:      #fbf8f1;  /* soft rice paper (surface)      */
+  --color-paper-shadow:    #e8e0ce;  /* damp paper (hover)             */
 
-  /* Accent palette (art deco jewel + metallic). Names kept for consumers. */
-  --accent-sakura:         #d98aa8;  /* blush rose                     */
-  --accent-jade:           #2f8f7f;  /* deco emerald (primary action)  */
-  --accent-sky:            #6f93b8;  /* powder deco blue               */
-  --accent-amber:          #c2a14d;  /* brass / gold (brand metallic)  */
-  --accent-rose:           #b4574e;  /* deco burgundy (signal)         */
+  /* Accent palette -- restrained sumi-e mineral pigments. Names kept for
+     consumers; only the VALUES shift to ink-wash tones. */
+  --accent-sakura:         #d691a0;  /* faded cherry blossom           */
+  --accent-jade:           #5d7c54;  /* bamboo green (primary action)  */
+  --accent-sky:            #4f6f8b;  /* ai indigo (info)               */
+  --accent-amber:          #b0822f;  /* aged ochre                     */
+  --accent-rose:           #b23a2a;  /* shu-iro seal vermilion (signal)*/
 
-  /* Brand metallic ramp (gold) -- used for hairline frames + accents. */
-  --gold-line:             #c2a14d;
-  --gold-soft:             rgba(194, 161, 77, 0.35);
-  --gold-faint:           rgba(194, 161, 77, 0.14);
+  /* Brand line ramp -- soft sumi hairline (the deco gold frames become a
+     faint ink wash). Names kept; app.css references these for frames. */
+  --gold-line:             #b7aa8f;  /* pale sumi line                 */
+  --gold-soft:             rgba(63, 56, 44, 0.28);
+  --gold-faint:           rgba(63, 56, 44, 0.09);
 
   /* Surface tokens. */
   --color-bg-surface:      var(--color-paper-cool);
@@ -32,8 +37,8 @@
   --color-text-primary:    var(--color-ink-deep);
   --color-text-secondary:  var(--color-ink-mid);
   --color-text-muted:      var(--color-ink-soft);
-  --color-border-subtle:   #e6dcc6;
-  --color-border-default:  #c2a14d;
+  --color-border-subtle:   #e2d8c4;
+  --color-border-default:  #c6bba1;
 
   /* 8px grid spacing scale. */
   --space-1: 4px;
@@ -45,10 +50,11 @@
   --space-7: 48px;
   --space-8: 64px;
 
-  /* Typography. Display = geometric art deco (Century Gothic ships on
-     Windows; Poppins/Futura when present). Body keeps a clean sans;
-     serif stays for letter-like body + the signature. */
-  --font-family-display: 'Poppins', 'Century Gothic', 'Futura', 'Twentieth Century', 'Avenir Next', 'Inter', sans-serif;
+  /* Typography. Display = mincho brush serif (Yu Mincho ships on Windows,
+     Hiragino Mincho on macOS, Songti on others) for a calligraphic ink
+     feel; body keeps a clean humanist sans; serif stays for letter-like
+     body + the signature. */
+  --font-family-display: 'Yu Mincho', 'Hiragino Mincho ProN', 'Songti SC', 'Source Serif Pro', Georgia, 'Times New Roman', serif;
   --font-family-sans: 'Inter', 'Helvetica Neue', Arial, sans-serif;
   --font-family-serif: 'Source Serif Pro', Georgia, 'Times New Roman', serif;
   --font-family-mono:  'JetBrains Mono', 'Consolas', monospace;
@@ -63,19 +69,19 @@
   --line-height-tight: 1.2;
   --line-height-normal: 1.5;
   --line-height-loose: 1.75;
-  /* Deco display tracking (uppercase headings + buttons). */
-  --tracking-display: 0.14em;
-  --tracking-button:  0.08em;
+  /* Calm sumi-e tracking -- a light breath, no deco uppercase shout. */
+  --tracking-display: 0.04em;
+  --tracking-button:  0.02em;
 
-  /* Radius -- crisp geometry for the deco look. */
-  --radius-sm: 2px;
-  --radius-md: 4px;
-  --radius-lg: 6px;
+  /* Radius -- soft, organic brush edges instead of crisp deco geometry. */
+  --radius-sm: 3px;
+  --radius-md: 7px;
+  --radius-lg: 12px;
 
-  /* Shadow -- soft, warm plum-tinted. */
-  --shadow-low:  0 1px 2px rgba(38, 31, 46, 0.07);
-  --shadow-mid:  0 6px 18px rgba(38, 31, 46, 0.10);
-  --shadow-high: 0 14px 40px rgba(38, 31, 46, 0.18);
+  /* Shadow -- soft, warm ink wash. */
+  --shadow-low:  0 1px 2px rgba(31, 27, 22, 0.06);
+  --shadow-mid:  0 8px 22px rgba(31, 27, 22, 0.10);
+  --shadow-high: 0 18px 46px rgba(31, 27, 22, 0.16);
 
   /* Motion. */
   --motion-fast:   120ms;
@@ -86,15 +92,16 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    /* Art deco at night -- deep teal-charcoal with the same gold. */
-    --color-bg-surface:     #1c2230;
-    --color-bg-subtle:      #161b27;
-    --color-bg-hover:       #283142;
-    --color-text-primary:   #f3ecdc;
-    --color-text-secondary: #d4ccbb;
-    --color-text-muted:     #9a9484;
-    --color-border-subtle:  #34405a;
-    --color-border-default: #c2a14d;
-    --gold-faint:          rgba(194, 161, 77, 0.10);
+    /* Sumi-e at night -- deep ink ground, rice-white text, same seal red. */
+    --color-bg-surface:     #201d17;
+    --color-bg-subtle:      #18150f;
+    --color-bg-hover:       #2b2820;
+    --color-text-primary:   #f1ebdc;
+    --color-text-secondary: #cec6b4;
+    --color-text-muted:     #948c7b;
+    --color-border-subtle:  #38342a;
+    --color-border-default: #57503f;
+    --gold-line:            #8a7f66;
+    --gold-faint:          rgba(180, 168, 140, 0.10);
   }
 }

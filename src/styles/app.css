@@ -1,7 +1,8 @@
-/* Yuemail app styles -- Yujin Design System: art deco moderna.
+/* Yuemail app styles -- Yujin Design System: sumi-e ink.
    All values reference tokens.css; no hardcoded hex / px here.
-   Deco language: warm cream surfaces, emerald action, gold hairline
-   frames, geometric uppercase display headings. ASCII-only. */
+   Sumi-e language: warm washi surfaces, bamboo-green action, soft ink
+   hairlines, a single shu-iro (vermilion) seal accent, mincho brush
+   headings in natural case. ASCII-only. */
 
 * {
   box-sizing: border-box;
@@ -52,13 +53,14 @@ html, body {
   color: var(--color-text-primary);
 }
 
-/* Deco diamond bullet before the wordmark. */
+/* Shu-iro seal (hanko) dot before the wordmark -- the one warm accent
+   of a sumi-e composition, like the red seal on an ink painting. */
 .yuemail-topbar h1::before {
   content: "";
-  width: 10px;
-  height: 10px;
-  transform: rotate(45deg);
-  background: var(--gold-line);
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--accent-rose);
   box-shadow: 0 0 0 3px var(--gold-faint);
 }
 
@@ -575,4 +577,55 @@ html, body {
 .yuemail-trainer-actions button {
   font-size: var(--font-size-xs);
   padding: var(--space-1) var(--space-3);
+}
+
+/* --- Sumi-e refinements (variant: ink on washi) ---------------------------
+   Layered AFTER the base rules so the same selectors win, letting us shift
+   the art-deco gestures (forced uppercase, sharp tracking) to the calmer
+   sumi-e register without touching component markup. */
+
+/* Headings + controls drop the deco uppercase: mincho brushwork reads as
+   intended in natural case. Tracking already softened via the tokens. */
+.yuemail-topbar h1,
+.yuemail-card h2,
+.yuemail-modal-card h2,
+.yuemail-modal-card legend,
+.yuemail-trainer-head,
+.yuemail-toolbar button,
+.yuemail-card button,
+.yuemail-modal-card button,
+.yuemail-brain-btn,
+.yuemail-mic-toggle {
+  text-transform: none;
+}
+
+/* Brush-stroke underline for card + modal headings: a tapered ink line
+   that fades at both ends, replacing the flat deco hairline. */
+.yuemail-card h2,
+.yuemail-modal-card h2 {
+  border-bottom: none;
+}
+
+.yuemail-card h2::after,
+.yuemail-modal-card h2::after {
+  content: "";
+  display: block;
+  height: 2px;
+  margin-top: var(--space-2);
+  border-radius: 2px;
+  opacity: 0.55;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--color-ink-soft) 10%,
+    var(--color-ink-mid) 50%,
+    var(--color-ink-soft) 90%,
+    transparent
+  );
+}
+
+/* Active mic reads as an enso (ink ring) rather than a hard deco frame. */
+.yuemail-mic-toggle[data-state="on"] {
+  box-shadow: 0 0 0 2px var(--color-bg-surface),
+              0 0 0 4px var(--accent-jade);
 }
