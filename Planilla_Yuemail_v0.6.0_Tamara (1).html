@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="es"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Planilla de resultados - Yuemail v0.6.0</title>
+<style>
+  :root{
+    --ink:#23201c; --ink-soft:#4a463f; --paper:#f5f1e8; --paper-2:#fbf8f1;
+    --line:#d8cfbd; --accent:#7a5c3e; --accent-soft:#a98a63; --seal:#9c3b2e;
+    --ok:#3a6b4f; --warn:#8a6d1f;
+  }
+  *{box-sizing:border-box}
+  body{margin:0; background:var(--paper); color:var(--ink);
+    font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+    line-height:1.6; font-size:17px}
+  .wrap{max-width:900px; margin:0 auto; padding:48px 28px 96px}
+  .sheet{background:var(--paper-2); border:1px solid var(--line);
+    border-radius:14px; padding:44px 48px;
+    box-shadow:0 1px 0 #fff inset, 0 18px 40px -28px rgba(35,32,28,.5)}
+  .kicker{font-size:13px; letter-spacing:.22em; text-transform:uppercase;
+    color:var(--accent-soft); margin:0 0 6px}
+  h1{font-size:30px; line-height:1.2; margin:0 0 6px; font-weight:600}
+  h2{font-size:21px; margin:34px 0 12px; padding-bottom:6px;
+    border-bottom:2px solid var(--accent-soft); font-weight:600; color:var(--accent)}
+  p{margin:0 0 14px; color:var(--ink-soft)}
+  strong{color:var(--ink)}
+  a{color:var(--accent); text-decoration:none; border-bottom:1px solid var(--accent-soft)}
+  a:hover{background:#efe7d6}
+  code{font-family:"SFMono-Regular",Consolas,monospace;
+    background:#efe7d6; padding:2px 6px; border-radius:5px; font-size:.85em; color:#5a4631}
+  .topnav{margin-bottom:24px; font-size:14px}
+  .legend li{margin:0 0 8px; color:var(--ink-soft)}
+  .pill{display:inline-block; font-weight:700; font-size:13px; letter-spacing:.05em;
+    padding:2px 10px; border-radius:6px; color:#fff}
+  .p-pass{background:var(--ok)} .p-fail{background:var(--seal)}
+  .p-block{background:var(--warn)} .p-na{background:#7a756c}
+
+  /* ---- Barra de acciones (pegada arriba) ---- */
+  .toolbar{position:sticky; top:0; z-index:20; margin:-44px -48px 22px;
+    padding:14px 48px; background:rgba(251,248,241,.96);
+    border-bottom:1px solid var(--line); backdrop-filter:blur(4px);
+    display:flex; flex-wrap:wrap; align-items:center; gap:10px}
+  .btn{font-family:inherit; font-size:15px; cursor:pointer; border:none;
+    border-radius:9px; padding:10px 16px; color:#fff; background:var(--accent);
+    box-shadow:0 2px 0 rgba(35,32,28,.18)}
+  .btn:hover{background:#6a4f34}
+  .btn:active{transform:translateY(1px); box-shadow:none}
+  .btn.alt{background:#fff; color:var(--accent); border:1px solid var(--accent-soft)}
+  .btn.alt:hover{background:#efe7d6}
+  .btn.ghost{background:transparent; color:var(--accent-soft); box-shadow:none;
+    border:1px solid var(--line)}
+  .btn.ghost:hover{background:#efe7d6; color:var(--accent)}
+  .savestate{margin-left:auto; font-size:13px; color:var(--accent-soft);
+    display:flex; align-items:center; gap:7px}
+  .dot{width:9px; height:9px; border-radius:50%; background:var(--ok);
+    box-shadow:0 0 0 3px rgba(58,107,79,.18)}
+
+  /* ---- Campos editables ---- */
+  .meta{background:#fff; border:1px solid var(--line); border-radius:12px; padding:8px 22px; margin:16px 0}
+  .meta .field{display:flex; align-items:center; gap:10px; padding:7px 0;
+    border-bottom:1px dashed var(--line)}
+  .meta .field:last-child{border-bottom:none}
+  .meta .field b{flex:0 0 auto; min-width:260px; color:var(--ink); font-weight:600}
+  input[type=text], textarea, select{font-family:inherit; color:var(--ink);
+    background:#fffdf8; border:1px solid var(--line); border-radius:7px;
+    padding:7px 10px; font-size:15px; width:100%}
+  input[type=text]:focus, textarea:focus, select:focus{outline:none;
+    border-color:var(--accent-soft); box-shadow:0 0 0 3px rgba(169,138,99,.18);
+    background:#fff}
+  .meta .field input{flex:1}
+  textarea{resize:vertical; min-height:42px; line-height:1.45}
+
+  table{width:100%; border-collapse:collapse; margin:14px 0; font-size:15px}
+  th{background:var(--accent); color:#fff; text-align:left; padding:10px 12px; font-weight:600}
+  th:first-child{border-top-left-radius:8px} th:last-child{border-top-right-radius:8px}
+  td{border:1px solid var(--line); padding:7px 8px; vertical-align:top; color:var(--ink-soft)}
+  tbody tr:nth-child(even){background:#f6f0e3}
+  td.n{text-align:center; font-weight:700; color:var(--accent); width:32px; padding-top:14px}
+  td.task{min-width:200px; padding-top:13px}
+  tr.crit td.task{color:var(--seal); font-weight:600}
+  td.col-res{width:140px}
+  td.col-cap{width:150px}
+  /* color del selector segun el valor elegido */
+  select.res{font-weight:700}
+  select.res[data-v="PASA"]{background:var(--ok); color:#fff; border-color:var(--ok)}
+  select.res[data-v="FALLA"]{background:var(--seal); color:#fff; border-color:var(--seal)}
+  select.res[data-v="BLOQUEADO"]{background:var(--warn); color:#fff; border-color:var(--warn)}
+  select.res[data-v="N/A"]{background:#7a756c; color:#fff; border-color:#7a756c}
+
+  .send{background:#f3ecdd; border-left:4px solid var(--accent-soft);
+    padding:16px 20px; border-radius:0 10px 10px 0; margin:20px 0}
+  .gold li{margin:0 0 8px; color:var(--ink-soft)}
+  .tip{font-size:14px; color:var(--accent-soft); margin-top:8px}
+  @media print{
+    body{background:#fff} .sheet{box-shadow:none; border:none}
+    .topnav,.toolbar,.tip{display:none}
+    input[type=text],textarea,select{border:none; background:transparent; box-shadow:none}
+    select.res[data-v]{color:#000 !important; background:transparent !important}
+  }
+  footer{margin-top:36px; padding-top:16px; border-top:1px solid var(--line);
+    font-size:13px; color:var(--accent-soft); text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="sheet">
+
+  <!-- Barra de acciones -->
+  <div class="toolbar" id="toolbar">
+    <button class="btn" id="btn-save" type="button">Guardar mi planilla</button>
+    <button class="btn alt" id="btn-csv" type="button">Descargar para Excel (CSV)</button>
+    <button class="btn alt" id="btn-send" type="button">Enviar por correo</button>
+    <button class="btn ghost" id="btn-clear" type="button">Vaciar todo</button>
+    <span class="savestate" id="savestate"><span class="dot"></span> Abriendo tu correo... adjunta el archivo guardado</span>
+  </div>
+
+  <p class="topnav"><a href="LEEME.html">← Indice</a> &nbsp;·&nbsp; <a href="2_PRUEBAS_TIPICAS.html">Pruebas tipicas</a></p>
+  <p class="kicker">Guia 3 de 3</p>
+  <h1>Planilla de resultados</h1>
+  <p>Completa esta planilla a medida que haces <a href="2_PRUEBAS_TIPICAS.html">las 20 pruebas tipicas</a>. Escribi directamente en los campos: <strong>se va guardando solo</strong> en esta misma pagina mientras la tenes abierta. Cuando termines, usa los botones de arriba para <strong>guardar tu copia</strong> y <strong>enviarla</strong>.</p>
+
+  <p>En la columna <strong>Resultado</strong> elegi una opcion:</p>
+  <ul class="legend">
+    <li><span class="pill p-pass">PASA</span> &nbsp; paso exactamente lo esperado.</li>
+    <li><span class="pill p-fail">FALLA</span> &nbsp; paso otra cosa (anota QUE paso, palabra por palabra si hay un mensaje en pantalla).</li>
+    <li><span class="pill p-block">BLOQUEADO</span> &nbsp; no se pudo probar (por ejemplo, depende de una prueba anterior que fallo). Anota por que.</li>
+    <li><span class="pill p-na">N/A</span> &nbsp; no aplica a tu equipo (por ejemplo, no tenes microfono). Anota por que.</li>
+  </ul>
+
+  <h2>Datos de la corrida</h2>
+  <div class="meta">
+    <div class="field"><b>Tester (tu nombre)</b><input type="text" data-k="tester" placeholder="Escribi aca..." value="Tamara"></div>
+    <div class="field"><b>Fecha</b><input type="text" data-k="fecha" placeholder="dd/mm/aaaa" value="22/06/2026"></div>
+    <div class="field"><b>Sistema operativo y version</b><input type="text" data-k="so" placeholder="Windows 11 / macOS 14 / ..." value="Windows 11"></div>
+    <div class="field"><b>Navegador y version</b><input type="text" data-k="navegador" placeholder="Chrome 120 / Edge ..." value="Chrome"></div>
+    <div class="field"><b>Version de Node (<code>node --version</code>)</b><input type="text" data-k="node" placeholder="v20.x" value="v24.16.0"></div>
+    <div class="field"><b>Version de Yuemail (<code>yuemail version</code>)</b><input type="text" data-k="yuemail" placeholder="0.6.0" value="0.6.1"></div>
+    <div class="field"><b>Proveedor de correo usado</b><input type="text" data-k="correo" placeholder="Gmail / Outlook / ..." value="Gmail"></div>
+    <div class="field"><b>Proveedor y modelo de IA del Asistente<br><small>(Gemini Flash Lite por defecto)</small></b><input type="text" data-k="ia" placeholder="Gemini 3.1 Flash Lite" value="Gemini 3.1 Flash Lite"></div>
+    <div class="field"><b>Voz de Google: encendida / navegador</b><input type="text" data-k="voz" placeholder="Encendida / Navegador" value="Encendida"></div>
+  </div>
+
+  <h2>Resultados</h2>
+  <table>
+    <thead><tr><th>#</th><th>Prueba</th><th>Resultado</th><th>Observaciones</th><th>Captura</th></tr></thead>
+    <tbody id="rows"><!-- filas generadas abajo --><tr><td class="n">1</td><td class="task">Instalar y verificar la version</td><td class="col-res"><select class="res" data-k="res1" data-v="PASA"><option value="">--</option><option value="PASA" selected="selected">PASA</option><option value="FALLA">FALLA</option><option value="BLOQUEADO">BLOQUEADO</option><option value="N/A">N/A</option></select></td><td><textarea data-k="obs1" placeholder="Que paso...">0.6.1</textarea></td><td class="col-cap"><input type="text" data-k="cap1" placeholder="nombre del archivo" value=""></td></tr><tr><td class="n">2</td><td class="task">Arrancar la aplicacion</td><td class="col-res"><select class="res" data-k="res2" data-v="PASA"><option value="">--</option><option value="PASA" selected="selected">PASA</option><option value="FALLA">FALLA</option><option value="BLOQUEADO">BLOQUEADO</option><option value="N/A">N/A</option></select></td><td><textarea data-k="obs2" placeholder="Que paso...">Se abrió Yuemail.</textarea></td><td class="col-cap"><input type="text" data-k="cap2" placeholder="nombre del archivo" value=""></td></tr><tr><td class="n">3</td><td class="task">Probar la voz de Google (que te hable)</td><td class="col-res"><select class="res" data-k="res3" data-v="PASA"><option value="">--</option><option value="PASA" selected="selected">PASA</option><option value="FALLA">FALLA</option><option value="BLOQUEADO">BLOQUEADO</option><option value="N/A">N/A</option></select></td><td><textarea data-k="obs3" placeholder="Que paso...">Se escuchó claramente la voz.</textarea></td><td class="col-cap"><input type="text" data-k="cap3" placeholder="nombre del archivo" value=""></td></tr><tr><td class="n">4</td><td class="task">Que el oido de Google te entienda</td><td class="col-res"><select class="res" data-k="res4" data-v="PASA"><option value="">--</option><option value="PASA" selected="selected">PASA</option><option value="FALLA">FALLA</option><option value="BLOQUEADO">BLOQUEADO</option><option value="N/A">N/A</option></select></td><td><textarea data-k="obs4" placeholder="Que paso...">Muestra la bandeja</textarea></td><td class="col-cap"><input type="text" data-k="cap4" placeholder="nombre del archivo" value=""></td></tr><tr><td class="n">5</td><td class="task">Configurar el Asistente (la IA)</td><td class="col-res"><select class="res" data-k="res5" data-v="PASA"><option value="">--</option><option value="PASA" selected="selected">PASA</option><option value="FALLA">FALLA</option><option value="BLOQUEADO">BLOQUEADO</option><option value="N/A">N/A</option></select></td><td><textarea data-k="obs5" placeholder="Que paso...">Configurada OK</textarea></td><td class="col-cap"><input type="text" data-k="cap5" placeholder="nombre del archivo" value=""></td></tr><tr><td class="n">6</td><td class="task">Configurar la cuenta de correo</td><td class="col-res"><select class="res" data-k="res6" data-v="PASA"><option value="">--</option><option value="PASA" selected="selected">PASA</option><option value="FALLA">FALLA</option><option value="BLOQUEADO">BLOQUEADO</option><option value="N/A">N/A</option></select></td><td><textarea data-k="obs6" placeholder="Que paso...">Configurada OK</textarea></td><td class="col-cap"><input type="text" data-k="cap6" placeholder="nombre del archivo" value=""></td></tr><tr><td class="n">7</td><td class="task">Crear un documento nuevo por voz</td><td class="col-res"><select class="res" data-k="res7" data-v="PASA"><option value="">--</option><option value="PASA" selected="selected">PASA</option><option value="FALLA">FALLA</option><option value="BLOQUEADO">BLOQUEADO</option><option value="N/A">N/A</option></select></td><td><textarea data-k="obs7" placeholder="Que paso...">Nuevo documento abierto</textarea></td><td class="col-cap"><input type="text" data-k="cap7" placeholder="nombre del archivo" value=""></td></tr><tr><td class="n">8</td><td class="task">Dictar texto en el documento</td><td class="col-res"><select class="res" data-k="res8" data-v="FALLA"><option value="">--</option><option value="PASA">PASA</option><option value="FALLA" selected="selected">FALLA</option><option value="BLOQUEADO">BLOQUEADO</option><option value="N/A">N/A</option></select></td><td><textarea data-k="obs8" placeholder="Que paso...">Activa y desactiva el dictado, pero también escribe "fin dictado"</textarea></td><td class="col-cap"><input type="text" data-k="cap8" placeholder="nombre del archivo" value=""></td></tr><tr><td class="n">9</td><td class="task">Pedirle algo con tus palabras</td><td class="col-res"><select class="res" data-k="res9" data-v="PASA"><option value="">--</option><option value="PASA" selected="selected">PASA</option><option value="FALLA">FALLA</option><option value="BLOQUEADO">BLOQUEADO</option><option value="N/A">N/A</option></select></td><td><textarea data-k="obs9" placeholder="Que paso...">"Hola, me llegó algun correo?". Me trajo los correos que tengo en la bandeja.</textarea></td><td class="col-cap"><input type="text" data-k="cap9" placeholder="nombre del archivo" value=""></td></tr><tr><td class="n">10</td><td class="task">Dictar un correo con tus palabras</td><td class="col-res"><select class="res" data-k="res10" data-v="PASA"><option value="">--</option><option value="PASA" selected="selected">PASA</option><option value="FALLA">FALLA</option><option value="BLOQUEADO">BLOQUEADO</option><option value="N/A">N/A</option></select></td><td><textarea data-k="obs10" placeholder="Que paso...">Se abrió la ventana con el destinatario.</textarea></td><td class="col-cap"><input type="text" data-k="cap10" placeholder="nombre del archivo" value=""></td></tr><tr><td class="n">11</td><td class="task">Guardar y poner una firma</td><td class="col-res"><select class="res" data-k="res11" data-v="PASA"><option value="">--</option><option value="PASA" selected="selected">PASA</option><option value="FALLA">FALLA</option><option value="BLOQUEADO">BLOQUEADO</option><option value="N/A">N/A</option></select></td><td><textarea data-k="obs11" placeholder="Que paso...">Se guardó la firma y se agregó al final del correo.</textarea></td><td class="col-cap"><input type="text" data-k="cap11" placeholder="nombre del archivo" value=""></td></tr><tr><td class="n">12</td><td class="task">Enviar el documento por voz</td><td class="col-res"><select class="res" data-k="res12" data-v="PASA"><option value="">--</option><option value="PASA" selected="selected">PASA</option><option value="FALLA">FALLA</option><option value="BLOQUEADO">BLOQUEADO</option><option value="N/A">N/A</option></select></td><td><textarea data-k="obs12" placeholder="Que paso...">El correó se envió.</textarea></td><td class="col-cap"><input type="text" data-k="cap12" placeholder="nombre del archivo" value=""></td></tr><tr><td class="n">13</td><td class="task">Que el correo llegue con el adjunto</td><td class="col-res"><select class="res" data-k="res13" data-v="PASA"><option value="">--</option><option value="PASA" selected="selected">PASA</option><option value="FALLA">FALLA</option><option value="BLOQUEADO">BLOQUEADO</option><option value="N/A">N/A</option></select></td><td><textarea data-k="obs13" placeholder="Que paso...">El correo llegó con el adjunto.</textarea></td><td class="col-cap"><input type="text" data-k="cap13" placeholder="nombre del archivo" value=""></td></tr><tr><td class="n">14</td><td class="task">Leer la bandeja de entrada</td><td class="col-res"><select class="res" data-k="res14" data-v="PASA"><option value="">--</option><option value="PASA" selected="selected">PASA</option><option value="FALLA">FALLA</option><option value="BLOQUEADO">BLOQUEADO</option><option value="N/A">N/A</option></select></td><td><textarea data-k="obs14" placeholder="Que paso...">Muestra la cantidad de correos en la bandeja.</textarea></td><td class="col-cap"><input type="text" data-k="cap14" placeholder="nombre del archivo" value=""></td></tr><tr class="crit"><td class="n">15</td><td class="task">El Asistente NO ejecuta lo que no pediste</td><td class="col-res"><select class="res" data-k="res15" data-v="PASA"><option value="">--</option><option value="PASA" selected="selected">PASA</option><option value="FALLA">FALLA</option><option value="BLOQUEADO">BLOQUEADO</option><option value="N/A">N/A</option></select></td><td><textarea data-k="obs15" placeholder="Que paso...">No abrió ninguna ventana ni envió correos.</textarea></td><td class="col-cap"><input type="text" data-k="cap15" placeholder="nombre del archivo" value=""></td></tr><tr class="crit"><td class="n">16</td><td class="task">"enviar" mientras dictas NO manda el correo</td><td class="col-res"><select class="res" data-k="res16" data-v="PASA"><option value="">--</option><option value="PASA" selected="selected">PASA</option><option value="FALLA">FALLA</option><option value="BLOQUEADO">BLOQUEADO</option><option value="N/A">N/A</option></select></td><td><textarea data-k="obs16" placeholder="Que paso...">No envió el correo.</textarea></td><td class="col-cap"><input type="text" data-k="cap16" placeholder="nombre del archivo" value=""></td></tr><tr><td class="n">17</td><td class="task">Red de seguridad: apagar la voz de Google</td><td class="col-res"><select class="res" data-k="res17" data-v="PASA"><option value="">--</option><option value="PASA" selected="selected">PASA</option><option value="FALLA">FALLA</option><option value="BLOQUEADO">BLOQUEADO</option><option value="N/A">N/A</option></select></td><td><textarea data-k="obs17" placeholder="Que paso...">La app escucha igual.</textarea></td><td class="col-cap"><input type="text" data-k="cap17" placeholder="nombre del archivo" value=""></td></tr><tr><td class="n">18</td><td class="task">Privacidad: las claves no se ven</td><td class="col-res"><select class="res" data-k="res18" data-v="PASA"><option value="">--</option><option value="PASA" selected="selected">PASA</option><option value="FALLA">FALLA</option><option value="BLOQUEADO">BLOQUEADO</option><option value="N/A">N/A</option></select></td><td><textarea data-k="obs18" placeholder="Que paso..."></textarea></td><td class="col-cap"><input type="text" data-k="cap18" placeholder="nombre del archivo" value=""></td></tr><tr><td class="n">19</td><td class="task">Destinatario mal escrito avisa con claridad</td><td class="col-res"><select class="res" data-k="res19" data-v="FALLA"><option value="">--</option><option value="PASA">PASA</option><option value="FALLA" selected="selected">FALLA</option><option value="BLOQUEADO">BLOQUEADO</option><option value="N/A">N/A</option></select></td><td><textarea data-k="obs19" placeholder="Que paso...">No es claro el mensaje, se muestra en inglés "No valid..."</textarea></td><td class="col-cap"><input type="text" data-k="cap19" placeholder="nombre del archivo" value=""></td></tr><tr><td class="n">20</td><td class="task">El viaje completo, solo con la voz</td><td class="col-res"><select class="res" data-k="res20" data-v="PASA"><option value="">--</option><option value="PASA" selected="selected">PASA</option><option value="FALLA">FALLA</option><option value="BLOQUEADO">BLOQUEADO</option><option value="N/A">N/A</option></select></td><td><textarea data-k="obs20" placeholder="Que paso..."></textarea></td><td class="col-cap"><input type="text" data-k="cap20" placeholder="nombre del archivo" value=""></td></tr></tbody>
+  </table>
+  <p><strong>Tiempo del viaje completo (prueba 20), en minutos:</strong>
+     <input type="text" data-k="tiempo" placeholder="ej: 7" style="width:120px; display:inline-block" value="50"></p>
+
+  <h2>Como enviar los resultados</h2>
+  <div class="send">
+    <p style="margin:0 0 8px">El boton <strong>Enviar por correo</strong> de arriba abre tu programa de correo con el destinatario y el asunto ya puestos. <strong>Antes</strong>, apreta <strong>Guardar mi planilla</strong> (o <strong>Descargar para Excel</strong>) y <strong>adjunta ese archivo</strong> al correo, junto con tus capturas.</p>
+    <p style="margin:8px 0 0">Destinatario: <a href="mailto:contact@yujin.app">contact@yujin.app</a> &nbsp;·&nbsp; Asunto: <code>QA Yuemail v0.6.0 -- &lt;tu nombre&gt;</code></p>
+  </div>
+
+  <p><strong>Reglas de oro al anotar:</strong></p>
+  <ul class="gold">
+    <li>Anota lo que VISTE, no lo que crees que deberia pasar.</li>
+    <li>Los textos exactos de los mensajes de error valen oro: copialos tal cual aparecen.</li>
+    <li>Si dudas entre PASA y FALLA, marca FALLA y explica la duda.</li>
+    <li>Tu contrasena y tus claves son tuyas: no las pongas en la planilla ni en las capturas (si una captura las muestra, tachalas antes de enviar).</li>
+    <li>En las pruebas 9 y 10 (Asistente), anota TEXTUAL lo que dijiste y que hizo la app: asi medimos que tan bien interpreta la IA.</li>
+  </ul>
+
+  <footer>Yuemail v0.6.0 · Yujin</footer>
+</div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var STORE_KEY = "yuemail_qa_v060_planilla";
+
+  // Las 20 pruebas (texto + si es critica de seguridad)
+  var TESTS = [
+    "Instalar y verificar la version",
+    "Arrancar la aplicacion",
+    "Probar la voz de Google (que te hable)",
+    "Que el oido de Google te entienda",
+    "Configurar el Asistente (la IA)",
+    "Configurar la cuenta de correo",
+    "Crear un documento nuevo por voz",
+    "Dictar texto en el documento",
+    "Pedirle algo con tus palabras",
+    "Dictar un correo con tus palabras",
+    "Guardar y poner una firma",
+    "Enviar el documento por voz",
+    "Que el correo llegue con el adjunto",
+    "Leer la bandeja de entrada",
+    {t:"El Asistente NO ejecuta lo que no pediste", crit:true},
+    {t:"\"enviar\" mientras dictas NO manda el correo", crit:true},
+    "Red de seguridad: apagar la voz de Google",
+    "Privacidad: las claves no se ven",
+    "Destinatario mal escrito avisa con claridad",
+    "El viaje completo, solo con la voz"
+  ];
+  var RES_OPTS = ["", "PASA", "FALLA", "BLOQUEADO", "N/A"];
+
+  // --- Construir las filas de la tabla ---
+  var rows = document.getElementById("rows");
+  TESTS.forEach(function(item, i){
+    var n = i + 1;
+    var task = (typeof item === "string") ? item : item.t;
+    var crit = (typeof item === "object") && item.crit;
+    var tr = document.createElement("tr");
+    if (crit) tr.className = "crit";
+
+    var sel = "<select class=\"res\" data-k=\"res" + n + "\">";
+    RES_OPTS.forEach(function(o){
+      sel += "<option value=\"" + o + "\">" + (o || "--") + "</option>";
+    });
+    sel += "</select>";
+
+    tr.innerHTML =
+      "<td class=\"n\">" + n + "</td>" +
+      "<td class=\"task\">" + task + "</td>" +
+      "<td class=\"col-res\">" + sel + "</td>" +
+      "<td><textarea data-k=\"obs" + n + "\" placeholder=\"Que paso...\"></textarea></td>" +
+      "<td class=\"col-cap\"><input type=\"text\" data-k=\"cap" + n + "\" placeholder=\"nombre del archivo\"></td>";
+    rows.appendChild(tr);
+  });
+
+  // --- Utilidades ---
+  function fields(){
+    return Array.prototype.slice.call(
+      document.querySelectorAll("[data-k]")
+    );
+  }
+  function paintSelect(el){
+    if (el.tagName === "SELECT" && el.classList.contains("res")){
+      el.setAttribute("data-v", el.value);
+    }
+  }
+
+  // --- Guardado automatico en esta pagina (localStorage) ---
+  var saveState = document.getElementById("savestate");
+  var saveTimer = null;
+  function collect(){
+    var data = {};
+    fields().forEach(function(el){ data[el.getAttribute("data-k")] = el.value; });
+    return data;
+  }
+  function flash(msg){
+    saveState.innerHTML = "<span class=\"dot\"></span> " + msg;
+  }
+  function autosave(){
+    try{
+      localStorage.setItem(STORE_KEY, JSON.stringify(collect()));
+      flash("Guardado en esta pagina");
+    }catch(e){
+      flash("No se pudo autoguardar (usa Guardar mi planilla)");
+    }
+  }
+  function restore(){
+    var raw;
+    try{ raw = localStorage.getItem(STORE_KEY); }catch(e){ raw = null; }
+    if (!raw) return;
+    var data;
+    try{ data = JSON.parse(raw); }catch(e){ return; }
+    fields().forEach(function(el){
+      var k = el.getAttribute("data-k");
+      if (data[k] != null){ el.value = data[k]; paintSelect(el); }
+    });
+  }
+
+  document.addEventListener("input", function(e){
+    if (!e.target.getAttribute || !e.target.getAttribute("data-k")) return;
+    paintSelect(e.target);
+    if (saveTimer) clearTimeout(saveTimer);
+    saveTimer = setTimeout(autosave, 400);
+  });
+  document.addEventListener("change", function(e){
+    if (e.target.getAttribute && e.target.getAttribute("data-k")) paintSelect(e.target);
+  });
+
+  // --- Nombre de archivo segun el tester ---
+  function safeName(){
+    var t = (collect().tester || "tester").trim() || "tester";
+    return "Planilla_Yuemail_v0.6.0_" + t.replace(/[^A-Za-z0-9_-]+/g, "_");
+  }
+  function download(filename, text, mime){
+    var blob = new Blob([text], {type: mime + ";charset=utf-8"});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click();
+    document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 1500);
+  }
+
+  // --- GUARDAR: copia HTML con las respuestas adentro, reabrible ---
+  document.getElementById("btn-save").addEventListener("click", function(){
+    // grabar los valores actuales como atributos para que la copia se reabra completa
+    fields().forEach(function(el){
+      if (el.tagName === "SELECT"){
+        Array.prototype.forEach.call(el.options, function(op){
+          if (op.value === el.value){ op.setAttribute("selected","selected"); }
+          else { op.removeAttribute("selected"); }
+        });
+        el.setAttribute("data-v", el.value);
+      } else if (el.tagName === "TEXTAREA"){
+        el.textContent = el.value;
+      } else {
+        el.setAttribute("value", el.value);
+      }
+    });
+    var html = "<!DOCTYPE html>\n" + document.documentElement.outerHTML;
+    download(safeName() + ".html", html, "text/html");
+    flash("Copia descargada");
+  });
+
+  // --- CSV para Excel / Google Sheets ---
+  function csvCell(s){
+    s = (s == null) ? "" : String(s);
+    if (/[",\n;]/.test(s)) s = '"' + s.replace(/"/g, '""') + '"';
+    return s;
+  }
+  document.getElementById("btn-csv").addEventListener("click", function(){
+    var d = collect();
+    var L = [];
+    L.push("Planilla de resultados - Yuemail v0.6.0");
+    L.push("");
+    L.push(csvCell("Tester") + "," + csvCell(d.tester));
+    L.push(csvCell("Fecha") + "," + csvCell(d.fecha));
+    L.push(csvCell("Sistema operativo") + "," + csvCell(d.so));
+    L.push(csvCell("Navegador") + "," + csvCell(d.navegador));
+    L.push(csvCell("Node") + "," + csvCell(d.node));
+    L.push(csvCell("Version Yuemail") + "," + csvCell(d.yuemail));
+    L.push(csvCell("Proveedor de correo") + "," + csvCell(d.correo));
+    L.push(csvCell("IA del Asistente") + "," + csvCell(d.ia));
+    L.push(csvCell("Voz de Google") + "," + csvCell(d.voz));
+    L.push("");
+    L.push(["#","Prueba","Resultado","Observaciones","Captura"].map(csvCell).join(","));
+    TESTS.forEach(function(item, i){
+      var n = i + 1;
+      var task = (typeof item === "string") ? item : item.t;
+      L.push([n, task, d["res"+n] || "", d["obs"+n] || "", d["cap"+n] || ""].map(csvCell).join(","));
+    });
+    L.push("");
+    L.push(csvCell("Tiempo viaje completo (min)") + "," + csvCell(d.tiempo));
+    // BOM para que Excel respete los caracteres especiales
+    download(safeName() + ".csv", "\uFEFF" + L.join("\r\n"), "text/csv");
+    flash("CSV descargado");
+  });
+
+  // --- ENVIAR: abre el correo con destinatario y asunto puestos ---
+  document.getElementById("btn-send").addEventListener("click", function(){
+    var d = collect();
+    var nombre = (d.tester || "").trim();
+    var asunto = "QA Yuemail v0.6.0 -- " + (nombre || "tester");
+    var cuerpo =
+      "Hola, adjunto mi planilla de resultados de Yuemail v0.6.0.\n\n" +
+      "Tester: " + (nombre || "(completar)") + "\n" +
+      "Fecha: " + (d.fecha || "(completar)") + "\n\n" +
+      "IMPORTANTE: acordate de adjuntar el archivo que descargaste con " +
+      "\"Guardar mi planilla\" (o el CSV) y tus capturas.\n";
+    var href = "mailto:contact@yujin.app" +
+      "?subject=" + encodeURIComponent(asunto) +
+      "&body=" + encodeURIComponent(cuerpo);
+    window.location.href = href;
+    flash("Abriendo tu correo... adjunta el archivo guardado");
+  });
+
+  // --- Vaciar todo ---
+  document.getElementById("btn-clear").addEventListener("click", function(){
+    if (!window.confirm("Esto borra todo lo que escribiste en esta planilla. Continuar?")) return;
+    fields().forEach(function(el){ el.value = ""; paintSelect(el); });
+    try{ localStorage.removeItem(STORE_KEY); }catch(e){}
+    flash("Planilla vaciada");
+  });
+
+  // --- Al abrir: recuperar lo guardado y pintar selectores ---
+  restore();
+  fields().forEach(paintSelect);
+})();
+</script>
+
+
+</body></html>

@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Reporte autopilot - Entrenador de voz (nac3-kikoe)</title><style>body{font-family:Georgia,"Times New Roman",serif;max-width:760px;margin:40px auto;padding:0 20px;color:#1a1a1a;line-height:1.6}h1,h2,h3{font-weight:600;color:#2e3a5e}table{border-collapse:collapse}td,th{border:1px solid #b8ad95;padding:6px 10px}code,pre{font-family:Consolas,monospace;background:#f5f0e6}</style></head><body>
+<h1>Reporte de trabajo - Entrenador de voz para voces atipicas</h1>
+<p><strong>Modo:</strong> autopilot (estuviste ausente). <strong>Resultado:</strong> entregado de punta a punta, verificado por mi. <strong>Fecha:</strong> 25-06-2026.</p>
+
+<h2>Que pediste</h2>
+<ul>
+<li>Construir la capa de metricas (confianza + efectividad) y el router sobre el nucleo del entrenador.</li>
+<li>Subir el paquete <code>nac3-kikoe</code> al repo.</li>
+<li>Cablearlo en Yuemail con un modal/vista propio: metricas por comando, entrenar uno o todos, cubriendo los comandos de la app.</li>
+<li>Hacer todo sin preguntar y cerrar con commit, push, publish y update global.</li>
+</ul>
+
+<h2>Que quedo hecho (todo verificado)</h2>
+<h3>1) El add-on (paquete reutilizable) - @yujinapp/nac3-kikoe v0.2.0</h3>
+<ul>
+<li><strong>Dos metricas por comando</strong> que maduran con el uso, ambas arrancan en 50% ("verdes de inexpertas"):
+<ul><li><strong>Confianza</strong>: cuanto la persona deja correr el reconocimiento local (vs. corregir/cancelar). Fuente de verdad: la persona.</li>
+<li><strong>Efectividad</strong>: cuanto coincide lo local con la nube (Google), tratada como SEGUNDA OPINION. Si para una voz atipica severa la efectividad es baja, eso valida lo local (la nube es la que falla).</li></ul></li>
+<li><strong>Router de 3 modos (la perilla)</strong>: "solo cuando dudo", "modo aprendizaje" (mide contra la nube un tiempo y despues afloja solo), "siempre comparar". El router NUNCA ejecuta: solo dice si conviene disparar local y si hay que llamar a la nube.</li>
+<li>Motor de alto nivel listo para cualquier app NAC3, que extrae huellas o recibe huellas ya numericas (para que el audio nunca salga del dispositivo).</li>
+<li><strong>47 pruebas en verde</strong> (+20 nuevas), tipos limpios, ASCII puro, el audio nunca se guarda (probado).</li>
+<li>Subido a <strong>github.com/pkuschnirof/nac3-kikoe</strong> y <strong>publicado en npm</strong> (asi queda disponible como add-on para cualquier app, como querias).</li>
+</ul>
+
+<h3>2) Yuemail cableado como adoptante #1 - v0.11.0</h3>
+<ul>
+<li><strong>Privacidad por diseno</strong>: las huellas se calculan EN EL NAVEGADOR; el audio se descarta ahi mismo y al servidor solo viajan numeros. Se guardan por dispositivo.</li>
+<li><strong>Convivencia</strong>: si la persona no entrena nada, la voz se comporta EXACTAMENTE como hoy (la nube es el piso comun; el entrenador es una etapa opcional adelante, invisible hasta que se entrena).</li>
+<li><strong>Modal del entrenador</strong> (boton "Entrenador" arriba, o por voz "abrir entrenador"): la perilla de 3 posiciones (default "modo aprendizaje", por dispositivo), la tabla de comandos con su confianza, efectividad y cantidad de grabaciones, y botones para <em>entrenar uno</em>, <em>entrenar todo</em>, <em>probar</em> y <em>borrar</em>. La grabacion es guiada y hablada (para quien no ve).</li>
+<li>Cubre los comandos globales de la app (leer bandeja, enviar, responder, dictado, firmar, contactos, configuracion, etc.).</li>
+<li><strong>407 pruebas en verde</strong> (+7), tipos limpios (web + servidor), build de produccion OK.</li>
+<li>Commit + push hechos; <strong>publicado en npm</strong>; <strong>comando global actualizado a 0.11.0</strong> (confirmado con yuemail --version).</li>
+</ul>
+
+<h2>Lo honesto: que falta validar</h2>
+<ul>
+<li><strong>La precision con una voz atipica REAL (Tamara) no esta medida.</strong> En esta sesion no tengo microfono, asi que verifique todo a nivel de codigo (pruebas, tipos, build, publicacion), pero la calidad del reconocimiento con su voz hay que probarla con ella. El umbral de aceptacion se calcula solo a partir de sus grabaciones (metodo principiado), pero conviene afinarlo con su voz real.</li>
+<li><strong>Capa C (Project Euphonia)</strong> sigue afuera, como acordamos: es un tramite tuyo con Google, no algo de programacion.</li>
+</ul>
+
+<h2>Para cuando vuelvas</h2>
+<ol>
+<li>Probar con Tamara: abrir el entrenador, entrenar 3-4 comandos clave con su voz, y usar "Probar" para ver si los reconoce. Con eso calibramos.</li>
+<li>Decidir si arrancas el tramite de Project Euphonia (Capa C) o lo dejamos para mas adelante.</li>
+</ol>
+
+<h2>Versiones y enlaces</h2>
+<ul>
+<li>Add-on: <code>@yujinapp/nac3-kikoe@0.2.0</code> - github.com/pkuschnirof/nac3-kikoe</li>
+<li>Yuemail: <code>@yujinapp/yuemail@0.11.0</code> - commit ca7106a</li>
+<li>Seguimiento: PND-032 cerrado (shipped).</li>
+</ul>
+</body></html>

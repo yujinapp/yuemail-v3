@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Planilla del Entrenador de voz - Tamara (para completar y devolver)</title>
+<style>
+  :root{ --tinta:#2e3a5e; --papel:#fbf8f1; --borde:#b8ad95; --ok:#2f6f4f; --no:#9a3b2f; }
+  *{box-sizing:border-box}
+  body{font-family:Georgia,"Times New Roman",serif;max-width:840px;margin:0 auto;padding:32px 20px 80px;color:#1a1a1a;line-height:1.6;background:var(--papel)}
+  h1,h2,h3{font-weight:600;color:var(--tinta)}
+  h1{font-size:1.7rem}
+  .nota{background:#fff;border:1px solid var(--borde);border-radius:8px;padding:14px 18px;margin:18px 0}
+  table{border-collapse:collapse;width:100%;margin:10px 0}
+  td,th{border:1px solid var(--borde);padding:8px 10px;text-align:left;vertical-align:top}
+  th{background:#efe9da;color:var(--tinta)}
+  td.frase{font-weight:600;white-space:nowrap}
+  /* Campos de escritura */
+  input[type=text],textarea,select{font-family:inherit;font-size:1rem;width:100%;padding:8px 10px;border:1.5px solid var(--borde);border-radius:6px;background:#fff;color:#1a1a1a}
+  input[type=text]:focus,textarea:focus,select:focus{outline:3px solid #c7b88a;border-color:var(--tinta)}
+  textarea{min-height:48px;resize:vertical}
+  .veces{width:90px}
+  select{min-width:130px}
+  select.si{background:#eaf5ee;border-color:var(--ok)}
+  select.no{background:#f7e9e6;border-color:var(--no)}
+  /* Barra de acciones */
+  .barra{position:sticky;top:0;z-index:5;background:var(--papel);border-bottom:1px solid var(--borde);padding:12px 0;margin:-32px 0 18px;display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+  button{font-family:inherit;font-size:1.02rem;cursor:pointer;border:none;border-radius:8px;padding:11px 18px;color:#fff;background:var(--tinta)}
+  button.sec{background:#6b6453}
+  button:focus{outline:3px solid #c7b88a}
+  .guardado{font-size:.9rem;color:#6b6453}
+  .quien{display:flex;gap:14px;flex-wrap:wrap;margin:6px 0 0}
+  .quien label{flex:1;min-width:240px}
+  @media print{ .barra,.noimprimir{display:none!important} body{background:#fff} }
+</style></head>
+<body>
+
+<div class="barra noimprimir">
+  <button type="button" onclick="descargar()">Descargar mis respuestas</button>
+  <button type="button" class="sec" onclick="window.print()">Imprimir / Guardar como PDF</button>
+  <span class="guardado" id="estado">Se va guardando solo en este navegador</span>
+</div>
+
+<h1>Planilla del Entrenador de voz</h1>
+<p><strong>Para:</strong> Tamara &nbsp;&middot;&nbsp; <strong>Producto:</strong> Yuemail (versi&oacute;n 0.11.0) &nbsp;&middot;&nbsp; <strong>Qu&eacute; probamos:</strong> el nuevo <em>Entrenador de voz</em>, <strong>un comando a la vez</strong>.</p>
+
+<div class="nota noimprimir">
+  <strong>C&oacute;mo se completa:</strong> escrib&iacute; directamente en los casilleros (se van guardando solos en esta computadora). Cuando termines, toc&aacute; <strong>&ldquo;Descargar mis respuestas&rdquo;</strong> arriba: se baja un archivo con todo lo que pusiste, y ese archivo se lo mand&aacute;s a Pablo por correo. Si te resulta m&aacute;s c&oacute;modo, tambi&eacute;n pod&eacute;s usar <strong>&ldquo;Imprimir / Guardar como PDF&rdquo;</strong>.
+</div>
+
+<div class="quien">
+  <label>Qui&eacute;n completa esta planilla:<br><input type="text" id="meta_quien" placeholder="Tamara / acompa&ntilde;ante"></label>
+  <label>Fecha de la prueba:<br><input type="text" id="meta_fecha" placeholder="d&iacute;a / mes"></label>
+</div>
+
+<h2>La regla de oro</h2>
+<ul>
+  <li><strong>Un comando por vez.</strong> Primero lo entren&aacute;s, despu&eacute;s lo prob&aacute;s, anot&aacute;s el resultado, y reci&eacute;n ah&iacute; pas&aacute;s al siguiente.</li>
+  <li><strong>No toques &ldquo;Entrenar todo&rdquo;.</strong> En esta prueba lo hacemos de a uno.</li>
+  <li><strong>Sin apuro.</strong> Si un comando no sale, no pasa nada: lo entren&aacute;s de nuevo. Eso es justo lo que queremos descubrir.</li>
+</ul>
+
+<h2>El circuito para cada comando (siempre igual)</h2>
+<ol>
+  <li><strong>Entrenar.</strong> Toc&aacute; (o que toquen) el bot&oacute;n <strong>Entrenar</strong> de ese comando. La app dice <em>&ldquo;Dec&iacute;:&rdquo;</em> y la frase, y te la pide <strong>tres veces</strong>. Repetila igual las tres.</li>
+  <li><strong>Probar.</strong> Toc&aacute; <strong>Probar</strong> y dec&iacute; la frase <strong>una vez</strong>. Te contesta <em>&ldquo;Lo reconoc&iacute; bien&rdquo;</em> (anot&aacute; <strong>S&Iacute;</strong>) o <em>&ldquo;No lo reconoc&iacute;&rdquo;</em> (anot&aacute; <strong>NO</strong>).</li>
+  <li><strong>Anotar.</strong> Marc&aacute; abajo si reconoci&oacute; (S&Iacute; / NO), cu&aacute;ntas veces lo entrenaste y cualquier comentario.</li>
+</ol>
+<p><strong>Si dio NO:</strong> volv&eacute; a <strong>Entrenar</strong> ese comando, despacito, y prob&aacute; otra vez. Si a la segunda o tercera sigue sin salir, anot&aacute; NO y segu&iacute;. Ese dato nos sirve igual.</p>
+
+<h2>Primero: los 6 m&aacute;s usados</h2>
+<p class="noimprimir">Con estos seis ya nos das una foto muy buena. Si ten&eacute;s ganas, segu&iacute; con el resto m&aacute;s abajo.</p>
+<table>
+  <thead>
+    <tr><th>Frase que ten&eacute;s que decir</th><th>Para qu&eacute; sirve</th><th>&iquest;Reconoci&oacute;?</th><th>&iquest;Cu&aacute;ntas veces lo entren&eacute;?</th><th>Nota</th></tr>
+  </thead>
+  <tbody id="tabla1"></tbody>
+</table>
+
+<h2>Despu&eacute;s (si quer&eacute;s seguir): el resto</h2>
+<table>
+  <thead>
+    <tr><th>Frase que ten&eacute;s que decir</th><th>Para qu&eacute; sirve</th><th>&iquest;Reconoci&oacute;?</th><th>&iquest;Cu&aacute;ntas veces lo entren&eacute;?</th><th>Nota</th></tr>
+  </thead>
+  <tbody id="tabla2"></tbody>
+</table>
+
+<h2>Tres preguntas para el final</h2>
+<ol>
+  <li>En general, despu&eacute;s de entrenarlos, &iquest;<strong>te entiende mejor</strong> que antes?<br>
+    <textarea id="q1" placeholder="Escrib&iacute; tu respuesta..."></textarea></li>
+  <li>&iquest;Hubo alg&uacute;n comando que <strong>nunca</strong> logr&oacute; reconocer por m&aacute;s que lo entrenaste?<br>
+    <textarea id="q2" placeholder="Escrib&iacute; tu respuesta..."></textarea></li>
+  <li>El proceso de entrenar (repetir 3 veces) &iquest;<strong>te result&oacute; c&oacute;modo</strong> o cansador?<br>
+    <textarea id="q3" placeholder="Escrib&iacute; tu respuesta..."></textarea></li>
+</ol>
+
+<p style="margin-top:24px"><em>Gracias, Tamara. Cada S&Iacute; y cada NO nos sirve para afinar el Entrenador a tu voz de verdad.</em></p>
+
+<script>
+(function(){
+  var comandos1 = [
+    ["leer bandeja","Que te lea los correos que llegaron"],
+    ["dictado","Encender / apagar el dictado de texto"],
+    ["enviar","Mandar un correo"],
+    ["responder","Contestar el ultimo correo leido"],
+    ["agregar contacto","Anotar una persona nueva en la agenda"],
+    ["poner titulo","Ponerle titulo al documento"]
+  ];
+  var comandos2 = [
+    ["nuevo documento","Empezar un documento en blanco"],
+    ["abrir documento","Abrir un documento guardado"],
+    ["reenviar","Reenviar un correo a otra persona"],
+    ["firmar","Poner tu firma en el documento"],
+    ["guardar firma","Crear o guardar tu firma"],
+    ["abrir contactos","Abrir la agenda de contactos"],
+    ["abrir configuracion","Abrir los ajustes de la cuenta"],
+    ["abrir entrenador","Abrir esta misma ventana"],
+    ["encender microfono","Prender el microfono"],
+    ["apagar microfono","Apagar el microfono"],
+    ["detener voz","Que la app deje de hablar"]
+  ];
+  function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c];});}
+  function fila(idx, frase, uso){
+    var id = "c"+idx;
+    return '<tr>'+
+      '<td class="frase">“'+esc(frase)+'”</td>'+
+      '<td>'+esc(uso)+'</td>'+
+      '<td><label class="sr" for="'+id+'_rec" hidden>Reconocio '+esc(frase)+'</label>'+
+        '<select id="'+id+'_rec" data-k="'+id+'_rec" onchange="pintar(this)">'+
+        '<option value="">(elegir)</option><option value="SI">SI</option><option value="NO">NO</option></select></td>'+
+      '<td><input class="veces" type="text" id="'+id+'_n" data-k="'+id+'_n" inputmode="numeric" aria-label="Cuantas veces entrene '+esc(frase)+'"></td>'+
+      '<td><textarea id="'+id+'_nota" data-k="'+id+'_nota" aria-label="Nota para '+esc(frase)+'"></textarea></td>'+
+    '</tr>';
+  }
+  var h1="",h2="";
+  comandos1.forEach(function(c,i){h1+=fila(i+1,c[0],c[1]);});
+  comandos2.forEach(function(c,i){h2+=fila(i+7,c[0],c[1]);});
+  document.getElementById("tabla1").innerHTML=h1;
+  document.getElementById("tabla2").innerHTML=h2;
+
+  window.ALL_COMANDOS = comandos1.concat(comandos2);
+  var KEY = "planilla_entrenador_tamara_v1";
+
+  function campos(){ return document.querySelectorAll("[data-k], #meta_quien, #meta_fecha, #q1, #q2, #q3"); }
+  function cargar(){
+    var raw; try{ raw = window.localStorage.getItem(KEY); }catch(e){ return; }
+    if(!raw) return;
+    var data; try{ data = JSON.parse(raw); }catch(e){ return; }
+    campos().forEach(function(el){
+      var k = el.getAttribute("data-k") || el.id;
+      if(data[k]!=null){ el.value = data[k]; if(el.tagName==="SELECT") pintar(el); }
+    });
+  }
+  function guardar(){
+    var data={};
+    campos().forEach(function(el){ var k=el.getAttribute("data-k")||el.id; data[k]=el.value; });
+    try{ window.localStorage.setItem(KEY, JSON.stringify(data)); }catch(e){}
+    var est=document.getElementById("estado"); if(est) est.textContent="Guardado en este navegador";
+  }
+  window.pintar=function(sel){ sel.classList.remove("si","no"); if(sel.value==="SI")sel.classList.add("si"); if(sel.value==="NO")sel.classList.add("no"); };
+
+  document.addEventListener("input", guardar, true);
+  document.addEventListener("change", guardar, true);
+  cargar();
+
+  window.descargar=function(){
+    var get=function(id){var el=document.getElementById(id);return el?el.value:"";};
+    var rows=window.ALL_COMANDOS.map(function(c,i){
+      var id="c"+(i+1);
+      return '<tr><td>'+c[0]+'</td><td>'+(get(id+"_rec")||"-")+'</td><td>'+(get(id+"_n")||"-")+'</td><td>'+(get(id+"_nota")||"").replace(/</g,"&lt;")+'</td></tr>';
+    }).join("");
+    var doc='<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Respuestas Entrenador - Tamara</title>'+
+      '<style>body{font-family:Georgia,serif;max-width:780px;margin:30px auto;padding:0 16px;color:#1a1a1a}h1,h2{color:#2e3a5e}table{border-collapse:collapse;width:100%}td,th{border:1px solid #b8ad95;padding:6px 10px;text-align:left}</style></head><body>'+
+      '<h1>Respuestas del Entrenador de voz</h1>'+
+      '<p><strong>Complet&oacute;:</strong> '+(get("meta_quien")||"-")+' &nbsp; <strong>Fecha:</strong> '+(get("meta_fecha")||"-")+'</p>'+
+      '<table><thead><tr><th>Comando</th><th>&iquest;Reconoci&oacute;?</th><th>Veces entrenado</th><th>Nota</th></tr></thead><tbody>'+rows+'</tbody></table>'+
+      '<h2>Preguntas finales</h2>'+
+      '<p><strong>1) &iquest;Te entiende mejor?</strong><br>'+((get("q1")||"-").replace(/</g,"&lt;"))+'</p>'+
+      '<p><strong>2) &iquest;Alguno nunca lo reconoci&oacute;?</strong><br>'+((get("q2")||"-").replace(/</g,"&lt;"))+'</p>'+
+      '<p><strong>3) &iquest;El entrenar fue c&oacute;modo o cansador?</strong><br>'+((get("q3")||"-").replace(/</g,"&lt;"))+'</p>'+
+      '</body></html>';
+    var blob=new Blob([doc],{type:"text/html;charset=utf-8"});
+    var a=document.createElement("a");
+    var nombre=(get("meta_quien")||"Tamara").trim().replace(/[^a-zA-Z0-9_-]+/g,"_")||"Tamara";
+    a.href=URL.createObjectURL(blob);
+    a.download="Respuestas_Entrenador_"+nombre+".html";
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function(){URL.revokeObjectURL(a.href);},2000);
+  };
+})();
+</script>
+</body></html>

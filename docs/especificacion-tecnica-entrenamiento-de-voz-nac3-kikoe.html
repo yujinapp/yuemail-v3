@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Especificacion tecnica - Entrenamiento de voz (nac3-kikoe)</title><style>body{font-family:Georgia,"Times New Roman",serif;max-width:760px;margin:40px auto;padding:0 20px;color:#1a1a1a;line-height:1.6}h1,h2,h3{font-weight:600;color:#2e3a5e}table{border-collapse:collapse}td,th{border:1px solid #b8ad95;padding:6px 10px}code,pre{font-family:Consolas,monospace;background:#f5f0e6}</style></head><body>
+<h1>Especificación técnica del entrenamiento de voz</h1>
+<p><strong>Paquete:</strong> <code>@yujinapp/nac3-kikoe</code> &middot; <strong>Adoptante #1:</strong> Yuemail v0.11.0 &middot; <strong>Alcance:</strong> reconocimiento local de comandos de voz para habla atípica, enchufable a cualquier app NAC3.</p>
+<p><em>Este documento está construido a partir del código fuente real del paquete (no de memoria): <code>features.ts</code>, <code>dtw.ts</code>, <code>matcher.ts</code>, <code>metrics.ts</code>, <code>router.ts</code>, <code>engine.ts</code>, <code>types.ts</code> y los helpers de prueba.</em></p>
+
+<h2>1. Resumen y decisión de fondo</h2>
+<p>El entrenamiento <strong>no usa <em>vector embeddings</em></strong> ni redes neuronales. Usa procesamiento de señales clásico:</p>
+<ul>
+<li><strong>Extracción de rasgos: MFCC</strong> (Mel-Frequency Cepstral Coefficients) &mdash; una <em>secuencia</em> de cuadros de 13 números, no un vector fijo.</li>
+<li><strong>Comparación: DTW</strong> (Dynamic Time Warping) &mdash; alineación elástica en el tiempo, con distancia normalizada por el largo del camino.</li>
+</ul>
+<p>La decisión es deliberada: un <em>embedding</em> pre-entrenado arrastra el mismo sesgo "voz típica" que hace fallar a los reconocedores de nube (Google STT) con habla atípica. MFCC + DTW compara <strong>la voz de la persona contra su propia voz</strong>, con apenas 3 a 5 ejemplos y sin entrenamiento previo. No necesita que nadie más entienda a la persona &mdash; solo que suene parecida a como sonó al enrolar.</p>
+<p>El paquete <strong>no ejecuta acciones</strong>: dice "esto suena al comando X con esta confianza" o "no sé, consultá la nube". Qué se hace con el comando lo decide la app anfitriona. Eso lo mantiene reusable.</p>
+
+<h2>2. Arquitectura del pipeline</h2>
+<p>El recorrido completo de una elocución, de audio a decisión:</p>
+<ol>
+<li><strong>Audio crudo (PCM)</strong> &mdash; transitorio, nunca se persiste.</li>
+<li><strong>Extracción MFCC</strong> (<code>extractFeatures</code>) &rarr; matriz N&times;13 (la "huella").</li>
+<li><strong>El audio se descarta acá.</strong> Solo sobreviven los números.</li>
+<li><strong>Comparación DTW</strong> (<code>dtwDistance</code>) contra cada huella enrolada.</li>
+<li><strong>Decisión de aceptación</strong> (<code>Matcher</code>): umbral + margen contra el segundo candidato.</li>
+<li><strong>Decisión de ruteo</strong> (<code>decideRoute</code>): según confianza histórica del comando + el modo activo, decide si se dispara local y si además corre la nube.</li>
+</ol>
+
+<h2>3. Extracción de características (MFCC)</h2>
+<p>El audio crudo entra y sale una secuencia de cuadros de 13 coeficientes (uno cada 10 ms). El pipeline de <code>extractFeatures</code>, paso a paso:</p>
+<ol>
+<li><strong>Pre-énfasis</strong> (coef. 0.97): <code>y[i] = x[i] - 0.97&middot;x[i-1]</code>. Levanta los agudos, que llevan más información de articulación.</li>
+<li><strong>Enventanado</strong>: ventanas de <strong>25 ms</strong> que avanzan de a <strong>10 ms</strong> (se solapan), cada una multiplicada por una <strong>ventana de Hamming</strong> (<code>0.54 - 0.46&middot;cos(2&pi;i/(L-1))</code>) para evitar artefactos en los bordes.</li>
+<li><strong>FFT</strong>: transformada rápida radix-2 Cooley-Tukey, implementada a mano (sin dependencias), sobre la ventana rellenada a la próxima potencia de dos. Se calcula el espectro de magnitud hasta Nyquist.</li>
+<li><strong>Banco de filtros mel</strong>: 26 filtros triangulares espaciados en la escala mel (<code>mel = 1127&middot;ln(1 + hz/700)</code>), que reagrupan el espectro según cómo el oído humano percibe los tonos. Se toma el <strong>logaritmo</strong> de cada energía (con piso <code>1e-10</code> para evitar log(0)).</li>
+<li><strong>DCT-II</strong> sobre los 26 log-energías &rarr; se conservan los <strong>primeros 13 coeficientes</strong>. Eso es el MFCC del cuadro.</li>
+<li><strong>Quita de silencios adaptativa</strong>: se descartan los cuadros cuya energía esté por debajo del <strong>2%</strong> de la del cuadro más fuerte. (Si se cayera todo &mdash; entrada plana &mdash; se conservan todos como salvaguarda.)</li>
+<li><strong>Normalización de media cepstral (CMN)</strong>: a cada coeficiente se le resta su promedio a lo largo de la elocución, lo que cancela buena parte del sesgo del micrófono y del canal.</li>
+</ol>
+<p><strong>Resultado:</strong> una matriz <strong>N&times;13</strong> (N cuadros). Es la diferencia central con un embedding: <em>no es un vector fijo, es una secuencia de largo variable</em> que preserva cómo evoluciona la voz en el tiempo. Opcionalmente se puede anteponer la log-energía del cuadro como coeficiente 0 (pasa a N&times;14), apagado por defecto.</p>
+
+<h2>4. Comparación elástica (DTW)</h2>
+<p>Como cada elocución dura distinto ("bandeja" vs "leer la bandeja de entrada") y la gente habla más rápido o más lento, no se pueden comparar dos matrices N&times;13 de largos distintos de forma directa. <code>dtwDistance</code> las <strong>alinea elásticamente</strong>:</p>
+<ul>
+<li><strong>Costo entre cuadros:</strong> distancia euclídea entre dos cuadros de 13 dimensiones.</li>
+<li><strong>Programación dinámica:</strong> matriz de costo acumulado; cada celda toma el mínimo entre los pasos diagonal / arriba / izquierda.</li>
+<li><strong>Normalización por largo de camino:</strong> el costo total se divide por la cantidad de pasos del camino óptimo, para <em>no castigar a las frases largas</em>. Elocuciones idénticas dan distancia ~0.</li>
+<li><strong>Banda de Sakoe-Chiba (opcional):</strong> limita cuánto puede desviarse el camino de la diagonal &mdash; acelera el cálculo y regulariza alineaciones absurdas.</li>
+</ul>
+
+<h2>5. Aceptación y rechazo (Matcher)</h2>
+<p>El <code>Matcher</code> compara la huella entrante contra todas las plantillas (cada comando guarda varias huellas; se toma la <em>mejor</em> distancia por comando), ordena los candidatos y aplica dos reglas:</p>
+<ul>
+<li><strong>Umbral:</strong> el mejor candidato se acepta solo si su distancia &le; umbral (default 8). Si nada queda por debajo, <strong>no dispara nada</strong> (rechazo de lo desconocido &mdash; clave para no inventar comandos).</li>
+<li><strong>Margen (opcional):</strong> el mejor debe ganarle al segundo por un margen mínimo; si están demasiado cerca, se rechaza por ambigüedad.</li>
+</ul>
+<p><strong>Umbral auto-calibrado:</strong> <code>suggestThreshold</code> separa dos poblaciones de distancias &mdash; <em>intra</em> (entre distintas huellas del mismo comando, deben ser chicas) y <em>cross</em> (entre comandos distintos, deben ser grandes) &mdash; y ubica el umbral en el punto medio. Por defecto el motor recalcula este umbral en cada reconocimiento, de modo que <strong>se adapta a la voz del hablante</strong> en lugar de usar una constante fija.</p>
+
+<h2>6. Las dos métricas por comando</h2>
+<p>Cada comando madura con el uso a través de dos números en 0..1. Ambos usan <strong>suavizado de Laplace (add-one)</strong>: arrancan en <strong>0.5</strong> ("verdes de inexpertos") y convergen al ratio empírico a medida que se acumula evidencia. Así un solo acierto no lee como 100% ni un solo error como 0%.</p>
+<table border="1" cellpadding="6" cellspacing="0">
+<thead><tr><th>Métrica</th><th>Pregunta que responde</th><th>Fuente de verdad</th><th>Fórmula</th></tr></thead>
+<tbody>
+<tr><td><strong>Confianza</strong></td><td>De las veces que el reconocimiento local disparó, ¿cuántas la persona dio por buenas (vs. corrigió/canceló)?</td><td>La <strong>persona</strong></td><td>(aceptaciones + 1) / (aceptaciones + rechazos + 2)</td></tr>
+<tr><td><strong>Efectividad</strong></td><td>De las veces medidas, ¿cuántas coincidió lo local con el camino de nube (Google STT + brain)?</td><td>La <strong>nube</strong>, como segunda opinión</td><td>(coincidencias + 1) / (coincidencias + discrepancias + 2)</td></tr>
+</tbody>
+</table>
+<p><strong>La trampa que evitamos (importante):</strong> la nube NO es juez supremo. Para una voz atípica severa, Google STT es justamente el que falla &mdash; por lo tanto una <em>efectividad baja no condena a lo local: valida que lo local es el mejor camino para esa voz</em>. La efectividad es, en realidad, un termómetro de cuánto se puede confiar en la nube para esa persona: alta para voces típicas (la nube ayuda), baja para voces severas (y eso prueba el valor del reconocedor local).</p>
+<p>Cada figura lleva además su <em>conteo de respaldo</em> (cuántos eventos de feedback / cuántas mediciones la sostienen), para que la tabla del entrenador muestre no solo el número sino su solidez.</p>
+
+<h2>7. El router: el patrón eco &rarr; frontier aplicado a la voz</h2>
+<p>Dado un match local, las métricas del comando y el modo activo, <code>decideRoute</code> decide si se prefiere lo local y si además debe correr la nube. <strong>Nunca ejecuta nada</strong>: devuelve un veredicto que la app acata.</p>
+<ul>
+<li>Un match se considera <strong>confiable</strong> solo si fue aceptado por el matcher Y la confianza del comando &ge; <code>minConfidence</code> (default 0.6).</li>
+<li>Un resultado <strong>no confiable</strong> (o ningún match) escala <em>siempre</em> a la nube. Esto es también, exactamente, lo que recibe una app con cero comandos enrolados: el entrenador es invisible hasta que la persona lo entrena.</li>
+</ul>
+<p>Los tres modos son <strong>un solo mecanismo</strong> con una única pregunta variable: ¿cuándo corre la nube (cara) ante un acierto local confiable?</p>
+<table border="1" cellpadding="6" cellspacing="0">
+<thead><tr><th>Modo</th><th>Ante acierto confiable</th><th>Uso</th></tr></thead>
+<tbody>
+<tr><td><strong>on_doubt</strong> (a) &mdash; "solo cuando dudo"</td><td>Dispara local, NO toca la nube</td><td>Barato, privado, casi siempre offline</td></tr>
+<tr><td><strong>learning</strong> (b) &mdash; "modo aprendizaje" (DEFAULT)</td><td>Corre la nube en paralelo para medir, hasta que el comando "se gradúa" (&ge; 8 eventos de feedback); luego se comporta como on_doubt</td><td>Afina rápido al principio, después afloja solo</td></tr>
+<tr><td><strong>always</strong> (c) &mdash; "siempre comparar"</td><td>Corre la nube siempre</td><td>Máxima medición; menos privado y más lento</td></tr>
+</tbody>
+</table>
+<p>A medida que la confianza sube, en modo aprendizaje las escaladas a la nube se vuelven raras &rarr; baja el costo y la latencia solo. <strong>El sistema se afina solo.</strong> El modo es una perilla por dispositivo, con default <em>learning</em>.</p>
+
+<h2>8. Privacidad por diseño</h2>
+<ul>
+<li><strong>El audio nunca se persiste.</strong> Se extraen los rasgos y el PCM se descarta en el acto. Solo sobreviven las huellas numéricas.</li>
+<li><strong>En Yuemail, las huellas se calculan en el navegador</strong> &mdash; el audio ni siquiera sale del dispositivo.</li>
+<li><strong>Verificación automática:</strong> el test <code>hasPcmKey</code> recorre recursivamente todo lo que se guarda y <em>falla</em> si encontrara cualquier clave de audio (PCM). Es una garantía ejecutable, no una promesa.</li>
+<li><strong>Alcance por dispositivo:</strong> las huellas y las métricas son de quien usa esa máquina; no se mezclan entre personas.</li>
+<li>Las huellas son difíciles de revertir a voz inteligible (son secuencias de coeficientes cepstrales normalizados, no la onda).</li>
+</ul>
+
+<h2>9. Generación del audio sintético de prueba</h2>
+<p>Las pruebas <strong>no graban voz real</strong>: fabrican ondas deterministas con <code>makeSignal</code>, para que verifiquen "distingue A de B" y "rechaza lo desconocido" sin micrófono y sin pruebas intermitentes. Cada "comando" sintético se construye así:</p>
+<ul>
+<li><strong>Suma de senoidales:</strong> una fundamental + sus armónicos (las frecuencias extra), donde cada armónico superior suena más bajo (amplitud <code>1/(k+1)</code>).</li>
+<li><strong>No estacionaria a propósito:</strong> cada parcial se modula en amplitud por una rampa lenta distinta a lo largo de la elocución, <code>traj = 0.5 + 0.5&middot;sin(&pi;(t+phase))</code>, con un <code>phase</code> distinto por parcial. Esto le da a cada conjunto de frecuencias una <em>trayectoria temporal de MFCC única</em>, que es justo lo que DTW (tras la normalización cepstral) necesita para discriminar una "palabra" de otra. Un tono plano no alcanzaría.</li>
+<li><strong>Envolvente de ataque/decaimiento:</strong> 10% al inicio y 10% al final, para que arranque y termine suave como una elocución real.</li>
+<li><strong>Ruido minúsculo y reproducible:</strong> 1% de amplitud (<code>0.01</code>) generado por un <strong>LCG con semilla</strong> (generador lineal congruencial, constantes de <em>Numerical Recipes</em>). <strong>No se usa <code>Math.random</code> en ningún lado</strong>: misma semilla &rarr; mismo audio, siempre.</li>
+</ul>
+<p>Distintos conjuntos de frecuencias = distintos "comandos" sintéticos. El helper <code>withSilence</code> permite además envolver una señal en silencio para probar la quita de silencios.</p>
+
+<h2>10. Parámetros por defecto (referencia)</h2>
+<table border="1" cellpadding="6" cellspacing="0">
+<thead><tr><th>Parámetro</th><th>Valor</th><th>Dónde</th></tr></thead>
+<tbody>
+<tr><td>Ventana de análisis</td><td>25 ms</td><td>features</td></tr>
+<tr><td>Salto (hop)</td><td>10 ms</td><td>features</td></tr>
+<tr><td>Pre-énfasis</td><td>0.97</td><td>features</td></tr>
+<tr><td>Filtros mel</td><td>26</td><td>features</td></tr>
+<tr><td>Coeficientes MFCC</td><td>13</td><td>features</td></tr>
+<tr><td>Umbral de silencio</td><td>2% del cuadro más fuerte</td><td>features</td></tr>
+<tr><td>Umbral de aceptación DTW</td><td>8 (o auto-calibrado)</td><td>matcher</td></tr>
+<tr><td>Prior de las métricas</td><td>Beta(1,1) &rarr; arranque 0.5</td><td>metrics</td></tr>
+<tr><td>Confianza mínima para disparar local</td><td>0.6</td><td>router</td></tr>
+<tr><td>Graduación en modo aprendizaje</td><td>8 eventos de feedback</td><td>router</td></tr>
+<tr><td>Modo por defecto</td><td>learning (por dispositivo)</td><td>router</td></tr>
+</tbody>
+</table>
+
+<h2>11. Acople a la app anfitriona y convivencia</h2>
+<p>El paquete se enchufa por adaptadores que provee la app: <strong>dónde guardar</strong> el estado (<code>KikoeStorageAdapter</code>, por dispositivo) y, opcionalmente, <strong>qué reconocedor de nube sesgar</strong> con el vocabulario (<code>RecognizerAdapter</code>, BYOK &mdash; la clave de Google la pone la app).</p>
+<ul>
+<li><strong>Quien NO entrena</strong> (voz típica, sin enrolar, o apagado): la voz pasa de largo y va directo al camino de hoy (nube + brain). Se comporta <em>exactamente como antes</em>. El add-on es invisible.</li>
+<li><strong>Quien SÍ entrena:</strong> la voz entra primero por las huellas; si hay match confiable se resuelve local, y si no, cae al mismo camino de nube que usa todo el mundo.</li>
+</ul>
+<p>El camino de nube es el <em>piso común</em>; el entrenador es un <em>piso de arriba</em> que solo aparece para quien lo activó. Ambos terminan en la misma tubería NAC3, así que el comando reconocido &mdash; venga de la huella o de la nube &mdash; sale por el mismo lugar.</p>
+
+<h2>12. Limitaciones honestas</h2>
+<ul>
+<li><strong>Requiere enrolar.</strong> La persona graba sus comandos una vez (3 a 5 repeticiones). Es el "entrenamiento" de verdad.</li>
+<li><strong>El umbral hay que afinarlo con voz real.</strong> Se auto-calibra con las grabaciones, pero todavía no se midió la precisión con una voz atípica real (no había micrófono en la sesión de construcción). Es el próximo paso con Tamara.</li>
+<li><strong>Es por persona y por dispositivo.</strong> El molde de una voz no sirve para otra.</li>
+<li><strong>No reemplaza Project Euphonia (Capa C).</strong> Esto es reconocimiento local por plantilla; el reentrenamiento del oído de Google a una voz severa es un trámite aparte, fuera de este paquete.</li>
+</ul>
+<hr>
+<p><em>Verificado contra el código fuente de <code>@yujinapp/nac3-kikoe</code>. 47 pruebas en verde a la fecha de este documento.</em></p>
+</body></html>
